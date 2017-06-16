@@ -102,7 +102,6 @@ namespace Stashie
             Settings.Talismen.Max = totalStashes;
             Settings.Talismen.Value %= totalStashes;
 
-
             #endregion
 
             #region Orb of Chance
@@ -204,6 +203,7 @@ namespace Stashie
             var itemsToMove = new Dictionary<int, List<Element>>();
             var inventoryPanel = GetInventoryPanel();
 
+            var gameWindow = GameController.Window.GetWindowRectangle();
             var cursorPosPreMoving = Mouse.GetCursorPosition();
 
             itemsToMove = AssignIndexesToInventoryItems(itemsToMove, inventoryPanel);
@@ -215,7 +215,6 @@ namespace Stashie
             // Now we know where each item in the inventory needs to be.
             foreach (var keyValuePair in sortedItemsToMove.ToList())
             {
-                Thread.Sleep(200);
                 List<NormalInventoryItem> sortedItems;
                 try
                 {
@@ -235,7 +234,8 @@ namespace Stashie
             //WinApi.BlockInput(false);
         }
 
-        private Dictionary<int, List<Element>> AssignIndexesToInventoryItems(Dictionary<int, List<Element>> itemsToMove, Element inventoryPanel)
+        private Dictionary<int, List<Element>> AssignIndexesToInventoryItems(Dictionary<int, List<Element>> itemsToMove,
+            Element inventoryPanel)
         {
             foreach (var element in inventoryPanel.Children.ToList())
             {
@@ -251,8 +251,8 @@ namespace Stashie
             var invPoint = inventoryPanel.GetClientRect();
             var wCell = invPoint.Width / 12;
             var hCell = invPoint.Height / 5;
-            var x = (int)((1f + position.X - invPoint.X) / wCell);
-            var y = (int)((1f + position.Y - invPoint.Y) / hCell);
+            var x = (int) ((1f + position.X - invPoint.X) / wCell);
+            var y = (int) ((1f + position.Y - invPoint.Y) / hCell);
 
             return _ignoredCells[y, x] == 1;
         }
@@ -283,7 +283,8 @@ namespace Stashie
                 LogMessage($"UsedCellsInStashTab: {numberOfUsedCellsInStashTab}\n" +
                            $"FreeCellsInInventory: {NumberOfFreeCellsInInventory()}", 10);
                 MoveItemsFromStashToInventory(stashTab.VisibleInventoryItems);
-                Thread.Sleep(latency * 2 + 100); // TODO:We don't want to rely on a delay. Instead we should check: inventoryItemsPreMoving.count + stashTabItems.count == inventoryItemsPostMoving.count
+                Thread.Sleep(latency * 2 +
+                             100); // TODO:We don't want to rely on a delay. Instead we should check: inventoryItemsPreMoving.count + stashTabItems.count == inventoryItemsPostMoving.count
                 Stashie();
                 return;
             }
@@ -349,6 +350,7 @@ namespace Stashie
 
         private void MoveItemsToStash(int latency, IEnumerable<NormalInventoryItem> sortedItems)
         {
+            var gameWindow = GameController.Window.GetWindowRectangle();
             var minLatency = latency * 2 > 50 ? latency * 2 : 50 + latency;
             _keyboard.KeyDown(VirtualKeyCode.CONTROL);
             foreach (var item in sortedItems)
@@ -421,7 +423,6 @@ namespace Stashie
 
                 var element = openLeftPanel.Children[2].Children[0].Children[1].Children[3]
                     .Children[1];
-
                 if (!element.IsVisible)
                 {
                     MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect(), Mouse.GetCursorPosition());
@@ -446,15 +447,17 @@ namespace Stashie
 
         private void MoveMouseToCenterOfRec(RectangleF to, POINT from)
         {
-            var deltaX = (int) (to.X + to.Width / 2 - from.X);
-            var deltaY = (int) (to.Y + to.Height / 2 - from.Y);
+            var gameWindow = GameController.Window.GetWindowRectangle();
+            var deltaX = (int) (gameWindow.X + to.X + to.Width / 2 - from.X);
+            var deltaY = (int) (gameWindow.Y + to.Y + to.Height / 2 - from.Y);
             _mouse.MoveMouseBy(deltaX, deltaY);
         }
 
         private void MoveMousePoint(POINT to, POINT from)
         {
-            var deltaX = to.X - from.X;
-            var deltaY = to.Y - from.Y;
+            var gameWindow = GameController.Window.GetWindowRectangle();
+            var deltaX = (int) gameWindow.X + to.X - from.X;
+            var deltaY = (int) gameWindow.Y + to.Y - from.Y;
             _mouse.MoveMouseBy(deltaX, deltaY);
         }
 
@@ -598,6 +601,7 @@ namespace Stashie
         {
             const int inputDelay = 20;
             var latency = (int) GameController.Game.IngameState.CurLatency;
+            var gameWindow = GameController.Window.GetWindowRectangle();
             //winApi.BlockInput(true);
             _keyboard.KeyDown(VirtualKeyCode.CONTROL);
             foreach (var item in stashItems.ToList())
@@ -650,7 +654,8 @@ namespace Stashie
                 Element.OffsetBuffers + 0x42C);
         }
 
-        private Dictionary<int, List<Element>> AssignIndexToItem(Element element, Dictionary<int, List<Element>> itemsToMove)
+        private Dictionary<int, List<Element>> AssignIndexToItem(Element element,
+            Dictionary<int, List<Element>> itemsToMove)
         {
             var itemPos = element.GetClientRect();
             var index = 9999; // magic number, that will never occur naturally.
@@ -699,7 +704,7 @@ namespace Stashie
                     }
 
                     SplitStackAndMoveToFreeCell(element, latency, stack, wantedStackSize, freeCell);
-                    
+
                     //WinApi.BlockInput(false);
 
                     #region Add new item to dictionary.
@@ -971,8 +976,10 @@ namespace Stashie
             return itemsToMove;
         }
 
-        private void SplitStackAndMoveToFreeCell(Element element, int latency, Stack stack, int wantedStackSize, RectangleF freeCell)
+        private void SplitStackAndMoveToFreeCell(Element element, int latency, Stack stack, int wantedStackSize,
+            RectangleF freeCell)
         {
+            var gameWindow = GameController.Window.GetWindowRectangle();
             var numberOfItemsInAStackToMove = stack.Size - wantedStackSize;
 
             //WinApi.BlockInput(true);
@@ -997,17 +1004,17 @@ namespace Stashie
 
             if (numberOfItemsInAStackToMove < 10)
             {
-                var keyToPress = (VirtualKeyCode)((int)VirtualKeyCode.VK_0 + numberOfItemsInAStackToMove);
+                var keyToPress = (VirtualKeyCode) ((int) VirtualKeyCode.VK_0 + numberOfItemsInAStackToMove);
                 _keyboard.KeyPress(keyToPress);
             }
             else
             {
                 var keyToPress =
-                    (VirtualKeyCode)((int)VirtualKeyCode.VK_0 + (numberOfItemsInAStackToMove / 10));
+                    (VirtualKeyCode) ((int) VirtualKeyCode.VK_0 + (numberOfItemsInAStackToMove / 10));
                 _keyboard.KeyPress(keyToPress);
                 Thread.Sleep(latency);
                 keyToPress =
-                    (VirtualKeyCode)((int)VirtualKeyCode.VK_0 + (numberOfItemsInAStackToMove % 10));
+                    (VirtualKeyCode) ((int) VirtualKeyCode.VK_0 + (numberOfItemsInAStackToMove % 10));
                 _keyboard.KeyPress(keyToPress);
             }
 

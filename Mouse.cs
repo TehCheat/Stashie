@@ -9,8 +9,7 @@ namespace Stashie
 
         public static POINT GetCursorPosition()
         {
-            POINT lpPoint;
-            GetCursorPos(out lpPoint);
+            GetCursorPos(out POINT lpPoint);
 
             return lpPoint;
         }
