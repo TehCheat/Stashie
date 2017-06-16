@@ -12,8 +12,7 @@ Walk up to your stashtab and open it, then press your hotkey (F3) if you have th
 * Sorting  
    * Items are ctrl+leftclick'ed in the order the user wants the item sorted by (fx. rarity, name, and so forth)
    * This feature needs to be rewritten into a full stash sorter, so that the tabs can look pretty at all times.
-   
-http://overseer.co
+
 
 #### Wanna give feedback?
 https://discord.gg/Q3cdy4v
