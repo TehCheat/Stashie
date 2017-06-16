@@ -71,7 +71,7 @@ namespace Stashie
 
         #region Portal and Wisdom Scroll Settings
 
-        [Menu("Wisdom & Portal Scrolls", 1000)]
+        [Menu("Scrolls", 1000)]
         public ToggleNode KeepSettings { get; set; }
 
         [Menu("Wisdom, keep", 100, 1000)]
