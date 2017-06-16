@@ -147,7 +147,7 @@ namespace Stashie
                 return;
             }
 
-            MoveItemsToStash();
+            ItemsToMoveToStash();
             _moveItemsToStash = false;
         }
 
@@ -166,7 +166,7 @@ namespace Stashie
         /// <summary>
         /// Moves the items from the inventory to the stash, and sorts them.
         /// </summary>
-        public void MoveItemsToStash()
+        public void ItemsToMoveToStash()
         {
             // Instead of just itterating through each item in our inventory panel and switching to it's corresponding tab
             // we, itterate through the items in the inventory and place them in a list with position and the corresponding tab it should be moved to,
@@ -569,9 +569,16 @@ namespace Stashie
                 GoToTab(keyValuePair.Key);
 
                 #region StashTab Sorting
+                var sortedItems = keyValuePair.Value.Select(element => element.AsObject<NormalInventoryItem>())
+                    .ToList();
 
-                //Thread.Sleep(latency * 2 + _debugDelay);
-
+                // If the user don't want to sort the items that are put into the stash.
+                if (!Settings.SortingSettings.Value)
+                {
+                    // Then move them into the stash, and return.
+                    MoveItemsToStash(latency, sortedItems);
+                    return;
+                }
 
                 var numberOfUsedCellsInStashTab = NumberOfUsedCellsInStashTab(keyValuePair.Key);
                 var spaceEnoughToSortItemsInInventoryPanel =
@@ -601,12 +608,11 @@ namespace Stashie
                     LogMessage($"UsedCellsInStashTab: {numberOfUsedCellsInStashTab}\n" +
                                $"FreeCellsInInventory: {NumberOfFreeCellsInInventory()}", 10);
                     MoveItemsFromStashToInventory(stashTab.VisibleInventoryItems);
-                    MoveItemsToStash();
+                    ItemsToMoveToStash();
                     return;
                 }
 
-                var sortedItems = keyValuePair.Value.Select(element => element.AsObject<NormalInventoryItem>())
-                    .ToList();
+                
 
                 #endregion
 
@@ -644,22 +650,27 @@ namespace Stashie
 
                 #endregion
 
-                var minLatency = latency * 2 > 50 ? latency * 2 : 50 + latency;
-                _keyboard.KeyDown(VirtualKeyCode.CONTROL);
-                foreach (var item in sortedItems)
-                {
-                    Thread.Sleep(minLatency);
-                    MoveMouseToCenterOfRec(item.GetClientRect(), Mouse.GetCursorPosition());
-                    Thread.Sleep(InputDelay);
-                    _mouse.LeftButtonClick();
-                }
-                _keyboard.KeyUp(VirtualKeyCode.CONTROL);
-                Thread.Sleep(latency + DebugDelay);
+                MoveItemsToStash(latency, sortedItems);
             }
 
             MoveMousePoint(cursorPosPreMoving, Mouse.GetCursorPosition());
 
             //WinApi.BlockInput(false);
+        }
+
+        private void MoveItemsToStash(int latency, IEnumerable<NormalInventoryItem> sortedItems)
+        {
+            var minLatency = latency * 2 > 50 ? latency * 2 : 50 + latency;
+            _keyboard.KeyDown(VirtualKeyCode.CONTROL);
+            foreach (var item in sortedItems)
+            {
+                Thread.Sleep(minLatency);
+                MoveMouseToCenterOfRec(item.GetClientRect(), Mouse.GetCursorPosition());
+                Thread.Sleep(InputDelay);
+                _mouse.LeftButtonClick();
+            }
+            _keyboard.KeyUp(VirtualKeyCode.CONTROL);
+            Thread.Sleep(latency + DebugDelay);
         }
 
         private void FirstTab()
