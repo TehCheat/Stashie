@@ -10,14 +10,11 @@ namespace Stashie
 
         public Settings()
         {
-            Enable = false;
-
             // Hotkey or automatic
             HotkeyRequired = true;
             HotkeySetting = new ToggleNode(false);
 
             // Tab Index (deprecated)
-            TabNum = true;
             Currency = new RangeNode<int>(0, 0, DefaultMaxTabs);
             DivinationCards = new RangeNode<int>(1, 0, DefaultMaxTabs);
             Essences = new RangeNode<int>(2, 0, DefaultMaxTabs);
@@ -58,7 +55,6 @@ namespace Stashie
             QualityGems = new RangeNode<int>(10, 0, DefaultMaxTabs);
 
             // Maps
-            MapTabs = true;
             StrandShaped = new RangeNode<int>(3, 0, DefaultMaxTabs);
             ShoreShaped = new RangeNode<int>(4, 0, DefaultMaxTabs);
             UniqueMaps = new RangeNode<int>(5, 0, DefaultMaxTabs);
@@ -117,7 +113,7 @@ namespace Stashie
         #region Tab Indexes Settings
 
         [Menu("Default Tabs", 3000)]
-        public ToggleNode TabNum { get; set; }
+        public EmptyNode TabNum { get; set; }
 
         [Menu("Currency", 300, 3000)]
         public RangeNode<int> Currency { get; set; }
@@ -199,7 +195,7 @@ namespace Stashie
         #region Maps
 
         [Menu("Map Tabs", 6000)]
-        public ToggleNode MapTabs { get; set; }
+        public EmptyNode MapTabsHOlder { get; set; }
 
         [Menu("Shaped Strands", 600, 6000)]
         public RangeNode<int> StrandShaped { get; set; }
