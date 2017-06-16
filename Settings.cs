@@ -10,8 +10,6 @@ namespace Stashie
 
         public Settings()
         {
-            Enable = false;
-
             // Hotkey or automatic
             HotkeyRequired = true;
             HotkeySetting = new ToggleNode(false);
@@ -62,6 +60,9 @@ namespace Stashie
             UniqueMaps = new RangeNode<int>(5, 0, DefaultMaxTabs);
             OtherMaps = new RangeNode<int>(6, 0, DefaultMaxTabs);
             ShapedMaps = new RangeNode<int>(7, 0, DefaultMaxTabs);
+
+            // Latency Slider
+            LatencySlider = new RangeNode<int>(0, 0, 1000);
         }
 
 
@@ -226,6 +227,16 @@ namespace Stashie
 
         #region Rarity Tabs
 
+
+
+        #endregion
+
+        // Parent index 9000
+
+        #region Latency Slider
+
+        [Menu("Extra Latency", 9000)]
+        public RangeNode<int> LatencySlider { get; set; }
 
 
         #endregion
