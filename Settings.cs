@@ -5,7 +5,7 @@ namespace Stashie
 {
     public class Settings : SettingsBase
     {
-        public const int defaultMaxTabs = 40;
+        public const int DefaultMaxTabs = 40;
 
 
         public Settings()
@@ -18,18 +18,18 @@ namespace Stashie
 
             // Tab Index (deprecated)
             TabNum = true;
-            Currency = new RangeNode<int>(0, 0, defaultMaxTabs);
-            DivinationCards = new RangeNode<int>(1, 0, defaultMaxTabs);
-            Essences = new RangeNode<int>(2, 0, defaultMaxTabs);
+            Currency = new RangeNode<int>(0, 0, DefaultMaxTabs);
+            DivinationCards = new RangeNode<int>(1, 0, DefaultMaxTabs);
+            Essences = new RangeNode<int>(2, 0, DefaultMaxTabs);
 
-            Jewels = new RangeNode<int>(7, 0, defaultMaxTabs);
-            Gems = new RangeNode<int>(8, 0, defaultMaxTabs);
-            LeagueStones = new RangeNode<int>(9, 0, defaultMaxTabs);
+            Jewels = new RangeNode<int>(7, 0, DefaultMaxTabs);
+            Gems = new RangeNode<int>(8, 0, DefaultMaxTabs);
+            LeagueStones = new RangeNode<int>(9, 0, DefaultMaxTabs);
 
-            Flasks = new RangeNode<int>(11, 0, defaultMaxTabs);
-            Jewelery = new RangeNode<int>(12, 0, defaultMaxTabs);
-            WhiteItems = new RangeNode<int>(13, 0, defaultMaxTabs);
-            Talismen = new RangeNode<int>(14, 0, defaultMaxTabs);
+            Flasks = new RangeNode<int>(11, 0, DefaultMaxTabs);
+            Jewelery = new RangeNode<int>(12, 0, DefaultMaxTabs);
+            WhiteItems = new RangeNode<int>(13, 0, DefaultMaxTabs);
+            Talismen = new RangeNode<int>(14, 0, DefaultMaxTabs);
 
             // Portal and Wisdom Scrolls
             KeepSettings = true;
@@ -38,8 +38,8 @@ namespace Stashie
 
             // Orb of Chance
             ChanceItemTabs = true;
-            LeatherBelt = new RangeNode<int>(17, 0, defaultMaxTabs);
-            SorcererBoots = new RangeNode<int>(1, 0, defaultMaxTabs);
+            LeatherBelt = new RangeNode<int>(17, 0, DefaultMaxTabs);
+            SorcererBoots = new RangeNode<int>(1, 0, DefaultMaxTabs);
 
             // Sorting
             SortingSettings = true;
@@ -50,20 +50,23 @@ namespace Stashie
 
             // Vendor Recipes
             VendorRecipeTabs = true;
-            ChaosRecipeLvlOne = new RangeNode<int>(14, 0, defaultMaxTabs);
-            ChaosRecipeLvlTwo = new RangeNode<int>(15, 0, defaultMaxTabs);
-            ChaosRecipeLvlThree = new RangeNode<int>(16, 0, defaultMaxTabs);
-            ChiselRecipe = new RangeNode<int>(10, 0, defaultMaxTabs);
-            QualityFlasks = new RangeNode<int>(10, 0, defaultMaxTabs);
-            QualityGems = new RangeNode<int>(10, 0, defaultMaxTabs);
+            ChaosRecipeLvlOne = new RangeNode<int>(14, 0, DefaultMaxTabs);
+            ChaosRecipeLvlTwo = new RangeNode<int>(15, 0, DefaultMaxTabs);
+            ChaosRecipeLvlThree = new RangeNode<int>(16, 0, DefaultMaxTabs);
+            ChiselRecipe = new RangeNode<int>(10, 0, DefaultMaxTabs);
+            QualityFlasks = new RangeNode<int>(10, 0, DefaultMaxTabs);
+            QualityGems = new RangeNode<int>(10, 0, DefaultMaxTabs);
 
             // Maps
             MapTabs = true;
-            StrandShaped = new RangeNode<int>(3, 0, defaultMaxTabs);
-            ShoreShaped = new RangeNode<int>(4, 0, defaultMaxTabs);
-            UniqueMaps = new RangeNode<int>(5, 0, defaultMaxTabs);
-            OtherMaps = new RangeNode<int>(6, 0, defaultMaxTabs);
-            ShapedMaps = new RangeNode<int>(7, 0, defaultMaxTabs);
+            StrandShaped = new RangeNode<int>(3, 0, DefaultMaxTabs);
+            ShoreShaped = new RangeNode<int>(4, 0, DefaultMaxTabs);
+            UniqueMaps = new RangeNode<int>(5, 0, DefaultMaxTabs);
+            OtherMaps = new RangeNode<int>(6, 0, DefaultMaxTabs);
+            ShapedMaps = new RangeNode<int>(7, 0, DefaultMaxTabs);
+
+            // Latency Slider
+            LatencySlider = new RangeNode<int>(0, 0, 1000);
         }
 
 
@@ -228,6 +231,16 @@ namespace Stashie
 
         #region Rarity Tabs
 
+
+
+        #endregion
+
+        // Parent index 9000
+
+        #region Latency Slider
+
+        [Menu("Extra Latency", 9000)]
+        public RangeNode<int> LatencySlider { get; set; }
 
 
         #endregion

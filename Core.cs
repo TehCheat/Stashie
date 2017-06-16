@@ -24,8 +24,7 @@ namespace Stashie
 
         private bool _moveItemsToStash = true;
 
-        private const int DebugDelay = 30;
-        private const int InputDelay = 10;
+        private const int InputDelay = 15;
         private const int WhileDelay = 5;
 
         // 1, cell is ignored. 0 cells is not ignored.
@@ -203,7 +202,6 @@ namespace Stashie
             var itemsToMove = new Dictionary<int, List<Element>>();
             var inventoryPanel = GetInventoryPanel();
 
-            var gameWindow = GameController.Window.GetWindowRectangle();
             var cursorPosPreMoving = Mouse.GetCursorPosition();
 
             itemsToMove = AssignIndexesToInventoryItems(itemsToMove, inventoryPanel);
@@ -283,8 +281,8 @@ namespace Stashie
                 LogMessage($"UsedCellsInStashTab: {numberOfUsedCellsInStashTab}\n" +
                            $"FreeCellsInInventory: {NumberOfFreeCellsInInventory()}", 10);
                 MoveItemsFromStashToInventory(stashTab.VisibleInventoryItems);
-                Thread.Sleep(latency * 2 +
-                             100); // TODO:We don't want to rely on a delay. Instead we should check: inventoryItemsPreMoving.count + stashTabItems.count == inventoryItemsPostMoving.count
+                Thread.Sleep(latency + 150);
+                // TODO:We don't want to rely on a delay. Instead we should check: inventoryItemsPreMoving.count + stashTabItems.count == inventoryItemsPostMoving.count
                 Stashie();
                 return;
             }
@@ -350,8 +348,9 @@ namespace Stashie
 
         private void MoveItemsToStash(int latency, IEnumerable<NormalInventoryItem> sortedItems)
         {
-            var gameWindow = GameController.Window.GetWindowRectangle();
             var minLatency = latency * 2 > 50 ? latency * 2 : 50 + latency;
+            minLatency += Settings.LatencySlider.Value;
+
             _keyboard.KeyDown(VirtualKeyCode.CONTROL);
             foreach (var item in sortedItems)
             {
@@ -361,12 +360,12 @@ namespace Stashie
                 _mouse.LeftButtonClick();
             }
             _keyboard.KeyUp(VirtualKeyCode.CONTROL);
-            Thread.Sleep(latency + DebugDelay);
+            Thread.Sleep(latency + 100);
         }
 
         private void FirstTab()
         {
-            var latency = (int) GameController.Game.IngameState.CurLatency;
+            var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
             while (GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(0) == null ||
                    !GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(0)
                        .AsObject<Element>()
@@ -379,7 +378,7 @@ namespace Stashie
 
         private void GoToTabLeftArrow(int tabIndex)
         {
-            var latency = (int) GameController.Game.IngameState.CurLatency;
+            var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
             var numberOfStashes = GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
             FirstTab();
             for (var i = 0; i < numberOfStashes; i++)
@@ -413,7 +412,7 @@ namespace Stashie
 
             try
             {
-                var latency = (int) (GameController.Game.IngameState.CurLatency + DebugDelay);
+                var latency = (int) (GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value);
 
                 // Obs, this method only works with 31 stashtabs on 1920x1080, since you have to scroll at 32 tabs, and the frame stays in place.
                 var openLeftPanel = GameController.Game.IngameState.IngameUi.OpenLeftPanel;
@@ -428,16 +427,19 @@ namespace Stashie
                     MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect(), Mouse.GetCursorPosition());
                     Thread.Sleep(InputDelay);
                     _mouse.LeftButtonClick();
-                    Thread.Sleep(latency);
+                    while (!element.IsVisible)
+                    {
+                        Thread.Sleep(WhileDelay);
+                    }
                     _mouse.VerticalScroll(5);
-                    Thread.Sleep(latency);
+                    Thread.Sleep(latency + 50);
                 }
 
                 var tabPos = element.Children[tabIndex].GetClientRect();
                 MoveMouseToCenterOfRec(tabPos, Mouse.GetCursorPosition());
                 Thread.Sleep(InputDelay);
                 _mouse.LeftButtonClick();
-                Thread.Sleep(latency);
+                //Thread.Sleep(latency * 2);
             }
             catch (Exception e)
             {
@@ -464,7 +466,7 @@ namespace Stashie
         public RectangleF FindEmptyOneCell(Element element)
         {
             var latency = (int) GameController.Game.IngameState.CurLatency;
-            Thread.Sleep(latency + DebugDelay);
+            Thread.Sleep(latency + 50);
             var inventoryPanel = GetInventoryPanel();
             var inventoryRec = inventoryPanel.GetClientRect();
             var topLeftX = inventoryRec.TopLeft.X;
@@ -508,7 +510,7 @@ namespace Stashie
         {
             var numberOfFreeCells = 0;
             var latency = (int) GameController.Game.IngameState.CurLatency;
-            Thread.Sleep(latency + DebugDelay);
+            Thread.Sleep(latency + 50);
             var inventoryPanel = GetInventoryPanel();
             var inventoryRec = inventoryPanel.GetClientRect();
 
@@ -599,15 +601,14 @@ namespace Stashie
 
         private void MoveItemsFromStashToInventory(IEnumerable<NormalInventoryItem> stashItems)
         {
-            const int inputDelay = 20;
-            var latency = (int) GameController.Game.IngameState.CurLatency;
-            var gameWindow = GameController.Window.GetWindowRectangle();
+            var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
+
             //winApi.BlockInput(true);
             _keyboard.KeyDown(VirtualKeyCode.CONTROL);
             foreach (var item in stashItems.ToList())
             {
                 MoveMouseToCenterOfRec(item.GetClientRect(), Mouse.GetCursorPosition());
-                Thread.Sleep(inputDelay);
+                Thread.Sleep(latency);
                 _mouse.LeftButtonClick();
                 Thread.Sleep(latency);
             }
@@ -716,7 +717,7 @@ namespace Stashie
                         itemsToMove.Add(index, new List<Element>());
                     }
 
-                    Thread.Sleep(latency + DebugDelay);
+                    Thread.Sleep(latency + 50);
 
 
                     var newInventoryPanel = GetInventoryPanel();
@@ -979,7 +980,6 @@ namespace Stashie
         private void SplitStackAndMoveToFreeCell(Element element, int latency, Stack stack, int wantedStackSize,
             RectangleF freeCell)
         {
-            var gameWindow = GameController.Window.GetWindowRectangle();
             var numberOfItemsInAStackToMove = stack.Size - wantedStackSize;
 
             //WinApi.BlockInput(true);
@@ -1022,9 +1022,9 @@ namespace Stashie
 
             #region Press Enter
 
-            Thread.Sleep(latency + DebugDelay);
+            Thread.Sleep(latency + 50);
             _keyboard.KeyPress(VirtualKeyCode.RETURN);
-            Thread.Sleep(latency + DebugDelay);
+            Thread.Sleep(latency + 50);
 
             #endregion
 
