@@ -16,3 +16,5 @@ Walk up to your stashtab and open it, then press your hotkey (F3) if you have th
 
 #### Wanna give feedback?
 https://discord.gg/Q3cdy4v
+
+![](http://overseer.co/Stashie/Stashie.gif)
