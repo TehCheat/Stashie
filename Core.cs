@@ -73,45 +73,86 @@ namespace Stashie
             #region Default Tabs
 
             Settings.Currency.Max = totalStashes;
+            Settings.Currency.Value %= totalStashes;
+
             Settings.DivinationCards.Max = totalStashes;
+            Settings.DivinationCards.Value %= totalStashes;
+
             Settings.Essences.Max = totalStashes;
+            Settings.Essences.Value %= totalStashes;
 
             Settings.Jewels.Max = totalStashes;
+            Settings.Jewels.Value %= totalStashes;
+
             Settings.Gems.Max = totalStashes;
+            Settings.Gems.Value %= totalStashes;
+
             Settings.LeagueStones.Max = totalStashes;
+            Settings.LeagueStones.Value %= totalStashes;
 
             Settings.Flasks.Max = totalStashes;
+            Settings.Flasks.Value %= totalStashes;
+
             Settings.Jewelery.Max = totalStashes;
+            Settings.Jewelery.Value %= totalStashes;
+
             Settings.WhiteItems.Max = totalStashes; // Todo: Should be expanded to crafting
+            Settings.WhiteItems.Value %= totalStashes;
+
             Settings.Talismen.Max = totalStashes;
+            Settings.Talismen.Value %= totalStashes;
+
 
             #endregion
 
             #region Orb of Chance
 
             Settings.LeatherBelt.Max = totalStashes;
+            Settings.LeatherBelt.Value %= totalStashes;
+
             Settings.SorcererBoots.Max = totalStashes;
+            Settings.SorcererBoots.Value %= totalStashes;
 
             #endregion
 
             #region Vendor Recipes
 
             Settings.ChiselRecipe.Max = totalStashes;
+            Settings.ChiselRecipe.Value %= totalStashes;
+
             Settings.ChaosRecipeLvlOne.Max = totalStashes;
+            Settings.ChaosRecipeLvlOne.Value %= totalStashes;
+
             Settings.ChaosRecipeLvlTwo.Max = totalStashes;
+            Settings.ChaosRecipeLvlTwo.Value %= totalStashes;
+
             Settings.ChaosRecipeLvlThree.Max = totalStashes;
+            Settings.ChaosRecipeLvlThree.Value %= totalStashes;
+
             Settings.QualityFlasks.Max = totalStashes;
+            Settings.QualityFlasks.Value %= totalStashes;
+
             Settings.QualityGems.Max = totalStashes;
+            Settings.QualityGems.Value %= totalStashes;
 
             #endregion
 
             #region Maps
 
             Settings.StrandShaped.Max = totalStashes;
+            Settings.StrandShaped.Value %= totalStashes;
+
+            Settings.ShoreShaped.Value %= totalStashes;
             Settings.ShoreShaped.Max = totalStashes;
+
             Settings.UniqueMaps.Max = totalStashes;
+            Settings.UniqueMaps.Value %= totalStashes;
+
             Settings.OtherMaps.Max = totalStashes;
+            Settings.OtherMaps.Value %= totalStashes;
+
             Settings.ShapedMaps.Max = totalStashes;
+            Settings.ShapedMaps.Value %= totalStashes;
 
             #endregion
 
