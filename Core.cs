@@ -206,14 +206,7 @@ namespace Stashie
 
             var cursorPosPreMoving = Mouse.GetCursorPosition();
 
-            #region Assign the stashTab stashTabIndex to each item in the inventory that needs to me moved.
-
-            foreach (var element in inventoryPanel.Children.ToList())
-            {
-                itemsToMove = AssignIndexToItem(element, itemsToMove);
-            }
-
-            #endregion
+            itemsToMove = AssignIndexesToInventoryItems(itemsToMove, inventoryPanel);
 
             var sortedItemsToMove = itemsToMove.OrderBy(x => x.Key);
 
@@ -222,8 +215,17 @@ namespace Stashie
             // Now we know where each item in the inventory needs to be.
             foreach (var keyValuePair in sortedItemsToMove.ToList())
             {
-                var sortedItems = keyValuePair.Value.Select(element => element.AsObject<NormalInventoryItem>())
-                    .ToList();
+                Thread.Sleep(200);
+                List<NormalInventoryItem> sortedItems;
+                try
+                {
+                    sortedItems = keyValuePair.Value.Select(element => element.AsObject<NormalInventoryItem>())
+                        .ToList();
+                }
+                catch
+                {
+                    continue;
+                }
                 GoToTab(keyValuePair.Key);
                 SortTab(keyValuePair.Key, sortedItems);
             }
@@ -231,6 +233,16 @@ namespace Stashie
             MoveMousePoint(cursorPosPreMoving, Mouse.GetCursorPosition());
 
             //WinApi.BlockInput(false);
+        }
+
+        private Dictionary<int, List<Element>> AssignIndexesToInventoryItems(Dictionary<int, List<Element>> itemsToMove, Element inventoryPanel)
+        {
+            foreach (var element in inventoryPanel.Children.ToList())
+            {
+                itemsToMove = AssignIndexToItem(element, itemsToMove);
+            }
+
+            return itemsToMove;
         }
 
         public bool IsCellIgnored(RectangleF position)
