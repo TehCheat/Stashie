@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -420,13 +421,17 @@ namespace Stashie
                     .Children[0]
                     .Children[1].Children[2];
 
-                var element = openLeftPanel.Children[2].Children[0].Children[1].Children[3]
-                    .Children[1];
+
+                var parent = openLeftPanel.Children[2].Children[0].Children[1].Children[3];
+                var element = Settings.IndexVersion.Value ? parent.Children[1] : parent.Children[2];
+
                 if (!element.IsVisible)
                 {
                     MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect(), Mouse.GetCursorPosition());
                     Thread.Sleep(InputDelay);
                     _mouse.LeftButtonClick();
+                    var sw = new Stopwatch();
+                    sw.Start();
                     while (!element.IsVisible)
                     {
                         Thread.Sleep(WhileDelay);
@@ -593,7 +598,7 @@ namespace Stashie
             }
             catch
             {
-                LogMessage($"{index} didn't work", 2);
+                return numberOfUsedCells;
             }
 
             return numberOfUsedCells;

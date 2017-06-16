@@ -67,6 +67,10 @@ namespace Stashie
 
             // Latency Slider
             LatencySlider = new RangeNode<int>(0, 0, 1000);
+
+            // Version
+            IndexVersion = Enable;
+            IndexVersion = false;
         }
 
 
@@ -242,6 +246,8 @@ namespace Stashie
         [Menu("Extra Latency", 9000)]
         public RangeNode<int> LatencySlider { get; set; }
 
+        [Menu("[2][0][3][1] version.", 10000)]
+        public ToggleNode IndexVersion { get; set; }
 
         #endregion
     }
