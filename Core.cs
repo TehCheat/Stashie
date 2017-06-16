@@ -39,6 +39,22 @@ namespace Stashie
         public override void Initialise()
         {
             PluginName = "STASHIE";
+
+            if (Settings.Enable.Value)
+            {
+                SetupOrClose();
+            }
+
+            Settings.Enable.OnValueChanged += SetupOrClose;
+        }
+
+        private void SetupOrClose()
+        {
+            if (!Settings.Enable.Value)
+            {
+                return;
+            }
+
             var path = PluginDirectory + @"/Settings.json";
             if (!File.Exists(path))
             {
