@@ -17,7 +17,7 @@ using SharpDX;
 
 namespace Stashie
 {
-    public class Core : BaseSettingsPlugin<Settings>
+    public class Core : BaseSettingsPlugin<UiSettings>
     {
         private readonly InputSimulator _input = new InputSimulator();
         private readonly MouseSimulator _mouse = new MouseSimulator(new InputSimulator());
@@ -28,15 +28,7 @@ namespace Stashie
         private const int InputDelay = 15;
         private const int WhileDelay = 5;
 
-        // 1, cell is ignored. 0 cells is not ignored.
-        private int[,] _ignoredCells =
-        {
-            {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        };
+        private Settings _settings = new Settings();
 
         public override void Initialise()
         {
@@ -58,14 +50,36 @@ namespace Stashie
             }
 
             var path = PluginDirectory + @"/Settings.json";
+
             if (!File.Exists(path))
             {
-                var defaultSettings = JsonConvert.SerializeObject(_ignoredCells)
-                    .Replace("],[", $"],{Environment.NewLine} [");
+                _settings.IgnoredCells = new[,]
+                {
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+                };
+
+                _settings.Hotkey = "0x72";
+
+                var defaultSettings = JsonConvert.SerializeObject(_settings);
+
+                defaultSettings = defaultSettings.Replace("],[", "],\n\t\t[");
+                defaultSettings = defaultSettings.Replace(":[", ":[\n\t\t");
+                defaultSettings = defaultSettings.Replace("{", "{\n\t");
+                defaultSettings = defaultSettings.Replace("}", "\n}");
+                defaultSettings = defaultSettings.Replace(",\"", ",\n\t\"");
+                defaultSettings = defaultSettings.Replace("]]", "]\n\t]");
+                defaultSettings = defaultSettings.Replace("\"Hotkey\"",
+                    "\n\t// Write the hex value of your desired hotkey.\n\t//https://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx \n\t\"Hotkey\"");
                 File.WriteAllText(path, defaultSettings);
             }
+
             var json = File.ReadAllText(path);
-            _ignoredCells = JsonConvert.DeserializeObject<int[,]>(json);
+
+            _settings = JsonConvert.DeserializeObject<Settings>(json);
 
             // Sets the maximum of the range node to the number of the players total stashes.
             var totalStashes = (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
@@ -167,7 +181,7 @@ namespace Stashie
             }
 
             // TODO: if it's true, prompt the user to type in the hotkey.
-            LogMessage("Feature not implemented, hotkey is F3!", 10);
+            LogMessage($"Feature not implemented, hotkey is {_settings.Hotkey}!", 10);
         }
 
         public override void Render()
@@ -184,7 +198,7 @@ namespace Stashie
                 return;
             }
 
-            if (Settings.HotkeyRequired.Value && !_input.InputDeviceState.IsKeyDown(VirtualKeyCode.F3))
+            if (Settings.HotkeyRequired.Value && !_input.InputDeviceState.IsKeyDown((VirtualKeyCode) Convert.ToUInt32(_settings.Hotkey, 16)))
             {
                 return;
             }
@@ -253,7 +267,7 @@ namespace Stashie
             var x = (int) ((1f + position.X - invPoint.X) / wCell);
             var y = (int) ((1f + position.Y - invPoint.Y) / hCell);
 
-            return _ignoredCells[y, x] == 1;
+            return _settings.IgnoredCells[y, x] == 1;
         }
 
         private void SortTab(int stashTabIndex, List<NormalInventoryItem> sortedItems)
@@ -496,7 +510,7 @@ namespace Stashie
                         widthCell, // Width
                         heightCell); // Height
                     var doesContain = inventoryPanel.Children.Any(child => cell.Intersects(child.GetClientRect()));
-                    if (doesContain || _ignoredCells[heightDirection, widthDirection] != 0)
+                    if (doesContain || _settings.IgnoredCells[heightDirection, widthDirection] != 0)
                     {
                         continue;
                     }
@@ -645,7 +659,7 @@ namespace Stashie
                         widthCell, // Width
                         heightCell); // Height
                     var doesContain = inventoryPanel.Children.Any(child => cell.Intersects(child.GetClientRect()));
-                    if (!doesContain && _ignoredCells[heightDirection, widthDirection] == 0)
+                    if (!doesContain && _settings.IgnoredCells[heightDirection, widthDirection] == 0)
                     {
                         Graphics.DrawBox(cell, new Color(new Vector3(255, 255, 255), 0.5f));
                     }
