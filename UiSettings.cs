@@ -44,6 +44,7 @@ namespace Stashie
             SortByBaseName = new ToggleNode(true);
             SortyByClassName = new ToggleNode(true);
             SortyByRarity = new ToggleNode(true);
+            StashTabToInventory = new ToggleNode(false);
 
             // Vendor Recipes
             VendorRecipeTabs = true;
@@ -104,6 +105,9 @@ namespace Stashie
 
         [Menu("Rarity", 203, 1339)]
         public ToggleNode SortyByRarity { get; set; }
+
+        [Menu("Stashtab to Inventory", 204, 1339)]
+        public ToggleNode StashTabToInventory { get; set; }
 
         #endregion
 
@@ -241,6 +245,12 @@ namespace Stashie
 
         [Menu("Extra Latency", 9000)]
         public RangeNode<int> LatencySlider { get; set; }
+
+        #endregion
+
+        // Parent index 10000
+
+        #region Index Version
 
         [Menu("[2][0][3][1] version.", 10000)]
         public ToggleNode IndexVersion { get; set; }

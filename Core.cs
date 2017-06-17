@@ -286,20 +286,22 @@ namespace Stashie
             var stashTab = GetStashTab(stashTabIndex);
             var stashTabInventoryType = stashTab.InvType;
 
-            var numberOfUsedCellsInStashTab = NumberOfUsedCellsInStashTab(stashTabIndex);
-            var spaceEnoughToSortItemsInInventoryPanel =
-                numberOfUsedCellsInStashTab <= NumberOfFreeCellsInInventory();
-
-            if (Settings.SortingSettings.Value && stashTabInventoryType == InventoryType.NormalStash &&
-                spaceEnoughToSortItemsInInventoryPanel && numberOfUsedCellsInStashTab > 0)
+            if (Settings.StashTabToInventory.Value && stashTabInventoryType == InventoryType.NormalStash)
             {
-                LogMessage($"UsedCellsInStashTab: {numberOfUsedCellsInStashTab}\n" +
-                           $"FreeCellsInInventory: {NumberOfFreeCellsInInventory()}", 10);
-                MoveItemsFromStashToInventory(stashTab.VisibleInventoryItems);
-                Thread.Sleep(latency + 150);
-                // TODO:We don't want to rely on a delay. Instead we should check: inventoryItemsPreMoving.count + stashTabItems.count == inventoryItemsPostMoving.count
-                Stashie();
-                return;
+                var numberOfUsedCellsInStashTab = NumberOfUsedCellsInStashTab(stashTabIndex);
+                var spaceEnoughToSortItemsInInventoryPanel =
+                    numberOfUsedCellsInStashTab <= NumberOfFreeCellsInInventory();
+
+                if (spaceEnoughToSortItemsInInventoryPanel && numberOfUsedCellsInStashTab > 0)
+                {
+                    LogMessage($"UsedCellsInStashTab: {numberOfUsedCellsInStashTab}\n" +
+                               $"FreeCellsInInventory: {NumberOfFreeCellsInInventory()}", 10);
+                    MoveItemsFromStashToInventory(stashTab.VisibleInventoryItems);
+                    Thread.Sleep(latency + 150);
+                    // TODO:We don't want to rely on a delay. Instead we should check: inventoryItemsPreMoving.count + stashTabItems.count == inventoryItemsPostMoving.count
+                    Stashie();
+                    return;
+                }
             }
 
             // Sort items

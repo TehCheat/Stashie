@@ -1,21 +1,13 @@
-﻿using System.Dynamic;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace Stashie
 {
     public class Settings
     {
         [JsonProperty("Ignored_Cells")]
-        public int[,] IgnoredCells { get; set; }/* =
-        {
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-        };*/
+        public int[,] IgnoredCells { get; set; }
 
         [JsonProperty("Hotkey")]
-        public string Hotkey { get; set; } = "F3";
+        public string Hotkey { get; set; }
     }
 }
