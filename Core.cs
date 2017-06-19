@@ -8,6 +8,7 @@ using WindowsInput;
 using WindowsInput.Native;
 using Newtonsoft.Json;
 using PoeHUD.Models.Enums;
+using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe;
 using PoeHUD.Poe.Components;
@@ -23,6 +24,8 @@ namespace Stashie
         private readonly MouseSimulator _mouse = new MouseSimulator(new InputSimulator());
         private readonly KeyboardSimulator _keyboard = new KeyboardSimulator(new InputSimulator());
 
+        private bool _movePortalScrolls = true;
+        private bool _moveWisdomScrolls = true;
         private bool _moveItemsToStash = true;
 
         private const int InputDelay = 15;
@@ -55,8 +58,8 @@ namespace Stashie
             {
                 _settings.IgnoredCells = new[,]
                 {
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Constants.PortalScroll},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Constants.WisdomScroll},
                     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -187,6 +190,7 @@ namespace Stashie
         public override void Render()
         {
             var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
+
             if (stashPanel != null && !stashPanel.IsVisible)
             {
                 _moveItemsToStash = true;
@@ -198,18 +202,129 @@ namespace Stashie
                 return;
             }
 
-            if (Settings.HotkeyRequired.Value && !_input.InputDeviceState.IsKeyDown((VirtualKeyCode) Convert.ToUInt32(_settings.Hotkey, 16)))
+            if (Settings.HotkeyRequired.Value &&
+                !_input.InputDeviceState.IsKeyDown((VirtualKeyCode) Convert.ToUInt32(_settings.Hotkey, 16)))
             {
                 return;
             }
 
             Stashie();
+            FillUpScrolls();
             _moveItemsToStash = false;
         }
 
+        public void FillUpScrolls()
+        {
+            // We currently don't have any scrolls in our inventory.
+            var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
+            if (stashTab.InvType != InventoryType.CurrencyStash)
+            {
+                GoToTab(Settings.Currency.Value);
+                Thread.Sleep(100);
+                stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
+            }
+            var latency = (int) GameController.Game.IngameState.CurLatency;
+
+            var doesStashContainPortalScrolls = stashTab.VisibleInventoryItems.ToList().Any(item => GameController.Files
+                .BaseItemTypes
+                .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
+
+            if (doesStashContainPortalScrolls && _movePortalScrolls)
+            {
+                var portalScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
+                    .BaseItemTypes
+                    .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
+
+                var emptyCell = FindEmptyOneCell(portalScroll);
+
+                SplitStackAndMoveToFreeCell(portalScroll, latency, Settings.PortalScrolls.Value, emptyCell);
+            }
+
+            if (!_moveWisdomScrolls)
+            {
+                return;
+            }
+
+            var doesStashContainWisdomScrolls = stashTab.VisibleInventoryItems.ToList().Any(item => GameController.Files
+                .BaseItemTypes
+                .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
+
+            if (doesStashContainWisdomScrolls)
+            {
+                var wisdomScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
+                    .BaseItemTypes
+                    .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
+
+                var emptyCell = FindEmptyOneCell(wisdomScroll);
+
+                SplitStackAndMoveToFreeCell(wisdomScroll, latency, Settings.WisdomScrolls.Value, emptyCell);
+            }
+        }
+
+        #region Advanced Portal and Wisdom Scroll 'Manager', for the time being this is not worth the implementation time.
+
+        /*private void TransferScrollsToInventory(string baseName, int ammount)
+        {
+            
+        }
+
+        private void Scrolls(string baseName)
+        {
+            // Make sure that we have the right ammount of portal scrolls in our inventory panel
+            // Where the right amount is the number of scrolls the user wants UiSettings.ScrollsToKeep
+
+            var wantedAmmountOfScrolls = baseName.Equals("Portal Scroll") ? Settings.PortalScrolls.Value : Settings.WisdomScrolls.Value;
+
+            // Next, find all the elements (stacks of items) in the inventory panel that are portal scrolls.
+            var inventoryPanel = GetInventoryPanel();
+
+            var portalScrollStackElements = inventoryPanel.Children.ToList()
+                .Where(element => GameController.Files.BaseItemTypes
+                    .Translate(element.AsObject<NormalInventoryItem>().Item.Path).BaseName.Equals(baseName))
+                .Select(element => element.AsObject<NormalInventoryItem>().Item).Cast<IEntity>().ToList();
+
+            if (portalScrollStackElements.Count == 0)
+            {
+                // No Scrolls.
+                TransferScrollsToInventory(baseName, wantedAmmountOfScrolls);
+            }
+
+            var numberOfScrolls = GetItemInventoryCount(portalScrollStackElements);
+            var numberOfStacks = portalScrollStackElements.Count;
+
+            if (numberOfScrolls == wantedAmmountOfScrolls)
+            {
+                if (numberOfStacks > 1)
+                {
+                    // Combine the stacks.
+                }
+
+                return;
+            }
+
+            if (numberOfScrolls < wantedAmmountOfScrolls)
+            {
+                // We have atleast 1 scroll in our inventory, combine the stacks.
+                if (numberOfStacks > 1)
+                {
+                    // Combine the stacks.
+                }
+
+                TransferScrollsToInventory(baseName, wantedAmmountOfScrolls - numberOfScrolls);
+                return;
+            }
+
+            if (numberOfScrolls > wantedAmmountOfScrolls)
+            {
+                // Combine the stacks.
+            }
+        }*/
+
+        #endregion
+
         public void Stashie()
         {
-            // Instead of just itterating through each item in our inventory panel and switching to it's corresponding tab
+            // Instead of just itterating through each itemToLookFor in our inventory panel and switching to it's corresponding tab
             // we, itterate through the items in the inventory and place them in a list with position and the corresponding tab it should be moved to,
             // then we sort the list by stash tab stashTabIndex (0 to number of stashes)
             // and then we move the items.
@@ -219,13 +334,16 @@ namespace Stashie
 
             var cursorPosPreMoving = Mouse.GetCursorPosition();
 
+            // Make sure we have the right amount of Wisdom - & Portal Scrolls.
+
+
             itemsToMove = AssignIndexesToInventoryItems(itemsToMove, inventoryPanel);
 
             var sortedItemsToMove = itemsToMove.OrderBy(x => x.Key);
 
             //WinApi.BlockInput(true);
 
-            // Now we know where each item in the inventory needs to be.
+            // Now we know where each itemToLookFor in the inventory needs to be.
             foreach (var keyValuePair in sortedItemsToMove.ToList())
             {
                 List<NormalInventoryItem> sortedItems;
@@ -250,6 +368,8 @@ namespace Stashie
         private Dictionary<int, List<Element>> AssignIndexesToInventoryItems(Dictionary<int, List<Element>> itemsToMove,
             Element inventoryPanel)
         {
+            _movePortalScrolls = true;
+            _moveWisdomScrolls = true;
             foreach (var element in inventoryPanel.Children.ToList())
             {
                 itemsToMove = AssignIndexToItem(element, itemsToMove);
@@ -267,7 +387,7 @@ namespace Stashie
             var x = (int) ((1f + position.X - invPoint.X) / wCell);
             var y = (int) ((1f + position.Y - invPoint.Y) / hCell);
 
-            return _settings.IgnoredCells[y, x] == 1;
+            return _settings.IgnoredCells[y, x] != Constants.Free;
         }
 
         private void SortTab(int stashTabIndex, List<NormalInventoryItem> sortedItems)
@@ -312,11 +432,11 @@ namespace Stashie
 
         private Inventory GetStashTab(int index)
         {
-            var stashTab = GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(index);
+            var stashTab = GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(index);
             while (stashTab == null)
             {
                 stashTab =
-                    GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(index);
+                    GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(index);
                 Thread.Sleep(WhileDelay);
             }
 
@@ -383,8 +503,8 @@ namespace Stashie
         private void FirstTab()
         {
             var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
-            while (GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(0) == null ||
-                   !GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(0)
+            while (GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(0) == null ||
+                   !GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(0)
                        .AsObject<Element>()
                        .IsVisible)
             {
@@ -405,8 +525,8 @@ namespace Stashie
                     break;
                 }
 
-                while (GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(i) == null ||
-                       !GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(i)
+                while (GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(i) == null ||
+                       !GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(i)
                            .AsObject<Element>()
                            .IsVisible)
                 {
@@ -470,16 +590,16 @@ namespace Stashie
         private void MoveMouseToCenterOfRec(RectangleF to)
         {
             var gameWindow = GameController.Window.GetWindowRectangle();
-            var x = (int)(gameWindow.X + to.X + to.Width / 2);
-            var y = (int)(gameWindow.Y + to.Y + to.Height / 2);
+            var x = (int) (gameWindow.X + to.X + to.Width / 2);
+            var y = (int) (gameWindow.Y + to.Y + to.Height / 2);
             Mouse.SetCursorPos(x, y);
         }
 
         private void MoveMousePoint(POINT to)
         {
             var gameWindow = GameController.Window.GetWindowRectangle();
-            var x = (int)gameWindow.X + to.X;
-            var y = (int)gameWindow.Y + to.Y;
+            var x = (int) gameWindow.X + to.X;
+            var y = (int) gameWindow.Y + to.Y;
             Mouse.SetCursorPos(x, y);
         }
 
@@ -574,11 +694,11 @@ namespace Stashie
 
             try
             {
-                var stashTab = GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(index);
+                var stashTab = GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(index);
 
                 while (stashTab == null)
                 {
-                    stashTab = GameController.Game.IngameState.ServerData.StashPanel.getStashInventory(index);
+                    stashTab = GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(index);
                     Thread.Sleep(WhileDelay);
                 }
 
@@ -679,7 +799,7 @@ namespace Stashie
             Dictionary<int, List<Element>> itemsToMove)
         {
             var itemPos = element.GetClientRect();
-            var index = 9999; // magic number, that will never occur naturally.
+            var tabIndex = 9999; // magic number, that will never occur naturally.
 
             var item = element.AsObject<NormalInventoryItem>().Item;
             var baseItemType = GameController.Files.BaseItemTypes.Translate(item.Path);
@@ -688,9 +808,6 @@ namespace Stashie
             var rarity = item.GetComponent<Mods>().ItemRarity;
             var quality = item.GetComponent<Quality>().ItemQuality;
             var iLvl = item.GetComponent<Mods>().ItemLevel;
-
-            var latency = (int) GameController.Game.IngameState.CurLatency;
-            //LogMessage($"base: {baseName}, class: {className}", 5);  
 
             #region Quest Items
 
@@ -703,10 +820,19 @@ namespace Stashie
 
             #region Portal and Wisdom Scrolls in Ignored Cells
 
-            if ((baseName.Equals("Scroll of Wisdom") || baseName.Equals("Portal Scroll")) &&
-                IsCellIgnored(element.GetClientRect()))
+            if (baseName.Equals("Scroll of Wisdom"))
             {
-                var stack = item.GetComponent<Stack>();
+                if (item.GetComponent<Stack>().Size == Settings.WisdomScrolls.Value)
+                {
+                    _moveWisdomScrolls = false;
+                    return itemsToMove;
+                }
+
+                tabIndex = Settings.Currency.Value;
+
+                #region deprectated
+
+                /*var stack = item.GetComponent<Stack>();
 
                 var wantedStackSize = item.Path.Contains("CurrencyPortal")
                     ? Settings.PortalScrolls.Value
@@ -728,7 +854,7 @@ namespace Stashie
 
                     //WinApi.BlockInput(false);
 
-                    #region Add new item to dictionary.
+                    #region Add new itemToLookFor to dictionary.
 
                     index = Settings.Currency.Value;
 
@@ -747,7 +873,20 @@ namespace Stashie
                     itemsToMove[index].Add(movedItemStack);
 
                     #endregion
+                }*/
+
+                #endregion
+            }
+
+            else if (baseName.Equals("Portal Scroll"))
+            {
+                if (item.GetComponent<Stack>().Size == Settings.PortalScrolls.Value)
+                {
+                    _movePortalScrolls = false;
+                    return itemsToMove;
                 }
+
+                tabIndex = Settings.Currency.Value;
             }
 
             #endregion
@@ -771,7 +910,7 @@ namespace Stashie
 
                 if (baseName.Equals("Shaped Shore Map"))
                 {
-                    index = Settings.ShoreShaped.Value;
+                    tabIndex = Settings.ShoreShaped.Value;
                 }
 
                 #endregion
@@ -780,7 +919,7 @@ namespace Stashie
 
                 else if (baseName.Equals("Shaped Strand Map"))
                 {
-                    index = Settings.StrandShaped.Value;
+                    tabIndex = Settings.StrandShaped.Value;
                 }
 
                 #endregion
@@ -789,7 +928,7 @@ namespace Stashie
 
                 else if (baseName.Contains("Shaped"))
                 {
-                    index = Settings.ShapedMaps.Value;
+                    tabIndex = Settings.ShapedMaps.Value;
                 }
 
                 #endregion
@@ -798,7 +937,7 @@ namespace Stashie
 
                 else
                 {
-                    index = rarity == ItemRarity.Unique ? Settings.UniqueMaps : Settings.OtherMaps;
+                    tabIndex = rarity == ItemRarity.Unique ? Settings.UniqueMaps : Settings.OtherMaps;
                 }
 
                 #endregion
@@ -813,7 +952,7 @@ namespace Stashie
             else if (baseName.Equals("Sorcerer Boots") && rarity == ItemRarity.Normal &&
                      Settings.ChanceItemTabs.Value)
             {
-                index = Settings.SorcererBoots.Value;
+                tabIndex = Settings.SorcererBoots.Value;
             }
 
             #endregion
@@ -823,7 +962,7 @@ namespace Stashie
             else if (baseName.Equals("Leather Belt") && rarity == ItemRarity.Normal &&
                      Settings.ChanceItemTabs.Value)
             {
-                index = Settings.LeatherBelt.Value;
+                tabIndex = Settings.LeatherBelt.Value;
             }
 
             #endregion
@@ -837,7 +976,7 @@ namespace Stashie
             else if (baseName.Equals("Stone Hammer") || baseName.Equals("Rock Breaker") ||
                      baseName.Equals("Gavel") && quality == 20)
             {
-                index = Settings.ChiselRecipe.Value;
+                tabIndex = Settings.ChiselRecipe.Value;
             }
 
             #endregion
@@ -850,15 +989,15 @@ namespace Stashie
                 var mods = item.GetComponent<Mods>();
                 if (mods.Identified && quality < 20)
                 {
-                    index = Settings.ChaosRecipeLvlOne.Value;
+                    tabIndex = Settings.ChaosRecipeLvlOne.Value;
                 }
                 else if (!mods.Identified || quality == 20)
                 {
-                    index = Settings.ChaosRecipeLvlTwo.Value;
+                    tabIndex = Settings.ChaosRecipeLvlTwo.Value;
                 }
                 else if (!mods.Identified && quality == 20)
                 {
-                    index = Settings.ChaosRecipeLvlThree.Value;
+                    tabIndex = Settings.ChaosRecipeLvlThree.Value;
                 }
             }
 
@@ -868,7 +1007,7 @@ namespace Stashie
 
             else if (className.Contains("Skill Gem") && quality > 0)
             {
-                index = Settings.QualityGems.Value;
+                tabIndex = Settings.QualityGems.Value;
             }
 
             #endregion
@@ -877,7 +1016,7 @@ namespace Stashie
 
             else if (className.Contains("Flask") && quality > 0)
             {
-                index = Settings.QualityFlasks.Value;
+                tabIndex = Settings.QualityFlasks.Value;
             }
 
             #endregion
@@ -890,7 +1029,7 @@ namespace Stashie
 
             else if (className.Equals("DivinationCard"))
             {
-                index = Settings.DivinationCards.Value;
+                tabIndex = Settings.DivinationCards.Value;
             }
 
             #endregion
@@ -899,7 +1038,7 @@ namespace Stashie
 
             else if (className.Contains("Skill Gem") && quality == 0)
             {
-                index = Settings.Gems.Value;
+                tabIndex = Settings.Gems.Value;
             }
 
             #endregion
@@ -908,7 +1047,7 @@ namespace Stashie
 
             else if (className.Equals("StackableCurrency") && !item.Path.Contains("Essence"))
             {
-                index = Settings.Currency.Value;
+                tabIndex = Settings.Currency.Value;
             }
 
             #endregion
@@ -917,7 +1056,7 @@ namespace Stashie
 
             else if (className.Equals("Leaguestone"))
             {
-                index = Settings.LeagueStones.Value;
+                tabIndex = Settings.LeagueStones.Value;
             }
 
             #endregion
@@ -926,7 +1065,7 @@ namespace Stashie
 
             else if (baseName.Contains("Essence") && className.Equals("StackableCurrency"))
             {
-                index = Settings.Essences.Value;
+                tabIndex = Settings.Essences.Value;
             }
 
             #endregion
@@ -935,7 +1074,7 @@ namespace Stashie
 
             else if (className.Equals("Jewel"))
             {
-                index = Settings.Jewels.Value;
+                tabIndex = Settings.Jewels.Value;
             }
 
             #endregion
@@ -944,7 +1083,7 @@ namespace Stashie
 
             else if (className.Contains("Flask") && quality == 0)
             {
-                index = Settings.Flasks.Value;
+                tabIndex = Settings.Flasks.Value;
             }
 
             #endregion
@@ -953,7 +1092,7 @@ namespace Stashie
 
             else if (className.Equals("Amulet") && baseName.Contains("Talisman"))
             {
-                index = Settings.Talismen.Value;
+                tabIndex = Settings.Talismen.Value;
             }
 
             #endregion
@@ -962,7 +1101,7 @@ namespace Stashie
 
             else if (className.Equals("Amulet") || className.Equals("Ring"))
             {
-                index = Settings.Jewelery.Value;
+                tabIndex = Settings.Jewelery.Value;
             }
 
             #endregion
@@ -973,34 +1112,34 @@ namespace Stashie
 
             else if (rarity == ItemRarity.Normal)
             {
-                index = Settings.WhiteItems.Value;
+                tabIndex = Settings.WhiteItems.Value;
             }
 
             #endregion
 
-            if (index == 9999)
+            if (tabIndex == 9999)
             {
                 return itemsToMove;
             }
 
-            #region Add item with corresponding Index to ItemsToMove
+            #region Add itemToLookFor with corresponding Index to ItemsToMove
 
-            if (!itemsToMove.ContainsKey(index))
+            if (!itemsToMove.ContainsKey(tabIndex))
             {
-                itemsToMove.Add(index, new List<Element>());
+                itemsToMove.Add(tabIndex, new List<Element>());
             }
 
-            itemsToMove[index].Add(element);
+            itemsToMove[tabIndex].Add(element);
 
             #endregion
 
             return itemsToMove;
         }
 
-        private void SplitStackAndMoveToFreeCell(Element element, int latency, Stack stack, int wantedStackSize,
+        private void SplitStackAndMoveToFreeCell(Element element, int latency, int wantedStackSize,
             RectangleF freeCell)
         {
-            var numberOfItemsInAStackToMove = stack.Size - wantedStackSize;
+            var numberOfItemsInAStackToMove = wantedStackSize;
 
             //WinApi.BlockInput(true);
 
@@ -1055,6 +1194,11 @@ namespace Stashie
             _mouse.LeftButtonClick();
 
             #endregion
+        }
+
+        private int GetItemInventoryCount(IEnumerable<IEntity> items)
+        {
+            return items.ToList().Sum(item => item.GetComponent<Stack>().Size);
         }
     }
 }
