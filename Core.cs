@@ -242,7 +242,7 @@ namespace Stashie
                 SortTab(keyValuePair.Key, sortedItems);
             }
 
-            MoveMousePoint(cursorPosPreMoving, Mouse.GetCursorPosition());
+            MoveMousePoint(cursorPosPreMoving);
 
             //WinApi.BlockInput(false);
         }
@@ -372,7 +372,7 @@ namespace Stashie
             foreach (var item in sortedItems)
             {
                 Thread.Sleep(minLatency);
-                MoveMouseToCenterOfRec(item.GetClientRect(), Mouse.GetCursorPosition());
+                MoveMouseToCenterOfRec(item.GetClientRect());
                 Thread.Sleep(InputDelay);
                 _mouse.LeftButtonClick();
             }
@@ -443,7 +443,7 @@ namespace Stashie
 
                 if (!element.IsVisible)
                 {
-                    MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect(), Mouse.GetCursorPosition());
+                    MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect());
                     Thread.Sleep(InputDelay);
                     _mouse.LeftButtonClick();
                     var sw = new Stopwatch();
@@ -457,10 +457,9 @@ namespace Stashie
                 }
 
                 var tabPos = element.Children[tabIndex].GetClientRect();
-                MoveMouseToCenterOfRec(tabPos, Mouse.GetCursorPosition());
+                MoveMouseToCenterOfRec(tabPos);
                 Thread.Sleep(InputDelay);
                 _mouse.LeftButtonClick();
-                //Thread.Sleep(latency * 2);
             }
             catch (Exception e)
             {
@@ -468,20 +467,20 @@ namespace Stashie
             }
         }
 
-        private void MoveMouseToCenterOfRec(RectangleF to, POINT from)
+        private void MoveMouseToCenterOfRec(RectangleF to)
         {
             var gameWindow = GameController.Window.GetWindowRectangle();
-            var deltaX = (int) (gameWindow.X + to.X + to.Width / 2 - from.X);
-            var deltaY = (int) (gameWindow.Y + to.Y + to.Height / 2 - from.Y);
-            _mouse.MoveMouseBy(deltaX, deltaY);
+            var x = (int)(gameWindow.X + to.X + to.Width / 2);
+            var y = (int)(gameWindow.Y + to.Y + to.Height / 2);
+            Mouse.SetCursorPos(x, y);
         }
 
-        private void MoveMousePoint(POINT to, POINT from)
+        private void MoveMousePoint(POINT to)
         {
             var gameWindow = GameController.Window.GetWindowRectangle();
-            var deltaX = (int) gameWindow.X + to.X - from.X;
-            var deltaY = (int) gameWindow.Y + to.Y - from.Y;
-            _mouse.MoveMouseBy(deltaX, deltaY);
+            var x = (int)gameWindow.X + to.X;
+            var y = (int)gameWindow.Y + to.Y;
+            Mouse.SetCursorPos(x, y);
         }
 
         public RectangleF FindEmptyOneCell(Element element)
@@ -628,7 +627,7 @@ namespace Stashie
             _keyboard.KeyDown(VirtualKeyCode.CONTROL);
             foreach (var item in stashItems.ToList())
             {
-                MoveMouseToCenterOfRec(item.GetClientRect(), Mouse.GetCursorPosition());
+                MoveMouseToCenterOfRec(item.GetClientRect());
                 Thread.Sleep(latency);
                 _mouse.LeftButtonClick();
                 Thread.Sleep(latency);
@@ -1007,7 +1006,7 @@ namespace Stashie
 
             #region Move Mouse to Item that needs to be splitted.
 
-            MoveMouseToCenterOfRec(element.GetClientRect(), Mouse.GetCursorPosition());
+            MoveMouseToCenterOfRec(element.GetClientRect());
             Thread.Sleep(InputDelay);
 
             #endregion
@@ -1051,7 +1050,7 @@ namespace Stashie
 
             #region Move Cursor to Empty Cell
 
-            MoveMouseToCenterOfRec(freeCell, Mouse.GetCursorPosition());
+            MoveMouseToCenterOfRec(freeCell);
             Thread.Sleep(latency + 50);
             _mouse.LeftButtonClick();
 
