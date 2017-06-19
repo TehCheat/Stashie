@@ -1,4 +1,5 @@
-﻿using PoeHUD.Hud.Settings;
+﻿using System.Windows.Forms;
+using PoeHUD.Hud.Settings;
 using PoeHUD.Plugins;
 
 namespace Stashie
@@ -12,7 +13,7 @@ namespace Stashie
         {
             // Hotkey or automatic
             HotkeyRequired = true;
-            HotkeySetting = new ToggleNode(false);
+            HotkeySetting = new HotkeyNode(Keys.F3);
 
             // Tab Index (deprecated)
             Currency = new RangeNode<int>(0, 0, DefaultMaxTabs);
@@ -227,7 +228,7 @@ namespace Stashie
         public ToggleNode HotkeyRequired { get; set; }
 
         [Menu("Change Hotkey", 700, 7000)]
-        public ToggleNode HotkeySetting { get; set; }
+        public HotkeyNode HotkeySetting { get; set; }
 
         #endregion
 

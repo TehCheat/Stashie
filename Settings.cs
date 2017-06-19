@@ -6,8 +6,5 @@ namespace Stashie
     {
         [JsonProperty("Ignored_Cells")]
         public int[,] IgnoredCells { get; set; }
-
-        [JsonProperty("Hotkey")]
-        public string Hotkey { get; set; }
     }
 }

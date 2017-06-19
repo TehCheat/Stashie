@@ -8,7 +8,6 @@ using WindowsInput;
 using WindowsInput.Native;
 using Newtonsoft.Json;
 using PoeHUD.Models.Enums;
-using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe;
 using PoeHUD.Poe.Components;
@@ -58,14 +57,12 @@ namespace Stashie
             {
                 _settings.IgnoredCells = new[,]
                 {
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Constants.PortalScroll},
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Constants.WisdomScroll},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Constants.Ignored},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Constants.Ignored},
                     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
                 };
-
-                _settings.Hotkey = "0x72";
 
                 var defaultSettings = JsonConvert.SerializeObject(_settings);
 
@@ -75,8 +72,7 @@ namespace Stashie
                 defaultSettings = defaultSettings.Replace("}", "\n}");
                 defaultSettings = defaultSettings.Replace(",\"", ",\n\t\"");
                 defaultSettings = defaultSettings.Replace("]]", "]\n\t]");
-                defaultSettings = defaultSettings.Replace("\"Hotkey\"",
-                    "\n\t// Write the hex value of your desired hotkey.\n\t//https://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx \n\t\"Hotkey\"");
+                
                 File.WriteAllText(path, defaultSettings);
             }
 
@@ -172,19 +168,6 @@ namespace Stashie
 
             #endregion
 
-            // Hotkey settings
-            Settings.HotkeySetting.OnValueChanged += ChangeHotkey;
-        }
-
-        private void ChangeHotkey()
-        {
-            if (!Settings.HotkeySetting.Value)
-            {
-                return;
-            }
-
-            // TODO: if it's true, prompt the user to type in the hotkey.
-            LogMessage($"Feature not implemented, hotkey is {_settings.Hotkey}!", 10);
         }
 
         public override void Render()
@@ -203,7 +186,7 @@ namespace Stashie
             }
 
             if (Settings.HotkeyRequired.Value &&
-                !_input.InputDeviceState.IsKeyDown((VirtualKeyCode) Convert.ToUInt32(_settings.Hotkey, 16)))
+                !_input.InputDeviceState.IsKeyDown((VirtualKeyCode) Settings.HotkeySetting.Value))
             {
                 return;
             }
@@ -1196,9 +1179,9 @@ namespace Stashie
             #endregion
         }
 
-        private int GetItemInventoryCount(IEnumerable<IEntity> items)
+        /*private int GetItemInventoryCount(IEnumerable<IEntity> items)
         {
             return items.ToList().Sum(item => item.GetComponent<Stack>().Size);
-        }
+        }*/
     }
 }
