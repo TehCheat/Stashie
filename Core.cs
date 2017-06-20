@@ -226,32 +226,36 @@ namespace Stashie
             var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
             var latency = (int) GameController.Game.IngameState.CurLatency;
 
-            var doesStashContainPortalScrolls = stashTab.VisibleInventoryItems.ToList().Any(item => GameController.Files
+            if (stashTab.VisibleInventoryItems == null)
+            {
+                return;
+            }
+
+            var doesStashContainPortalScrolls = stashTab.VisibleInventoryItems.Any(item => GameController.Files
                 .BaseItemTypes
                 .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
 
             RectangleF emptyCell;
 
-            if (stashTab.VisibleInventoryItems != null)
+
+            if (doesStashContainPortalScrolls && _movePortalScrolls)
             {
-                if (doesStashContainPortalScrolls && _movePortalScrolls)
-                {
-                    var portalScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
-                        .BaseItemTypes
-                        .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
+                var portalScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
+                    .BaseItemTypes
+                    .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
 
-                    emptyCell = FindEmptyOneCell(portalScroll);
+                emptyCell = FindEmptyOneCell(portalScroll);
 
-                    SplitStackAndMoveToFreeCell(portalScroll, latency, Settings.PortalScrolls.Value, emptyCell);
-                }
+                SplitStackAndMoveToFreeCell(portalScroll, latency, Settings.PortalScrolls.Value, emptyCell);
             }
+
 
             if (!_moveWisdomScrolls)
             {
                 return;
             }
 
-            var doesStashContainWisdomScrolls = stashTab.VisibleInventoryItems.ToList().Any(item => GameController.Files
+            var doesStashContainWisdomScrolls = stashTab.VisibleInventoryItems.Any(item => GameController.Files
                 .BaseItemTypes
                 .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
 
