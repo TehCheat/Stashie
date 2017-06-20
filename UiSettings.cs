@@ -30,7 +30,7 @@ namespace Stashie
             Talismen = new RangeNode<int>(14, 0, DefaultMaxTabs);
 
             // Portal and Wisdom Scrolls
-            KeepSettings = true;
+            ReFillScrolls = true;
             PortalScrolls = new RangeNode<int>(20, 0, 40);
             WisdomScrolls = new RangeNode<int>(20, 0, 40);
 
@@ -65,10 +65,6 @@ namespace Stashie
 
             // Latency Slider
             LatencySlider = new RangeNode<int>(0, 0, 1000);
-
-            // Version
-            IndexVersion = Enable;
-            IndexVersion = false;
         }
 
 
@@ -76,13 +72,13 @@ namespace Stashie
 
         #region Portal and Wisdom Scroll Settings
 
-        [Menu("Scrolls", 1000)]
-        public ToggleNode KeepSettings { get; set; }
+        [Menu("Re-fill Scrolls", 1000)]
+        public ToggleNode ReFillScrolls { get; set; }
 
-        [Menu("Wisdom, keep", 100, 1000)]
+        [Menu("Wisdom Scrolls", 100, 1000)]
         public RangeNode<int> WisdomScrolls { get; set; }
 
-        [Menu("Portal, keep", 101, 1000)]
+        [Menu("Portal Scrolls", 101, 1000)]
         public RangeNode<int> PortalScrolls { get; set; }
 
         #endregion
@@ -246,15 +242,6 @@ namespace Stashie
 
         [Menu("Extra Latency", 9000)]
         public RangeNode<int> LatencySlider { get; set; }
-
-        #endregion
-
-        // Parent index 10000
-
-        #region Index Version
-
-        [Menu("[2][0][3][1] version.", 10000)]
-        public ToggleNode IndexVersion { get; set; }
 
         #endregion
     }

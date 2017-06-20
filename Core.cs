@@ -72,7 +72,7 @@ namespace Stashie
                 defaultSettings = defaultSettings.Replace("}", "\n}");
                 defaultSettings = defaultSettings.Replace(",\"", ",\n\t\"");
                 defaultSettings = defaultSettings.Replace("]]", "]\n\t]");
-                
+
                 File.WriteAllText(path, defaultSettings);
             }
 
@@ -167,7 +167,6 @@ namespace Stashie
             Settings.ShapedMaps.Value %= totalStashes;
 
             #endregion
-
         }
 
         public override void Render()
@@ -198,14 +197,13 @@ namespace Stashie
 
         public void FillUpScrolls()
         {
-            // We currently don't have any scrolls in our inventory.
-            var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
-            if (stashTab.InvType != InventoryType.CurrencyStash)
+            if (!Settings.ReFillScrolls.Value)
             {
-                GoToTab(Settings.Currency.Value);
-                Thread.Sleep(100);
-                stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
+                return;
             }
+            // We currently don't have any scrolls in our inventory.
+            GoToTab(Settings.Currency.Value);
+            var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
             var latency = (int) GameController.Game.IngameState.CurLatency;
 
             var doesStashContainPortalScrolls = stashTab.VisibleInventoryItems.ToList().Any(item => GameController.Files
@@ -232,7 +230,11 @@ namespace Stashie
                 .BaseItemTypes
                 .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
 
-            if (doesStashContainWisdomScrolls)
+            if (!doesStashContainWisdomScrolls)
+            {
+                return;
+            }
+
             {
                 var wisdomScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
                     .BaseItemTypes
@@ -353,6 +355,7 @@ namespace Stashie
         {
             _movePortalScrolls = true;
             _moveWisdomScrolls = true;
+
             foreach (var element in inventoryPanel.Children.ToList())
             {
                 itemsToMove = AssignIndexToItem(element, itemsToMove);
@@ -521,6 +524,30 @@ namespace Stashie
 
         private void GoToTab(int tabIndex)
         {
+            var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
+            var visibleStash = stashPanel.VisibleStash;
+
+            while (visibleStash == null)
+            {
+                Thread.Sleep(WhileDelay);
+                visibleStash = stashPanel.VisibleStash;
+            }
+            if (tabIndex == Settings.Currency.Value && visibleStash.InvType == InventoryType.CurrencyStash)
+            {
+                return;
+            }
+
+            if (tabIndex == Settings.Essences.Value && visibleStash.InvType == InventoryType.EssenceStash)
+            {
+                return;
+            }
+
+            if (tabIndex == Settings.DivinationCards.Value && visibleStash.InvType == InventoryType.DivinationStash)
+            {
+                return;
+            }
+
+
             if (tabIndex > 30)
             {
                 LogError(
@@ -530,28 +557,35 @@ namespace Stashie
                 return;
             }
 
+
             try
             {
                 var latency = (int) (GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value);
 
                 // Obs, this method only works with 31 stashtabs on 1920x1080, since you have to scroll at 32 tabs, and the frame stays in place.
+                var viewAllTabsButton = stashPanel.ViewAllStashButton;
+
                 var openLeftPanel = GameController.Game.IngameState.IngameUi.OpenLeftPanel;
-                var viewAllTabsButton = GameController.Game.IngameState.UIRoot.Children[1].Children[21].Children[2]
-                    .Children[0]
-                    .Children[1].Children[2];
-
-
                 var parent = openLeftPanel.Children[2].Children[0].Children[1].Children[3];
-                var element = Settings.IndexVersion.Value ? parent.Children[1] : parent.Children[2];
+                var dropDownTabElements = parent.Children[2];
 
-                if (!element.IsVisible)
+                var totalStashes = stashPanel.TotalStashes;
+                if (totalStashes > 30)
+                {
+                    // If the number of stashes is greater than 30, then parent.Children[1] becomes the ScrollBar
+                    // and the DropDownElements becomes parent.Children[2]
+                    dropDownTabElements = parent.Children[1];
+                }
+
+
+                if (!dropDownTabElements.IsVisible)
                 {
                     MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect());
                     Thread.Sleep(InputDelay);
                     _mouse.LeftButtonClick();
                     var sw = new Stopwatch();
                     sw.Start();
-                    while (!element.IsVisible)
+                    while (!dropDownTabElements.IsVisible)
                     {
                         Thread.Sleep(WhileDelay);
                     }
@@ -559,7 +593,7 @@ namespace Stashie
                     Thread.Sleep(latency + 50);
                 }
 
-                var tabPos = element.Children[tabIndex].GetClientRect();
+                var tabPos = dropDownTabElements.Children[tabIndex].GetClientRect();
                 MoveMouseToCenterOfRec(tabPos);
                 Thread.Sleep(InputDelay);
                 _mouse.LeftButtonClick();
@@ -580,9 +614,8 @@ namespace Stashie
 
         private void MoveMousePoint(POINT to)
         {
-            var gameWindow = GameController.Window.GetWindowRectangle();
-            var x = (int) gameWindow.X + to.X;
-            var y = (int) gameWindow.Y + to.Y;
+            var x = to.X;
+            var y = to.Y;
             Mouse.SetCursorPos(x, y);
         }
 
@@ -739,7 +772,7 @@ namespace Stashie
             //winApi.BlockInput(false);
         }
 
-        public void TestFunction()
+        /*public void TestFunction()
         {
             var inventoryPanel = GetInventoryPanel();
             var inventoryRec = inventoryPanel.GetClientRect();
@@ -769,7 +802,7 @@ namespace Stashie
                     }
                 }
             }
-        }
+        }*/
 
         private Element GetInventoryPanel()
         {
@@ -803,7 +836,7 @@ namespace Stashie
 
             #region Portal and Wisdom Scrolls in Ignored Cells
 
-            if (baseName.Equals("Scroll of Wisdom"))
+            if (baseName.Equals("Scroll of Wisdom") && Settings.ReFillScrolls.Value)
             {
                 if (item.GetComponent<Stack>().Size == Settings.WisdomScrolls.Value)
                 {
@@ -861,7 +894,7 @@ namespace Stashie
                 #endregion
             }
 
-            else if (baseName.Equals("Portal Scroll"))
+            else if (baseName.Equals("Portal Scroll") && Settings.ReFillScrolls.Value)
             {
                 if (item.GetComponent<Stack>().Size == Settings.PortalScrolls.Value)
                 {
@@ -876,7 +909,7 @@ namespace Stashie
 
             #region Ignored Cell
 
-            else if (IsCellIgnored(itemPos))
+            if (IsCellIgnored(itemPos))
             {
                 return itemsToMove;
             }
