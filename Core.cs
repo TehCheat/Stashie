@@ -19,6 +19,8 @@ namespace Stashie
 {
     public class Core : BaseSettingsPlugin<UiSettings>
     {
+        private Thread _tabNamesUpdaterThread;
+
         private readonly InputSimulator _input = new InputSimulator();
         private readonly MouseSimulator _mouse = new MouseSimulator(new InputSimulator());
         private readonly KeyboardSimulator _keyboard = new KeyboardSimulator(new InputSimulator());
@@ -36,20 +38,33 @@ namespace Stashie
         {
             PluginName = "STASHIE";
 
-            if (Settings.Enable.Value)
-            {
-                SetupOrClose();
-            }
-
+            SetupOrClose();
             Settings.Enable.OnValueChanged += SetupOrClose;
+        }
+
+        public override void OnClose()
+        {
+            CloseThreads();
+        }
+
+        private void CloseThreads()
+        {
+            if (_tabNamesUpdaterThread != null && _tabNamesUpdaterThread.IsAlive)
+            {
+                _tabNamesUpdaterThread.IsBackground = true;
+            }
         }
 
         private void SetupOrClose()
         {
             if (!Settings.Enable.Value)
             {
+                CloseThreads();
                 return;
             }
+            UpdateStashTabNames();
+            _tabNamesUpdaterThread = new Thread(StashTabNamesUpdater);
+            _tabNamesUpdaterThread.Start();
 
             var path = PluginDirectory + @"/Settings.json";
 
@@ -81,9 +96,11 @@ namespace Stashie
             _settings = JsonConvert.DeserializeObject<Settings>(json);
 
             // Sets the maximum of the range node to the number of the players total stashes.
-            var totalStashes = (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
+            //var totalStashes = (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
 
-            #region Default Tabs
+            #region deprecated
+
+            /*#region Default Tabs
 
             Settings.Currency.Max = totalStashes;
             Settings.Currency.Value %= totalStashes;
@@ -100,8 +117,8 @@ namespace Stashie
             Settings.Gems.Max = totalStashes;
             Settings.Gems.Value %= totalStashes;
 
-            Settings.LeagueStones.Max = totalStashes;
-            Settings.LeagueStones.Value %= totalStashes;
+            Settings.Leaguestones.Max = totalStashes;
+            Settings.Leaguestones.Value %= totalStashes;
 
             Settings.Flasks.Max = totalStashes;
             Settings.Flasks.Value %= totalStashes;
@@ -166,6 +183,8 @@ namespace Stashie
             Settings.ShapedMaps.Max = totalStashes;
             Settings.ShapedMaps.Value %= totalStashes;
 
+            #endregion*/
+
             #endregion
         }
 
@@ -202,7 +221,8 @@ namespace Stashie
                 return;
             }
             // We currently don't have any scrolls in our inventory.
-            GoToTab(Settings.Currency.Value);
+            var index = GetIndexOfTabName(Settings.Currency.Value);
+            GoToTab(index);
             var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
             var latency = (int) GameController.Game.IngameState.CurLatency;
 
@@ -210,15 +230,20 @@ namespace Stashie
                 .BaseItemTypes
                 .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
 
-            if (doesStashContainPortalScrolls && _movePortalScrolls)
+            RectangleF emptyCell;
+
+            if (stashTab.VisibleInventoryItems != null)
             {
-                var portalScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
-                    .BaseItemTypes
-                    .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
+                if (doesStashContainPortalScrolls && _movePortalScrolls)
+                {
+                    var portalScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
+                        .BaseItemTypes
+                        .Translate(item.Item.Path).BaseName.Equals("Portal Scroll"));
 
-                var emptyCell = FindEmptyOneCell(portalScroll);
+                    emptyCell = FindEmptyOneCell(portalScroll);
 
-                SplitStackAndMoveToFreeCell(portalScroll, latency, Settings.PortalScrolls.Value, emptyCell);
+                    SplitStackAndMoveToFreeCell(portalScroll, latency, Settings.PortalScrolls.Value, emptyCell);
+                }
             }
 
             if (!_moveWisdomScrolls)
@@ -235,15 +260,14 @@ namespace Stashie
                 return;
             }
 
-            {
-                var wisdomScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
-                    .BaseItemTypes
-                    .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
 
-                var emptyCell = FindEmptyOneCell(wisdomScroll);
+            var wisdomScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
+                .BaseItemTypes
+                .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
 
-                SplitStackAndMoveToFreeCell(wisdomScroll, latency, Settings.WisdomScrolls.Value, emptyCell);
-            }
+            emptyCell = FindEmptyOneCell(wisdomScroll);
+
+            SplitStackAndMoveToFreeCell(wisdomScroll, latency, Settings.WisdomScrolls.Value, emptyCell);
         }
 
         #region Advanced Portal and Wisdom Scroll 'Manager', for the time being this is not worth the implementation time.
@@ -532,17 +556,21 @@ namespace Stashie
                 Thread.Sleep(WhileDelay);
                 visibleStash = stashPanel.VisibleStash;
             }
-            if (tabIndex == Settings.Currency.Value && visibleStash.InvType == InventoryType.CurrencyStash)
+
+            var stashNameOfIndex = GetStashNameFromIndex(tabIndex);
+
+            if (stashNameOfIndex.Equals(Settings.Currency.Value) && visibleStash.InvType == InventoryType.CurrencyStash)
             {
                 return;
             }
 
-            if (tabIndex == Settings.Essences.Value && visibleStash.InvType == InventoryType.EssenceStash)
+            if (stashNameOfIndex.Equals(Settings.Essences.Value) && visibleStash.InvType == InventoryType.EssenceStash)
             {
                 return;
             }
 
-            if (tabIndex == Settings.DivinationCards.Value && visibleStash.InvType == InventoryType.DivinationStash)
+            if (stashNameOfIndex.Equals(Settings.DivinationCards.Value) &&
+                visibleStash.InvType == InventoryType.DivinationStash)
             {
                 return;
             }
@@ -844,7 +872,7 @@ namespace Stashie
                     return itemsToMove;
                 }
 
-                tabIndex = Settings.Currency.Value;
+                tabIndex = GetIndexOfTabName(Settings.Currency.Value);
 
                 #region deprectated
 
@@ -902,7 +930,7 @@ namespace Stashie
                     return itemsToMove;
                 }
 
-                tabIndex = Settings.Currency.Value;
+                tabIndex = GetIndexOfTabName(Settings.Currency.Value);
             }
 
             #endregion
@@ -920,13 +948,16 @@ namespace Stashie
 
             #region Maps
 
-            else if (className.Equals("Map"))
+            if (className.Equals("Map") && Settings.MapTabsHolder)
             {
                 #region Shaped Shore
 
                 if (baseName.Equals("Shaped Shore Map"))
                 {
-                    tabIndex = Settings.ShoreShaped.Value;
+                    if (!Settings.ShoreShaped.Value.Equals("Ignore"))
+                    {
+                        tabIndex = GetIndexOfTabName(Settings.ShoreShaped.Value);
+                    }
                 }
 
                 #endregion
@@ -935,7 +966,10 @@ namespace Stashie
 
                 else if (baseName.Equals("Shaped Strand Map"))
                 {
-                    tabIndex = Settings.StrandShaped.Value;
+                    if (!Settings.StrandShaped.Value.Equals("Ignore"))
+                    {
+                        tabIndex = GetIndexOfTabName(Settings.StrandShaped.Value);
+                    }
                 }
 
                 #endregion
@@ -944,16 +978,27 @@ namespace Stashie
 
                 else if (baseName.Contains("Shaped"))
                 {
-                    tabIndex = Settings.ShapedMaps.Value;
+                    if (!Settings.ShapedMaps.Value.Equals("Ignore"))
+                    {
+                        tabIndex = GetIndexOfTabName(Settings.ShapedMaps.Value);
+                    }
                 }
 
                 #endregion
 
                 #region Other Maps and Unique Maps
 
-                else
+                else if (rarity == ItemRarity.Unique)
                 {
-                    tabIndex = rarity == ItemRarity.Unique ? Settings.UniqueMaps : Settings.OtherMaps;
+                    if (!Settings.UniqueMaps.Value.Equals("Ignore"))
+                    {
+                        tabIndex = GetIndexOfTabName(Settings.UniqueMaps.Value);
+                    }
+                }
+
+                else if (!Settings.OtherMaps.Value.Equals("Ignore"))
+                {
+                    tabIndex = GetIndexOfTabName(Settings.OtherMaps.Value);
                 }
 
                 #endregion
@@ -966,9 +1011,10 @@ namespace Stashie
             #region Sorcerer Boots
 
             else if (baseName.Equals("Sorcerer Boots") && rarity == ItemRarity.Normal &&
-                     Settings.ChanceItemTabs.Value)
+                     Settings.ChanceItemTabs.Value &&
+                     !Settings.SorcererBoots.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.SorcererBoots.Value;
+                tabIndex = GetIndexOfTabName(Settings.SorcererBoots.Value);
             }
 
             #endregion
@@ -976,9 +1022,10 @@ namespace Stashie
             #region Leather Belt
 
             else if (baseName.Equals("Leather Belt") && rarity == ItemRarity.Normal &&
-                     Settings.ChanceItemTabs.Value)
+                     Settings.ChanceItemTabs.Value &&
+                     !Settings.LeatherBelt.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.LeatherBelt.Value;
+                tabIndex = GetIndexOfTabName(Settings.LeatherBelt.Value);
             }
 
             #endregion
@@ -989,10 +1036,11 @@ namespace Stashie
 
             #region Chisel Recipe
 
-            else if (baseName.Equals("Stone Hammer") || baseName.Equals("Rock Breaker") ||
-                     baseName.Equals("Gavel") && quality == 20)
+            else if ((baseName.Equals("Stone Hammer") || baseName.Equals("Rock Breaker") ||
+                      baseName.Equals("Gavel") && quality == 20) && Settings.VendorRecipeTabs.Value &&
+                     !Settings.ChiselRecipe.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.ChiselRecipe.Value;
+                tabIndex = GetIndexOfTabName(Settings.ChiselRecipe.Value);
             }
 
             #endregion
@@ -1003,17 +1051,17 @@ namespace Stashie
                      !className.Equals("Jewel") && iLvl >= 60 && iLvl <= 74)
             {
                 var mods = item.GetComponent<Mods>();
-                if (mods.Identified && quality < 20)
+                if (mods.Identified && quality < 20 && !Settings.ChaosRecipeLvlOne.Value.Equals("Ignore"))
                 {
-                    tabIndex = Settings.ChaosRecipeLvlOne.Value;
+                    tabIndex = GetIndexOfTabName(Settings.ChaosRecipeLvlOne.Value);
                 }
-                else if (!mods.Identified || quality == 20)
+                if ((!mods.Identified || quality == 20) && !Settings.ChaosRecipeLvlTwo.Value.Equals("Ignore"))
                 {
-                    tabIndex = Settings.ChaosRecipeLvlTwo.Value;
+                    tabIndex = GetIndexOfTabName(Settings.ChaosRecipeLvlTwo.Value);
                 }
-                else if (!mods.Identified && quality == 20)
+                if (!mods.Identified && quality == 20 && !Settings.ChaosRecipeLvlThree.Value.Equals("Ignore"))
                 {
-                    tabIndex = Settings.ChaosRecipeLvlThree.Value;
+                    tabIndex = GetIndexOfTabName(Settings.ChaosRecipeLvlThree.Value);
                 }
             }
 
@@ -1021,18 +1069,18 @@ namespace Stashie
 
             #region Quality Gems
 
-            else if (className.Contains("Skill Gem") && quality > 0)
+            else if (className.Contains("Skill Gem") && quality > 0 && !Settings.QualityGems.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.QualityGems.Value;
+                tabIndex = GetIndexOfTabName(Settings.QualityGems.Value);
             }
 
             #endregion
 
             #region Quality Flasks
 
-            else if (className.Contains("Flask") && quality > 0)
+            else if (className.Contains("Flask") && quality > 0 && !Settings.QualityFlasks.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.QualityFlasks.Value;
+                tabIndex = GetIndexOfTabName(Settings.QualityFlasks.Value);
             }
 
             #endregion
@@ -1043,81 +1091,85 @@ namespace Stashie
 
             #region Divination Cards
 
-            else if (className.Equals("DivinationCard"))
+            else if (className.Equals("DivinationCard") && !Settings.DivinationCards.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.DivinationCards.Value;
+                tabIndex = GetIndexOfTabName(Settings.DivinationCards.Value);
             }
 
             #endregion
 
             #region Gems
 
-            else if (className.Contains("Skill Gem") && quality == 0)
+            else if (className.Contains("Skill Gem") && quality == 0 && !Settings.Gems.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Gems.Value;
+                tabIndex = GetIndexOfTabName(Settings.Gems.Value);
             }
 
             #endregion
 
             #region Currency
 
-            else if (className.Equals("StackableCurrency") && !item.Path.Contains("Essence"))
+            else if (className.Equals("StackableCurrency") && !item.Path.Contains("Essence") &&
+                     !Settings.Currency.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Currency.Value;
+                tabIndex = GetIndexOfTabName(Settings.Currency.Value);
             }
 
             #endregion
 
             #region Leaguestone
 
-            else if (className.Equals("Leaguestone"))
+            else if (className.Equals("Leaguestone") && !Settings.Leaguestones.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.LeagueStones.Value;
+                tabIndex = GetIndexOfTabName(Settings.Leaguestones.Value);
             }
 
             #endregion
 
             #region Essence
 
-            else if (baseName.Contains("Essence") && className.Equals("StackableCurrency"))
+            else if (baseName.Contains("Essence") && className.Equals("StackableCurrency") &&
+                     !Settings.Essences.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Essences.Value;
+                tabIndex = GetIndexOfTabName(Settings.Essences.Value);
             }
 
             #endregion
 
             #region Jewels
 
-            else if (className.Equals("Jewel"))
+            else if (className.Equals("Jewel") && !Settings.Jewels.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Jewels.Value;
+                tabIndex = GetIndexOfTabName(Settings.Jewels.Value);
             }
 
             #endregion
 
             #region Flasks
 
-            else if (className.Contains("Flask") && quality == 0)
+            else if (className.Contains("Flask") && quality == 0 && !Settings.Flasks.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Flasks.Value;
+                tabIndex = GetIndexOfTabName(Settings.Flasks.Value);
             }
 
             #endregion
 
             #region Talisman
 
-            else if (className.Equals("Amulet") && baseName.Contains("Talisman"))
+            else if (className.Equals("Amulet") && baseName.Contains("Talisman") &&
+                     !Settings.Talismen.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Talismen.Value;
+                tabIndex = GetIndexOfTabName(Settings.Talismen.Value);
             }
 
             #endregion
 
             #region jewelery
 
-            else if (className.Equals("Amulet") || className.Equals("Ring"))
+            else if ((className.Equals("Amulet") || className.Equals("Ring")) &&
+                     !Settings.Jewelery.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.Jewelery.Value;
+                tabIndex = GetIndexOfTabName(Settings.Jewelery.Value);
             }
 
             #endregion
@@ -1126,9 +1178,9 @@ namespace Stashie
 
             #region White Items
 
-            else if (rarity == ItemRarity.Normal)
+            else if (rarity == ItemRarity.Normal && !Settings.WhiteItems.Value.Equals("Ignore"))
             {
-                tabIndex = Settings.WhiteItems.Value;
+                tabIndex = GetIndexOfTabName(Settings.WhiteItems.Value);
             }
 
             #endregion
@@ -1216,5 +1268,107 @@ namespace Stashie
         {
             return items.ToList().Sum(item => item.GetComponent<Stack>().Size);
         }*/
+
+        private int GetIndexOfTabName(string tabName)
+        {
+            var stashNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
+            if (!stashNames.Contains(tabName))
+            {
+                return -1;
+            }
+            return stashNames.IndexOf(tabName);
+        }
+
+        private string GetStashNameFromIndex(int index)
+        {
+            try
+            {
+                var stashNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
+                return stashNames[index];
+            }
+            catch
+            {
+                return "Ignore";
+            }
+        }
+
+        public void StashTabNamesUpdater()
+        {
+            while (!_tabNamesUpdaterThread.IsBackground)
+            {
+                var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
+                if (!stashPanel.IsVisible)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+
+                // Since all our ListNodes have the same option, we just choose one of them.
+                var names = Settings.Currency.ListValues.ToList();
+                var tabNames = stashPanel.AllStashNames;
+
+                if (tabNames.Count + 1 != names.Count)
+                {
+                    UpdateStashTabNames();
+                    continue;
+                }
+
+                for (var index = 1; index < names.Count; index++)
+                {
+                    var name = names[index];
+
+                    if (tabNames[index - 1].Equals(name))
+                    {
+                        continue;
+                    }
+
+                    UpdateStashTabNames();
+                    break;
+                }
+
+                Thread.Sleep(100);
+            }
+
+            _tabNamesUpdaterThread.Interrupt();
+        }
+
+
+        private void UpdateStashTabNames()
+        {
+            var tabNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
+            var stashNames = new List<string> {"Ignore"};
+            stashNames.AddRange(tabNames);
+
+            // Tab Index (deprecated)
+            Settings.Currency.SetListValues(stashNames);
+            Settings.DivinationCards.SetListValues(stashNames);
+            Settings.Essences.SetListValues(stashNames);
+            Settings.Jewels.SetListValues(stashNames);
+            Settings.Gems.SetListValues(stashNames);
+            Settings.Leaguestones.SetListValues(stashNames);
+            Settings.Flasks.SetListValues(stashNames);
+            Settings.Jewelery.SetListValues(stashNames);
+            Settings.WhiteItems.SetListValues(stashNames);
+            Settings.Talismen.SetListValues(stashNames);
+
+            // Orb of Chance
+            Settings.LeatherBelt.SetListValues(stashNames);
+            Settings.SorcererBoots.SetListValues(stashNames);
+
+            // Vendor
+            Settings.ChaosRecipeLvlOne.SetListValues(stashNames);
+            Settings.ChaosRecipeLvlTwo.SetListValues(stashNames);
+            Settings.ChaosRecipeLvlThree.SetListValues(stashNames);
+            Settings.ChiselRecipe.SetListValues(stashNames);
+            Settings.QualityFlasks.SetListValues(stashNames);
+            Settings.QualityGems.SetListValues(stashNames);
+
+            // Maps
+            Settings.StrandShaped.SetListValues(stashNames);
+            Settings.ShoreShaped.SetListValues(stashNames);
+            Settings.UniqueMaps.SetListValues(stashNames);
+            Settings.OtherMaps.SetListValues(stashNames);
+            Settings.ShapedMaps.SetListValues(stashNames);
+        }
     }
 }
