@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Threading;
 using SharpDX;
 
 namespace Stashie.Utilities
@@ -43,6 +44,13 @@ namespace Stashie.Utilities
         public static bool SetCursorPos(POINT position)
         {
             return SetCursorPos(position.X, position.Y);
+        }
+
+        public static void SetCursorPosAndLeftClick(Vector2 position, RectangleF gameWindow)
+        {
+            SetCursorPos((int) (gameWindow.X + position.X), (int) (gameWindow.Y + position.Y));
+            Thread.Sleep(Constants.InputDelay);
+            LeftButtonClick();
         }
 
         public static void VerticalScroll(bool forward, int clicks)

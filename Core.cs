@@ -26,7 +26,6 @@ namespace Stashie
 
         private RectangleF _gameWindow = new RectangleF(0, 0, 1920, 1080);
 
-        private const int InputDelay = 15;
         private const int WhileDelay = 5;
 
         private Settings _settings = new Settings();
@@ -406,17 +405,14 @@ namespace Stashie
             var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
 
             Keyboard.KeyDown(Keys.ControlKey);
-            Thread.Sleep(InputDelay);
+            Thread.Sleep(Constants.InputDelay);
 
             foreach (var item in sortedItems)
             {
-                Mouse.SetCursorPos(item.GetClientRect().Center, _gameWindow);
-                Thread.Sleep(InputDelay);
-                Mouse.LeftButtonClick();
+                Mouse.SetCursorPosAndLeftClick(item.GetClientRect().Center, _gameWindow);
                 Thread.Sleep(latency);
             }
             Keyboard.KeyUp(Keys.ControlKey);
-            //Thread.Sleep(latency + 100);
         }
 
         private void FirstTab()
@@ -515,9 +511,7 @@ namespace Stashie
 
                 if (!dropDownTabElements.IsVisible)
                 {
-                    Mouse.SetCursorPos(viewAllTabsButton.GetClientRect().Center, _gameWindow);
-                    Thread.Sleep(InputDelay);
-                    Mouse.LeftButtonClick();
+                    Mouse.SetCursorPosAndLeftClick(viewAllTabsButton.GetClientRect().Center, _gameWindow);
                     while (!dropDownTabElements.IsVisible)
                     {
                         Thread.Sleep(WhileDelay);
@@ -527,9 +521,7 @@ namespace Stashie
                 }
 
                 var tabPos = dropDownTabElements.Children[tabIndex].GetClientRect();
-                Mouse.SetCursorPos(tabPos.Center, _gameWindow);
-                Thread.Sleep(InputDelay);
-                Mouse.LeftButtonClick();
+                Mouse.SetCursorPosAndLeftClick(tabPos.Center, _gameWindow);
                 Thread.Sleep(latency);
             }
             catch (Exception e)
@@ -728,53 +720,6 @@ namespace Stashie
                 }
 
                 tabIndex = GetIndexOfTabName(Settings.Currency.Value);
-
-                #region deprectated
-
-                /*var stack = item.GetComponent<Stack>();
-
-                var wantedStackSize = item.Path.Contains("CurrencyPortal")
-                    ? Settings.PortalScrolls.Value
-                    : Settings.WisdomScrolls.Value;
-
-                if (stack.Size > wantedStackSize)
-                {
-                    // Split
-                    var freeCell = FindEmptyOneCell(element);
-                    if (freeCell.X <= -1)
-                    {
-                        // No free space was found.
-                        // Todo: Add it to a list, after all the other items has been move to the stash, then we should check if there's a free space again.
-                        LogError("Couldn't find a free cell!", 5);
-                        return itemsToMove;
-                    }
-
-                    SplitStackAndMoveToFreeCell(element, latency, stack, wantedStackSize, freeCell);
-
-                    //WinApi.BlockInput(false);
-
-                    #region Add new itemToLookFor to dictionary.
-
-                    index = Settings.Currency.Value;
-
-                    if (!itemsToMove.ContainsKey(index))
-                    {
-                        itemsToMove.Add(index, new List<Element>());
-                    }
-
-                    Thread.Sleep(latency + 50);
-
-
-                    var newInventoryPanel = GetInventoryPanel();
-                    var movedItemStack =
-                        newInventoryPanel.Children.FirstOrDefault(x => x.GetClientRect().Intersects(freeCell));
-
-                    itemsToMove[index].Add(movedItemStack);
-
-                    #endregion
-                }*/
-
-                #endregion
             }
 
             else if (baseName.Equals("Portal Scroll") && Settings.ReFillScrolls.Value)
@@ -1066,20 +1011,10 @@ namespace Stashie
 
             //WinApi.BlockInput(true);
 
-            #region Move Mouse to Item that needs to be splitted.
-
             Keyboard.KeyDown(Keys.ShiftKey);
-            Mouse.SetCursorPos(element.GetClientRect().Center, _gameWindow);
-            Thread.Sleep(InputDelay);
-
-            #endregion
-
-            #region Shift + Left Click.
-
-            Mouse.LeftButtonClick();
+            Mouse.SetCursorPosAndLeftClick(element.GetClientRect().Center, _gameWindow);
             Keyboard.KeyUp(Keys.ShiftKey);
 
-            #endregion
 
             #region Enter split size.
 
@@ -1099,21 +1034,11 @@ namespace Stashie
 
             #endregion
 
-            #region Press Enter
-
-            Thread.Sleep(latency + 50);
+            Thread.Sleep(latency);
             Keyboard.KeyPress(Keys.Enter);
-            Thread.Sleep(latency + 50);
+            Thread.Sleep(latency);
 
-            #endregion
-
-            #region Move Cursor to Empty Cell
-
-            Mouse.SetCursorPos(freeCell.Center, _gameWindow);
-            Thread.Sleep(latency + 50);
-            Mouse.LeftButtonClick();
-
-            #endregion
+            Mouse.SetCursorPosAndLeftClick(freeCell.Center, _gameWindow);
         }
 
         private int GetIndexOfTabName(string tabName)
