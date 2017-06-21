@@ -1,6 +1,6 @@
 ﻿using SharpDX;
 
-namespace Stashie
+namespace Stashie.Utilities
 {
     public struct POINT
     {

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using WindowsInput;
-using WindowsInput.Native;
+using System.Windows.Forms;
 using Newtonsoft.Json;
 using PoeHUD.Models.Enums;
 using PoeHUD.Plugins;
@@ -14,6 +12,7 @@ using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
 using PoeHUD.Poe.RemoteMemoryObjects;
 using SharpDX;
+using Stashie.Utilities;
 
 namespace Stashie
 {
@@ -21,13 +20,11 @@ namespace Stashie
     {
         private Thread _tabNamesUpdaterThread;
 
-        private readonly InputSimulator _input = new InputSimulator();
-        private readonly MouseSimulator _mouse = new MouseSimulator(new InputSimulator());
-        private readonly KeyboardSimulator _keyboard = new KeyboardSimulator(new InputSimulator());
-
         private bool _movePortalScrolls = true;
         private bool _moveWisdomScrolls = true;
         private bool _moveItemsToStash = true;
+
+        private RectangleF _gameWindow = new RectangleF(0, 0, 1920, 1080);
 
         private const int InputDelay = 15;
         private const int WhileDelay = 5;
@@ -94,98 +91,6 @@ namespace Stashie
             var json = File.ReadAllText(path);
 
             _settings = JsonConvert.DeserializeObject<Settings>(json);
-
-            // Sets the maximum of the range node to the number of the players total stashes.
-            //var totalStashes = (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
-
-            #region deprecated
-
-            /*#region Default Tabs
-
-            Settings.Currency.Max = totalStashes;
-            Settings.Currency.Value %= totalStashes;
-
-            Settings.DivinationCards.Max = totalStashes;
-            Settings.DivinationCards.Value %= totalStashes;
-
-            Settings.Essences.Max = totalStashes;
-            Settings.Essences.Value %= totalStashes;
-
-            Settings.Jewels.Max = totalStashes;
-            Settings.Jewels.Value %= totalStashes;
-
-            Settings.Gems.Max = totalStashes;
-            Settings.Gems.Value %= totalStashes;
-
-            Settings.Leaguestones.Max = totalStashes;
-            Settings.Leaguestones.Value %= totalStashes;
-
-            Settings.Flasks.Max = totalStashes;
-            Settings.Flasks.Value %= totalStashes;
-
-            Settings.Jewelery.Max = totalStashes;
-            Settings.Jewelery.Value %= totalStashes;
-
-            Settings.WhiteItems.Max = totalStashes; // Todo: Should be expanded to crafting
-            Settings.WhiteItems.Value %= totalStashes;
-
-            Settings.Talismen.Max = totalStashes;
-            Settings.Talismen.Value %= totalStashes;
-
-            #endregion
-
-            #region Orb of Chance
-
-            Settings.LeatherBelt.Max = totalStashes;
-            Settings.LeatherBelt.Value %= totalStashes;
-
-            Settings.SorcererBoots.Max = totalStashes;
-            Settings.SorcererBoots.Value %= totalStashes;
-
-            #endregion
-
-            #region Vendor Recipes
-
-            Settings.ChiselRecipe.Max = totalStashes;
-            Settings.ChiselRecipe.Value %= totalStashes;
-
-            Settings.ChaosRecipeLvlOne.Max = totalStashes;
-            Settings.ChaosRecipeLvlOne.Value %= totalStashes;
-
-            Settings.ChaosRecipeLvlTwo.Max = totalStashes;
-            Settings.ChaosRecipeLvlTwo.Value %= totalStashes;
-
-            Settings.ChaosRecipeLvlThree.Max = totalStashes;
-            Settings.ChaosRecipeLvlThree.Value %= totalStashes;
-
-            Settings.QualityFlasks.Max = totalStashes;
-            Settings.QualityFlasks.Value %= totalStashes;
-
-            Settings.QualityGems.Max = totalStashes;
-            Settings.QualityGems.Value %= totalStashes;
-
-            #endregion
-
-            #region Maps
-
-            Settings.StrandShaped.Max = totalStashes;
-            Settings.StrandShaped.Value %= totalStashes;
-
-            Settings.ShoreShaped.Value %= totalStashes;
-            Settings.ShoreShaped.Max = totalStashes;
-
-            Settings.UniqueMaps.Max = totalStashes;
-            Settings.UniqueMaps.Value %= totalStashes;
-
-            Settings.OtherMaps.Max = totalStashes;
-            Settings.OtherMaps.Value %= totalStashes;
-
-            Settings.ShapedMaps.Max = totalStashes;
-            Settings.ShapedMaps.Value %= totalStashes;
-
-            #endregion*/
-
-            #endregion
         }
 
         public override void Render()
@@ -204,7 +109,7 @@ namespace Stashie
             }
 
             if (Settings.HotkeyRequired.Value &&
-                !_input.InputDeviceState.IsKeyDown((VirtualKeyCode) Settings.HotkeySetting.Value))
+                !Keyboard.IsKeyPressed(Settings.HotkeySetting.Value))
             {
                 return;
             }
@@ -224,7 +129,7 @@ namespace Stashie
             var index = GetIndexOfTabName(Settings.Currency.Value);
             GoToTab(index);
             var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
-            var latency = (int) GameController.Game.IngameState.CurLatency;
+            var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
 
             if (stashTab.VisibleInventoryItems == null)
             {
@@ -249,21 +154,20 @@ namespace Stashie
                 SplitStackAndMoveToFreeCell(portalScroll, latency, Settings.PortalScrolls.Value, emptyCell);
             }
 
+            var doesStashContainWisdomScrolls = stashTab.VisibleInventoryItems.Any(item => GameController.Files
+                .BaseItemTypes
+                .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
+
 
             if (!_moveWisdomScrolls)
             {
                 return;
             }
 
-            var doesStashContainWisdomScrolls = stashTab.VisibleInventoryItems.Any(item => GameController.Files
-                .BaseItemTypes
-                .Translate(item.Item.Path).BaseName.Equals("Scroll of Wisdom"));
-
             if (!doesStashContainWisdomScrolls)
             {
                 return;
             }
-
 
             var wisdomScroll = stashTab.VisibleInventoryItems.ToList().First(item => GameController.Files
                 .BaseItemTypes
@@ -341,7 +245,7 @@ namespace Stashie
             // we, itterate through the items in the inventory and place them in a list with position and the corresponding tab it should be moved to,
             // then we sort the list by stash tab stashTabIndex (0 to number of stashes)
             // and then we move the items.
-
+            _gameWindow = GameController.Window.GetWindowRectangle();
             var itemsToMove = new Dictionary<int, List<Element>>();
             var inventoryPanel = GetInventoryPanel();
 
@@ -373,7 +277,7 @@ namespace Stashie
                 SortTab(keyValuePair.Key, sortedItems);
             }
 
-            MoveMousePoint(cursorPosPreMoving);
+            Mouse.SetCursorPos(cursorPosPreMoving);
 
             //WinApi.BlockInput(false);
         }
@@ -412,7 +316,7 @@ namespace Stashie
             if (!Settings.SortingSettings.Value)
             {
                 // Then move them into the stash, and return.
-                MoveItemsToStash(latency, sortedItems);
+                MoveItemsToStash(sortedItems);
                 return;
             }
 
@@ -441,7 +345,7 @@ namespace Stashie
             // Sort items
             sortedItems = SortListOfItemsAccordingToUserSettings(stashTabIndex, sortedItems);
 
-            MoveItemsToStash(latency, sortedItems);
+            MoveItemsToStash(sortedItems);
         }
 
         private Inventory GetStashTab(int index)
@@ -497,21 +401,22 @@ namespace Stashie
             return sortedItems;
         }
 
-        private void MoveItemsToStash(int latency, IEnumerable<NormalInventoryItem> sortedItems)
+        private void MoveItemsToStash(IEnumerable<NormalInventoryItem> sortedItems)
         {
-            var minLatency = latency * 2 > 50 ? latency * 2 : 50 + latency;
-            minLatency += Settings.LatencySlider.Value;
+            var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
 
-            _keyboard.KeyDown(VirtualKeyCode.CONTROL);
+            Keyboard.KeyDown(Keys.ControlKey);
+            Thread.Sleep(InputDelay);
+
             foreach (var item in sortedItems)
             {
-                Thread.Sleep(minLatency);
-                MoveMouseToCenterOfRec(item.GetClientRect());
+                Mouse.SetCursorPos(item.GetClientRect().Center, _gameWindow);
                 Thread.Sleep(InputDelay);
-                _mouse.LeftButtonClick();
+                Mouse.LeftButtonClick();
+                Thread.Sleep(latency);
             }
-            _keyboard.KeyUp(VirtualKeyCode.CONTROL);
-            Thread.Sleep(latency + 100);
+            Keyboard.KeyUp(Keys.ControlKey);
+            //Thread.Sleep(latency + 100);
         }
 
         private void FirstTab()
@@ -522,7 +427,7 @@ namespace Stashie
                        .AsObject<Element>()
                        .IsVisible)
             {
-                _keyboard.KeyPress(VirtualKeyCode.LEFT);
+                Keyboard.KeyPress(Keys.Left);
                 Thread.Sleep(latency);
             }
         }
@@ -546,7 +451,7 @@ namespace Stashie
                 {
                     Thread.Sleep(latency);
                 }
-                _keyboard.KeyPress(VirtualKeyCode.RIGHT);
+                Keyboard.KeyPress(Keys.Right);
             }
         }
 
@@ -589,7 +494,6 @@ namespace Stashie
                 return;
             }
 
-
             try
             {
                 var latency = (int) (GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value);
@@ -609,46 +513,29 @@ namespace Stashie
                     dropDownTabElements = parent.Children[1];
                 }
 
-
                 if (!dropDownTabElements.IsVisible)
                 {
-                    MoveMouseToCenterOfRec(viewAllTabsButton.GetClientRect());
+                    Mouse.SetCursorPos(viewAllTabsButton.GetClientRect().Center, _gameWindow);
                     Thread.Sleep(InputDelay);
-                    _mouse.LeftButtonClick();
-                    var sw = new Stopwatch();
-                    sw.Start();
+                    Mouse.LeftButtonClick();
                     while (!dropDownTabElements.IsVisible)
                     {
                         Thread.Sleep(WhileDelay);
                     }
-                    _mouse.VerticalScroll(5);
+                    Mouse.VerticalScroll(true, 5);
                     Thread.Sleep(latency + 50);
                 }
 
                 var tabPos = dropDownTabElements.Children[tabIndex].GetClientRect();
-                MoveMouseToCenterOfRec(tabPos);
+                Mouse.SetCursorPos(tabPos.Center, _gameWindow);
                 Thread.Sleep(InputDelay);
-                _mouse.LeftButtonClick();
+                Mouse.LeftButtonClick();
+                Thread.Sleep(latency);
             }
             catch (Exception e)
             {
                 LogError($"Error in GoToTab: {e}", 5);
             }
-        }
-
-        private void MoveMouseToCenterOfRec(RectangleF to)
-        {
-            var gameWindow = GameController.Window.GetWindowRectangle();
-            var x = (int) (gameWindow.X + to.X + to.Width / 2);
-            var y = (int) (gameWindow.Y + to.Y + to.Height / 2);
-            Mouse.SetCursorPos(x, y);
-        }
-
-        private void MoveMousePoint(POINT to)
-        {
-            var x = to.X;
-            var y = to.Y;
-            Mouse.SetCursorPos(x, y);
         }
 
         public RectangleF FindEmptyOneCell(Element element)
@@ -736,7 +623,6 @@ namespace Stashie
             var numberOfUsedCells = 0;
             if (index < 0 || index > 31)
             {
-                LogMessage($"stashTabIndex: {index}", 1);
                 return 0;
             }
 
@@ -790,51 +676,16 @@ namespace Stashie
         private void MoveItemsFromStashToInventory(IEnumerable<NormalInventoryItem> stashItems)
         {
             var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
-
             //winApi.BlockInput(true);
-            _keyboard.KeyDown(VirtualKeyCode.CONTROL);
+            Keyboard.KeyDown(Keys.Control);
             foreach (var item in stashItems.ToList())
             {
-                MoveMouseToCenterOfRec(item.GetClientRect());
-                Thread.Sleep(latency);
-                _mouse.LeftButtonClick();
+                Mouse.SetCursorPos(item.GetClientRect().Center, _gameWindow);
                 Thread.Sleep(latency);
             }
-            _keyboard.KeyUp(VirtualKeyCode.CONTROL);
+            Keyboard.KeyUp(Keys.Control);
             //winApi.BlockInput(false);
         }
-
-        /*public void TestFunction()
-        {
-            var inventoryPanel = GetInventoryPanel();
-            var inventoryRec = inventoryPanel.GetClientRect();
-            var topLeftX = inventoryRec.TopLeft.X;
-            var topLeftY = inventoryRec.TopLeft.Y;
-
-            var borderSize = 10;
-            var widthCell = inventoryRec.Width / 12 - borderSize;
-            var heightCell = inventoryRec.Height / 5 - borderSize;
-
-
-            for (var widthDirection = 0; widthDirection < 12; widthDirection++)
-            {
-                for (var heightDirection = 0; heightDirection < 5; heightDirection++)
-                {
-                    var x = (widthCell + borderSize) * widthDirection + borderSize * 0.5f + topLeftX;
-                    var y = (heightCell + borderSize) * heightDirection + borderSize * 0.5f + topLeftY;
-
-                    var cell = new RectangleF(x,
-                        y,
-                        widthCell, // Width
-                        heightCell); // Height
-                    var doesContain = inventoryPanel.Children.Any(child => cell.Intersects(child.GetClientRect()));
-                    if (!doesContain && _settings.IgnoredCells[heightDirection, widthDirection] == 0)
-                    {
-                        Graphics.DrawBox(cell, new Color(new Vector3(255, 255, 255), 0.5f));
-                    }
-                }
-            }
-        }*/
 
         private Element GetInventoryPanel()
         {
@@ -1211,42 +1062,39 @@ namespace Stashie
         private void SplitStackAndMoveToFreeCell(Element element, int latency, int wantedStackSize,
             RectangleF freeCell)
         {
-            var numberOfItemsInAStackToMove = wantedStackSize;
+            var stackSizeOfItemToMove = wantedStackSize;
 
             //WinApi.BlockInput(true);
 
             #region Move Mouse to Item that needs to be splitted.
 
-            MoveMouseToCenterOfRec(element.GetClientRect());
+            Keyboard.KeyDown(Keys.ShiftKey);
+            Mouse.SetCursorPos(element.GetClientRect().Center, _gameWindow);
             Thread.Sleep(InputDelay);
 
             #endregion
 
             #region Shift + Left Click.
 
-            _keyboard.KeyDown(VirtualKeyCode.SHIFT);
-            Thread.Sleep(InputDelay);
-            _mouse.LeftButtonClick();
-            _keyboard.KeyUp(VirtualKeyCode.SHIFT);
+            Mouse.LeftButtonClick();
+            Keyboard.KeyUp(Keys.ShiftKey);
 
             #endregion
 
             #region Enter split size.
 
-            if (numberOfItemsInAStackToMove < 10)
+            if (stackSizeOfItemToMove < 10)
             {
-                var keyToPress = (VirtualKeyCode) ((int) VirtualKeyCode.VK_0 + numberOfItemsInAStackToMove);
-                _keyboard.KeyPress(keyToPress);
+                var keyToPress = (int) Keys.D0 + stackSizeOfItemToMove;
+                Keyboard.KeyPress((Keys) keyToPress);
             }
             else
             {
-                var keyToPress =
-                    (VirtualKeyCode) ((int) VirtualKeyCode.VK_0 + (numberOfItemsInAStackToMove / 10));
-                _keyboard.KeyPress(keyToPress);
+                var keyToPress = (int) Keys.D0 + stackSizeOfItemToMove / 10;
+                Keyboard.KeyPress((Keys) keyToPress);
                 Thread.Sleep(latency);
-                keyToPress =
-                    (VirtualKeyCode) ((int) VirtualKeyCode.VK_0 + (numberOfItemsInAStackToMove % 10));
-                _keyboard.KeyPress(keyToPress);
+                keyToPress = (int) Keys.D0 + stackSizeOfItemToMove % 10;
+                Keyboard.KeyPress((Keys) keyToPress);
             }
 
             #endregion
@@ -1254,24 +1102,19 @@ namespace Stashie
             #region Press Enter
 
             Thread.Sleep(latency + 50);
-            _keyboard.KeyPress(VirtualKeyCode.RETURN);
+            Keyboard.KeyPress(Keys.Enter);
             Thread.Sleep(latency + 50);
 
             #endregion
 
             #region Move Cursor to Empty Cell
 
-            MoveMouseToCenterOfRec(freeCell);
+            Mouse.SetCursorPos(freeCell.Center, _gameWindow);
             Thread.Sleep(latency + 50);
-            _mouse.LeftButtonClick();
+            Mouse.LeftButtonClick();
 
             #endregion
         }
-
-        /*private int GetItemInventoryCount(IEnumerable<IEntity> items)
-        {
-            return items.ToList().Sum(item => item.GetComponent<Stack>().Size);
-        }*/
 
         private int GetIndexOfTabName(string tabName)
         {

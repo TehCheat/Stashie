@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Stashie
+namespace Stashie.Utilities
 {
     public class WinApi
     {
