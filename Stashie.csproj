@@ -68,6 +68,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="ListIndexNode.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utilities\Keyboard.cs" />
     <Compile Include="Utilities\Mouse.cs" />

@@ -17,7 +17,6 @@ namespace Stashie.Utilities
 
         public const int MouseEventWheel = 0x800;
 
-
         [DllImport("user32.dll")]
         public static extern bool GetCursorPos(out POINT lpPoint);
 

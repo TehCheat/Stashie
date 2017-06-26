@@ -18,17 +18,19 @@ namespace Stashie
 {
     public class Core : BaseSettingsPlugin<UiSettings>
     {
-        private Thread _tabNamesUpdaterThread;
+        private const int WhileDelay = 5;
+
+        private RectangleF _gameWindow = new RectangleF(0, 0, 1920, 1080);
+        private bool _moveItemsToStash = true;
 
         private bool _movePortalScrolls = true;
         private bool _moveWisdomScrolls = true;
-        private bool _moveItemsToStash = true;
 
-        private RectangleF _gameWindow = new RectangleF(0, 0, 1920, 1080);
-
-        private const int WhileDelay = 5;
+        private List<string> _renamedAllStashNames;
 
         private Settings _settings = new Settings();
+        private List<ListIndexNode> _settingsListNodes;
+        private Thread _tabNamesUpdaterThread;
 
         public override void Initialise()
         {
@@ -58,10 +60,52 @@ namespace Stashie
                 CloseThreads();
                 return;
             }
-            UpdateStashTabNames();
+            _settingsListNodes = new List<ListIndexNode>
+            {
+                Settings.Currency,
+                Settings.DivinationCards,
+                Settings.Essences,
+                Settings.Jewels,
+                Settings.Gems,
+                Settings.Leaguestones,
+                Settings.Flasks,
+                Settings.Jewelery,
+                Settings.WhiteItems,
+                Settings.Talismen,
+
+                Settings.LeatherBelt,
+                Settings.SorcererBoots,
+
+                Settings.ChaosRecipeLvlOne,
+                Settings.ChaosRecipeLvlTwo,
+                Settings.ChaosRecipeLvlThree,
+                Settings.ChiselRecipe,
+                Settings.QualityFlasks,
+                Settings.QualityGems,
+
+                Settings.StrandShaped,
+                Settings.ShoreShaped,
+                Settings.UniqueMaps,
+                Settings.OtherMaps,
+                Settings.ShapedMaps
+            };
+
+            var names = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
+            UpdateStashNames(names);
+
+            foreach (var settingsListNode in _settingsListNodes)
+            {
+                var node = settingsListNode; //Enumerator delegate fix
+                node.OnValueSelected += delegate(string newValue) { OnSettingsStashNameChanged(node, newValue); };
+            }
+            SetIgnoredCells();
+
             _tabNamesUpdaterThread = new Thread(StashTabNamesUpdater);
             _tabNamesUpdaterThread.Start();
+        }
 
+        private void SetIgnoredCells()
+        {
             var path = PluginDirectory + @"/Settings.json";
 
             if (!File.Exists(path))
@@ -90,6 +134,11 @@ namespace Stashie
             var json = File.ReadAllText(path);
 
             _settings = JsonConvert.DeserializeObject<Settings>(json);
+        }
+
+        private void OnSettingsStashNameChanged(ListIndexNode node, string newValue)
+        {
+            node.Index = GetInventIndexByStashName(newValue);
         }
 
         public override void Render()
@@ -125,7 +174,7 @@ namespace Stashie
                 return;
             }
             // We currently don't have any scrolls in our inventory.
-            var index = GetIndexOfTabName(Settings.Currency.Value);
+            var index = GetInventIndexByStashName(Settings.Currency.Value);
             GoToTab(index);
             var stashTab = GameController.Game.IngameState.ServerData.StashPanel.VisibleStash;
             var latency = (int) GameController.Game.IngameState.CurLatency + Settings.LatencySlider.Value;
@@ -177,67 +226,6 @@ namespace Stashie
             SplitStackAndMoveToFreeCell(wisdomScroll, latency, Settings.WisdomScrolls.Value, emptyCell);
         }
 
-        #region Advanced Portal and Wisdom Scroll 'Manager', for the time being this is not worth the implementation time.
-
-        /*private void TransferScrollsToInventory(string baseName, int ammount)
-        {
-            
-        }
-
-        private void Scrolls(string baseName)
-        {
-            // Make sure that we have the right ammount of portal scrolls in our inventory panel
-            // Where the right amount is the number of scrolls the user wants UiSettings.ScrollsToKeep
-
-            var wantedAmmountOfScrolls = baseName.Equals("Portal Scroll") ? Settings.PortalScrolls.Value : Settings.WisdomScrolls.Value;
-
-            // Next, find all the elements (stacks of items) in the inventory panel that are portal scrolls.
-            var inventoryPanel = GetInventoryPanel();
-
-            var portalScrollStackElements = inventoryPanel.Children.ToList()
-                .Where(element => GameController.Files.BaseItemTypes
-                    .Translate(element.AsObject<NormalInventoryItem>().Item.Path).BaseName.Equals(baseName))
-                .Select(element => element.AsObject<NormalInventoryItem>().Item).Cast<IEntity>().ToList();
-
-            if (portalScrollStackElements.Count == 0)
-            {
-                // No Scrolls.
-                TransferScrollsToInventory(baseName, wantedAmmountOfScrolls);
-            }
-
-            var numberOfScrolls = GetItemInventoryCount(portalScrollStackElements);
-            var numberOfStacks = portalScrollStackElements.Count;
-
-            if (numberOfScrolls == wantedAmmountOfScrolls)
-            {
-                if (numberOfStacks > 1)
-                {
-                    // Combine the stacks.
-                }
-
-                return;
-            }
-
-            if (numberOfScrolls < wantedAmmountOfScrolls)
-            {
-                // We have atleast 1 scroll in our inventory, combine the stacks.
-                if (numberOfStacks > 1)
-                {
-                    // Combine the stacks.
-                }
-
-                TransferScrollsToInventory(baseName, wantedAmmountOfScrolls - numberOfScrolls);
-                return;
-            }
-
-            if (numberOfScrolls > wantedAmmountOfScrolls)
-            {
-                // Combine the stacks.
-            }
-        }*/
-
-        #endregion
-
         public void Stashie()
         {
             // Instead of just itterating through each itemToLookFor in our inventory panel and switching to it's corresponding tab
@@ -281,20 +269,7 @@ namespace Stashie
             //WinApi.BlockInput(false);
         }
 
-        private Dictionary<int, List<Element>> AssignIndexesToInventoryItems(Dictionary<int, List<Element>> itemsToMove,
-            Element inventoryPanel)
-        {
-            _movePortalScrolls = true;
-            _moveWisdomScrolls = true;
-
-            foreach (var element in inventoryPanel.Children.ToList())
-            {
-                itemsToMove = AssignIndexToItem(element, itemsToMove);
-            }
-
-            return itemsToMove;
-        }
-
+        
         public bool IsCellIgnored(RectangleF position)
         {
             var inventoryPanel = GetInventoryPanel();
@@ -347,6 +322,7 @@ namespace Stashie
             MoveItemsToStash(sortedItems);
         }
 
+
         private Inventory GetStashTab(int index)
         {
             var stashTab = GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(index);
@@ -358,6 +334,13 @@ namespace Stashie
             }
 
             return stashTab;
+        }
+
+        private Element GetInventoryPanel()
+        {
+            return GameController.Game.IngameState.ReadObject<Element>(
+                GameController.Game.IngameState.IngameUi.InventoryPanel.Address +
+                Element.OffsetBuffers + 0x42C);
         }
 
         private List<NormalInventoryItem> SortListOfItemsAccordingToUserSettings(int index,
@@ -414,6 +397,8 @@ namespace Stashie
             }
             Keyboard.KeyUp(Keys.ControlKey);
         }
+
+        #region Functions for switching between tabs / 'going' to a tab.
 
         private void FirstTab()
         {
@@ -530,9 +515,15 @@ namespace Stashie
             }
         }
 
+        #endregion
+
+
+
+        #region Functions related to moving stash tab items to inventory and then putting them back in stash tab in sorted order.
+
         public RectangleF FindEmptyOneCell(Element element)
         {
-            var latency = (int) GameController.Game.IngameState.CurLatency;
+            var latency = (int)GameController.Game.IngameState.CurLatency;
             Thread.Sleep(latency + 50);
             var inventoryPanel = GetInventoryPanel();
             var inventoryRec = inventoryPanel.GetClientRect();
@@ -543,8 +534,8 @@ namespace Stashie
             var widthCell = inventoryRec.Width / 12 - borderSize;
             var heightCell = inventoryRec.Height / 5 - borderSize;
 
-            var elementCellWidth = (int) (element.GetClientRect().Width / widthCell);
-            var elementCellHeight = (int) (element.GetClientRect().Height / heightCell);
+            var elementCellWidth = (int)(element.GetClientRect().Width / widthCell);
+            var elementCellHeight = (int)(element.GetClientRect().Height / heightCell);
 
             for (var widthDirection = 0; widthDirection < 12; widthDirection++)
             {
@@ -679,12 +670,27 @@ namespace Stashie
             //winApi.BlockInput(false);
         }
 
-        private Element GetInventoryPanel()
+        #endregion
+
+        
+
+
+        #region Assigning an index to an item (which tab should the item be placed in?)
+
+        private Dictionary<int, List<Element>> AssignIndexesToInventoryItems(Dictionary<int, List<Element>> itemsToMove,
+            Element inventoryPanel)
         {
-            return GameController.Game.IngameState.ReadObject<Element>(
-                GameController.Game.IngameState.IngameUi.InventoryPanel.Address +
-                Element.OffsetBuffers + 0x42C);
+            _movePortalScrolls = true;
+            _moveWisdomScrolls = true;
+
+            foreach (var element in inventoryPanel.Children.ToList())
+            {
+                itemsToMove = AssignIndexToItem(element, itemsToMove);
+            }
+
+            return itemsToMove;
         }
+
 
         private Dictionary<int, List<Element>> AssignIndexToItem(Element element,
             Dictionary<int, List<Element>> itemsToMove)
@@ -719,7 +725,7 @@ namespace Stashie
                     return itemsToMove;
                 }
 
-                tabIndex = GetIndexOfTabName(Settings.Currency.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Currency.Value);
             }
 
             else if (baseName.Equals("Portal Scroll") && Settings.ReFillScrolls.Value)
@@ -730,7 +736,7 @@ namespace Stashie
                     return itemsToMove;
                 }
 
-                tabIndex = GetIndexOfTabName(Settings.Currency.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Currency.Value);
             }
 
             #endregion
@@ -756,7 +762,7 @@ namespace Stashie
                 {
                     if (!Settings.ShoreShaped.Value.Equals("Ignore"))
                     {
-                        tabIndex = GetIndexOfTabName(Settings.ShoreShaped.Value);
+                        tabIndex = GetInventIndexByStashName(Settings.ShoreShaped.Value);
                     }
                 }
 
@@ -768,7 +774,7 @@ namespace Stashie
                 {
                     if (!Settings.StrandShaped.Value.Equals("Ignore"))
                     {
-                        tabIndex = GetIndexOfTabName(Settings.StrandShaped.Value);
+                        tabIndex = GetInventIndexByStashName(Settings.StrandShaped.Value);
                     }
                 }
 
@@ -780,7 +786,7 @@ namespace Stashie
                 {
                     if (!Settings.ShapedMaps.Value.Equals("Ignore"))
                     {
-                        tabIndex = GetIndexOfTabName(Settings.ShapedMaps.Value);
+                        tabIndex = GetInventIndexByStashName(Settings.ShapedMaps.Value);
                     }
                 }
 
@@ -792,13 +798,13 @@ namespace Stashie
                 {
                     if (!Settings.UniqueMaps.Value.Equals("Ignore"))
                     {
-                        tabIndex = GetIndexOfTabName(Settings.UniqueMaps.Value);
+                        tabIndex = GetInventIndexByStashName(Settings.UniqueMaps.Value);
                     }
                 }
 
                 else if (!Settings.OtherMaps.Value.Equals("Ignore"))
                 {
-                    tabIndex = GetIndexOfTabName(Settings.OtherMaps.Value);
+                    tabIndex = GetInventIndexByStashName(Settings.OtherMaps.Value);
                 }
 
                 #endregion
@@ -814,7 +820,7 @@ namespace Stashie
                      Settings.ChanceItemTabs.Value &&
                      !Settings.SorcererBoots.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.SorcererBoots.Value);
+                tabIndex = GetInventIndexByStashName(Settings.SorcererBoots.Value);
             }
 
             #endregion
@@ -825,7 +831,7 @@ namespace Stashie
                      Settings.ChanceItemTabs.Value &&
                      !Settings.LeatherBelt.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.LeatherBelt.Value);
+                tabIndex = GetInventIndexByStashName(Settings.LeatherBelt.Value);
             }
 
             #endregion
@@ -840,7 +846,7 @@ namespace Stashie
                       baseName.Equals("Gavel") && quality == 20) && Settings.VendorRecipeTabs.Value &&
                      !Settings.ChiselRecipe.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.ChiselRecipe.Value);
+                tabIndex = GetInventIndexByStashName(Settings.ChiselRecipe.Value);
             }
 
             #endregion
@@ -853,15 +859,15 @@ namespace Stashie
                 var mods = item.GetComponent<Mods>();
                 if (mods.Identified && quality < 20 && !Settings.ChaosRecipeLvlOne.Value.Equals("Ignore"))
                 {
-                    tabIndex = GetIndexOfTabName(Settings.ChaosRecipeLvlOne.Value);
+                    tabIndex = GetInventIndexByStashName(Settings.ChaosRecipeLvlOne.Value);
                 }
                 if ((!mods.Identified || quality == 20) && !Settings.ChaosRecipeLvlTwo.Value.Equals("Ignore"))
                 {
-                    tabIndex = GetIndexOfTabName(Settings.ChaosRecipeLvlTwo.Value);
+                    tabIndex = GetInventIndexByStashName(Settings.ChaosRecipeLvlTwo.Value);
                 }
                 if (!mods.Identified && quality == 20 && !Settings.ChaosRecipeLvlThree.Value.Equals("Ignore"))
                 {
-                    tabIndex = GetIndexOfTabName(Settings.ChaosRecipeLvlThree.Value);
+                    tabIndex = GetInventIndexByStashName(Settings.ChaosRecipeLvlThree.Value);
                 }
             }
 
@@ -871,7 +877,7 @@ namespace Stashie
 
             else if (className.Contains("Skill Gem") && quality > 0 && !Settings.QualityGems.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.QualityGems.Value);
+                tabIndex = GetInventIndexByStashName(Settings.QualityGems.Value);
             }
 
             #endregion
@@ -880,7 +886,7 @@ namespace Stashie
 
             else if (className.Contains("Flask") && quality > 0 && !Settings.QualityFlasks.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.QualityFlasks.Value);
+                tabIndex = GetInventIndexByStashName(Settings.QualityFlasks.Value);
             }
 
             #endregion
@@ -893,7 +899,7 @@ namespace Stashie
 
             else if (className.Equals("DivinationCard") && !Settings.DivinationCards.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.DivinationCards.Value);
+                tabIndex = GetInventIndexByStashName(Settings.DivinationCards.Value);
             }
 
             #endregion
@@ -902,7 +908,7 @@ namespace Stashie
 
             else if (className.Contains("Skill Gem") && quality == 0 && !Settings.Gems.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Gems.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Gems.Value);
             }
 
             #endregion
@@ -912,7 +918,7 @@ namespace Stashie
             else if (className.Equals("StackableCurrency") && !item.Path.Contains("Essence") &&
                      !Settings.Currency.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Currency.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Currency.Value);
             }
 
             #endregion
@@ -921,7 +927,7 @@ namespace Stashie
 
             else if (className.Equals("Leaguestone") && !Settings.Leaguestones.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Leaguestones.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Leaguestones.Value);
             }
 
             #endregion
@@ -931,7 +937,7 @@ namespace Stashie
             else if (baseName.Contains("Essence") && className.Equals("StackableCurrency") &&
                      !Settings.Essences.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Essences.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Essences.Value);
             }
 
             #endregion
@@ -940,7 +946,7 @@ namespace Stashie
 
             else if (className.Equals("Jewel") && !Settings.Jewels.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Jewels.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Jewels.Value);
             }
 
             #endregion
@@ -949,7 +955,7 @@ namespace Stashie
 
             else if (className.Contains("Flask") && quality == 0 && !Settings.Flasks.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Flasks.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Flasks.Value);
             }
 
             #endregion
@@ -959,7 +965,7 @@ namespace Stashie
             else if (className.Equals("Amulet") && baseName.Contains("Talisman") &&
                      !Settings.Talismen.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Talismen.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Talismen.Value);
             }
 
             #endregion
@@ -969,7 +975,7 @@ namespace Stashie
             else if ((className.Equals("Amulet") || className.Equals("Ring")) &&
                      !Settings.Jewelery.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.Jewelery.Value);
+                tabIndex = GetInventIndexByStashName(Settings.Jewelery.Value);
             }
 
             #endregion
@@ -980,7 +986,7 @@ namespace Stashie
 
             else if (rarity == ItemRarity.Normal && !Settings.WhiteItems.Value.Equals("Ignore"))
             {
-                tabIndex = GetIndexOfTabName(Settings.WhiteItems.Value);
+                tabIndex = GetInventIndexByStashName(Settings.WhiteItems.Value);
             }
 
             #endregion
@@ -1003,6 +1009,8 @@ namespace Stashie
 
             return itemsToMove;
         }
+
+        #endregion
 
         private void SplitStackAndMoveToFreeCell(Element element, int latency, int wantedStackSize,
             RectangleF freeCell)
@@ -1041,15 +1049,6 @@ namespace Stashie
             Mouse.SetCursorPosAndLeftClick(freeCell.Center, _gameWindow);
         }
 
-        private int GetIndexOfTabName(string tabName)
-        {
-            var stashNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
-            if (!stashNames.Contains(tabName))
-            {
-                return -1;
-            }
-            return stashNames.IndexOf(tabName);
-        }
 
         private string GetStashNameFromIndex(int index)
         {
@@ -1064,83 +1063,176 @@ namespace Stashie
             }
         }
 
+        private int GetInventIndexByStashName(string name)
+        {
+            var index = _renamedAllStashNames.IndexOf(name);
+            if (index != -1)
+            {
+                index--;
+            }
+            return index;
+        }
+
+        private void UpdateStashNames(List<string> newNames)
+        {
+            Settings.AllStashNames = newNames;
+            _renamedAllStashNames = new List<string> {"Ignore"};
+
+            for (var i = 0; i < Settings.AllStashNames.Count; i++)
+            {
+                var realStashName = Settings.AllStashNames[i];
+
+                if (_renamedAllStashNames.Contains(realStashName))
+                {
+                    realStashName += " (" + i + ")";
+                    LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
+                }
+
+                _renamedAllStashNames.Add(realStashName);
+            }
+
+            Settings.AllStashNames.Insert(0, "Ignore");
+
+            foreach (var listIndexNode in _settingsListNodes)
+            {
+                listIndexNode.SetListValues(_renamedAllStashNames);
+
+                var inventoryIndex = GetInventIndexByStashName(listIndexNode.Value);
+
+                if (inventoryIndex == -1) //If the value doesn't exist in list (renamed)
+                {
+                    if (listIndexNode.Index != -1) //If the value doesn't exist in list and the value was not Ignore
+                    {
+                        LogMessage(
+                            "Tab renamed? : " + listIndexNode.Value + " to " + _renamedAllStashNames[listIndexNode.Index + 1],
+                            5);
+
+                        listIndexNode.Value = _renamedAllStashNames[listIndexNode.Index + 1]; //    Just update it's name
+                    }
+                    else
+                    {
+                        listIndexNode.Value =
+                            _renamedAllStashNames[0]; //Actually it was "Ignore", we just update it (can be removed)
+                    }
+                }
+                else //tab just change it's index
+                {
+                    if (listIndexNode.Index != inventoryIndex)
+                    {
+                        LogMessage("Tab moved: " + listIndexNode.Index + " to " + inventoryIndex, 5);
+                    }
+
+                    listIndexNode.Index = inventoryIndex;
+                    listIndexNode.Value = _renamedAllStashNames[inventoryIndex + 1];
+                }
+            }
+        }
+
         public void StashTabNamesUpdater()
         {
             while (!_tabNamesUpdaterThread.IsBackground)
             {
                 var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
+                if (stashPanel == null)
+                {
+                    continue;
+                }
+
                 if (!stashPanel.IsVisible)
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(1000);
                     continue;
                 }
 
-                // Since all our ListNodes have the same option, we just choose one of them.
-                var names = Settings.Currency.ListValues.ToList();
-                var tabNames = stashPanel.AllStashNames;
+                var cachedNames = Settings.AllStashNames;
+                var realNames = stashPanel.AllStashNames;
 
-                if (tabNames.Count + 1 != names.Count)
+                if (realNames.Count + 1 != cachedNames.Count)
                 {
-                    UpdateStashTabNames();
+                    UpdateStashNames(realNames);
                     continue;
                 }
 
-                for (var index = 1; index < names.Count; index++)
+                for (var index = 0; index < realNames.Count; ++index)
                 {
-                    var name = names[index];
-
-                    if (tabNames[index - 1].Equals(name))
+                    var cachedName = cachedNames[index + 1];
+                    if (cachedName.Equals(realNames[index]))
                     {
                         continue;
                     }
 
-                    UpdateStashTabNames();
+                    UpdateStashNames(realNames);
                     break;
                 }
 
-                Thread.Sleep(100);
+                Thread.Sleep(500);
             }
 
             _tabNamesUpdaterThread.Interrupt();
         }
+        
 
 
-        private void UpdateStashTabNames()
+
+        #region Advanced Portal and Wisdom Scroll 'Manager', for the time being this is not worth the implementation time.
+
+        /*private void TransferScrollsToInventory(string baseName, int ammount)
         {
-            var tabNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
-            var stashNames = new List<string> {"Ignore"};
-            stashNames.AddRange(tabNames);
-
-            // Tab Index (deprecated)
-            Settings.Currency.SetListValues(stashNames);
-            Settings.DivinationCards.SetListValues(stashNames);
-            Settings.Essences.SetListValues(stashNames);
-            Settings.Jewels.SetListValues(stashNames);
-            Settings.Gems.SetListValues(stashNames);
-            Settings.Leaguestones.SetListValues(stashNames);
-            Settings.Flasks.SetListValues(stashNames);
-            Settings.Jewelery.SetListValues(stashNames);
-            Settings.WhiteItems.SetListValues(stashNames);
-            Settings.Talismen.SetListValues(stashNames);
-
-            // Orb of Chance
-            Settings.LeatherBelt.SetListValues(stashNames);
-            Settings.SorcererBoots.SetListValues(stashNames);
-
-            // Vendor
-            Settings.ChaosRecipeLvlOne.SetListValues(stashNames);
-            Settings.ChaosRecipeLvlTwo.SetListValues(stashNames);
-            Settings.ChaosRecipeLvlThree.SetListValues(stashNames);
-            Settings.ChiselRecipe.SetListValues(stashNames);
-            Settings.QualityFlasks.SetListValues(stashNames);
-            Settings.QualityGems.SetListValues(stashNames);
-
-            // Maps
-            Settings.StrandShaped.SetListValues(stashNames);
-            Settings.ShoreShaped.SetListValues(stashNames);
-            Settings.UniqueMaps.SetListValues(stashNames);
-            Settings.OtherMaps.SetListValues(stashNames);
-            Settings.ShapedMaps.SetListValues(stashNames);
+            
         }
+
+        private void Scrolls(string baseName)
+        {
+            // Make sure that we have the right ammount of portal scrolls in our inventory panel
+            // Where the right amount is the number of scrolls the user wants UiSettings.ScrollsToKeep
+
+            var wantedAmmountOfScrolls = baseName.Equals("Portal Scroll") ? Settings.PortalScrolls.Value : Settings.WisdomScrolls.Value;
+
+            // Next, find all the elements (stacks of items) in the inventory panel that are portal scrolls.
+            var inventoryPanel = GetInventoryPanel();
+
+            var portalScrollStackElements = inventoryPanel.Children.ToList()
+                .Where(element => GameController.Files.BaseItemTypes
+                    .Translate(element.AsObject<NormalInventoryItem>().Item.Path).BaseName.Equals(baseName))
+                .Select(element => element.AsObject<NormalInventoryItem>().Item).Cast<IEntity>().ToList();
+
+            if (portalScrollStackElements.Count == 0)
+            {
+                // No Scrolls.
+                TransferScrollsToInventory(baseName, wantedAmmountOfScrolls);
+            }
+
+            var numberOfScrolls = GetItemInventoryCount(portalScrollStackElements);
+            var numberOfStacks = portalScrollStackElements.Count;
+
+            if (numberOfScrolls == wantedAmmountOfScrolls)
+            {
+                if (numberOfStacks > 1)
+                {
+                    // Combine the stacks.
+                }
+
+                return;
+            }
+
+            if (numberOfScrolls < wantedAmmountOfScrolls)
+            {
+                // We have atleast 1 scroll in our inventory, combine the stacks.
+                if (numberOfStacks > 1)
+                {
+                    // Combine the stacks.
+                }
+
+                TransferScrollsToInventory(baseName, wantedAmmountOfScrolls - numberOfScrolls);
+                return;
+            }
+
+            if (numberOfScrolls > wantedAmmountOfScrolls)
+            {
+                // Combine the stacks.
+            }
+        }*/
+
+        #endregion
     }
 }

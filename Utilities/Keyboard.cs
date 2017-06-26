@@ -7,9 +7,6 @@ namespace Stashie.Utilities
 {
     public class Keyboard
     {
-        [DllImport("user32.dll")]
-        private static extern uint keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
-
         private const int KeyeventfExtendedkey = 0x0001;
         private const int KeyeventfKeyup = 0x0002;
 
@@ -17,6 +14,9 @@ namespace Stashie.Utilities
         private const int KeyToggled = 0x1;
 
         private const int ActionDelay = 100;
+
+        [DllImport("user32.dll")]
+        private static extern uint keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
 
 
         public static void KeyDown(Keys key)

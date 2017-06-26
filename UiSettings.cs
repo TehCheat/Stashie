@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using System.Collections.Generic;
+using System.Windows.Forms;
 using PoeHUD.Hud.Settings;
 using PoeHUD.Plugins;
 
@@ -16,18 +17,18 @@ namespace Stashie
             HotkeySetting = new HotkeyNode(Keys.F3);
 
             // Tab Index (deprecated)
-            Currency = new ListNode {Value = "Ignore"};
-            DivinationCards = new ListNode {Value = "Ignore"};
-            Essences = new ListNode {Value = "Ignore"};
+            Currency = new ListIndexNode {Value = "Ignore", Index = -1};
+            DivinationCards = new ListIndexNode {Value = "Ignore", Index = -1};
+            Essences = new ListIndexNode {Value = "Ignore", Index = -1};
 
-            Jewels = new ListNode {Value = "Ignore"};
-            Gems = new ListNode {Value = "Ignore"};
-            Leaguestones = new ListNode {Value = "Ignore"};
+            Jewels = new ListIndexNode {Value = "Ignore", Index = -1};
+            Gems = new ListIndexNode {Value = "Ignore", Index = -1};
+            Leaguestones = new ListIndexNode {Value = "Ignore", Index = -1};
 
-            Flasks = new ListNode {Value = "Ignore"};
-            Jewelery = new ListNode {Value = "Ignore"};
-            WhiteItems = new ListNode {Value = "Ignore"};
-            Talismen = new ListNode {Value = "Ignore"};
+            Flasks = new ListIndexNode {Value = "Ignore", Index = -1};
+            Jewelery = new ListIndexNode {Value = "Ignore", Index = -1};
+            WhiteItems = new ListIndexNode {Value = "Ignore", Index = -1};
+            Talismen = new ListIndexNode {Value = "Ignore", Index = -1};
 
             // Portal and Wisdom Scrolls
             ReFillScrolls = true;
@@ -36,8 +37,8 @@ namespace Stashie
 
             // Orb of Chance
             ChanceItemTabs = true;
-            LeatherBelt = new ListNode {Value = "Ignore"};
-            SorcererBoots = new ListNode {Value = "Ignore"};
+            LeatherBelt = new ListIndexNode {Value = "Ignore", Index = -1};
+            SorcererBoots = new ListIndexNode {Value = "Ignore", Index = -1};
 
             // Sorting
             SortingSettings = true;
@@ -49,20 +50,20 @@ namespace Stashie
 
             // Vendor Recipes
             VendorRecipeTabs = true;
-            ChaosRecipeLvlOne = new ListNode {Value = "Ignore"};
-            ChaosRecipeLvlTwo = new ListNode {Value = "Ignore"};
-            ChaosRecipeLvlThree = new ListNode {Value = "Ignore"};
-            ChiselRecipe = new ListNode {Value = "Ignore"};
-            QualityFlasks = new ListNode {Value = "Ignore"};
-            QualityGems = new ListNode {Value = "Ignore"};
+            ChaosRecipeLvlOne = new ListIndexNode {Value = "Ignore", Index = -1};
+            ChaosRecipeLvlTwo = new ListIndexNode {Value = "Ignore", Index = -1};
+            ChaosRecipeLvlThree = new ListIndexNode {Value = "Ignore", Index = -1};
+            ChiselRecipe = new ListIndexNode {Value = "Ignore", Index = -1};
+            QualityFlasks = new ListIndexNode {Value = "Ignore", Index = -1};
+            QualityGems = new ListIndexNode {Value = "Ignore", Index = -1};
 
             // Maps
             MapTabsHolder = new ToggleNode(true);
-            StrandShaped = new ListNode {Value = "Ignore"};
-            ShoreShaped = new ListNode {Value = "Ignore"};
-            UniqueMaps = new ListNode {Value = "Ignore"};
-            OtherMaps = new ListNode {Value = "Ignore"};
-            ShapedMaps = new ListNode {Value = "Ignore"};
+            StrandShaped = new ListIndexNode {Value = "Ignore", Index = -1};
+            ShoreShaped = new ListIndexNode {Value = "Ignore", Index = -1};
+            UniqueMaps = new ListIndexNode {Value = "Ignore", Index = -1};
+            OtherMaps = new ListIndexNode {Value = "Ignore", Index = -1};
+            ShapedMaps = new ListIndexNode {Value = "Ignore", Index = -1};
 
             // Latency Slider
             LatencySlider = new RangeNode<int>(0, 0, 1000);
@@ -118,34 +119,34 @@ namespace Stashie
         public EmptyNode TabNum { get; set; }
 
         [Menu("Currency", 300, 3000)]
-        public ListNode Currency { get; set; }
+        public ListIndexNode Currency { get; set; }
 
         [Menu("Divination Cards", 301, 3000)]
-        public ListNode DivinationCards { get; set; }
+        public ListIndexNode DivinationCards { get; set; }
 
         [Menu("Essences", 302, 3000)]
-        public ListNode Essences { get; set; }
+        public ListIndexNode Essences { get; set; }
 
         [Menu("Jewels", 307, 3000)]
-        public ListNode Jewels { get; set; }
+        public ListIndexNode Jewels { get; set; }
 
         [Menu("Gems", 308, 3000)]
-        public ListNode Gems { get; set; }
+        public ListIndexNode Gems { get; set; }
 
         [Menu("Leaguestones", 309, 3000)]
-        public ListNode Leaguestones { get; set; }
+        public ListIndexNode Leaguestones { get; set; }
 
         [Menu("Flask", 311, 3000)]
-        public ListNode Flasks { get; set; }
+        public ListIndexNode Flasks { get; set; }
 
         [Menu("Rings And Amulets", 312, 3000)]
-        public ListNode Jewelery { get; set; }
+        public ListIndexNode Jewelery { get; set; }
 
         [Menu("White Items", 313, 3000)]
-        public ListNode WhiteItems { get; set; }
+        public ListIndexNode WhiteItems { get; set; }
 
         [Menu("Talismen", 314, 3000)]
-        public ListNode Talismen { get; set; }
+        public ListIndexNode Talismen { get; set; }
 
         #endregion
 
@@ -158,10 +159,10 @@ namespace Stashie
         public ToggleNode ChanceItemTabs { get; set; }
 
         [Menu("Leather Belt", 400, 4000)]
-        public ListNode LeatherBelt { get; set; }
+        public ListIndexNode LeatherBelt { get; set; }
 
         [Menu("Sorcerer Boots", 401, 4000)]
-        public ListNode SorcererBoots { get; set; }
+        public ListIndexNode SorcererBoots { get; set; }
 
         #endregion
 
@@ -174,22 +175,22 @@ namespace Stashie
         public ToggleNode VendorRecipeTabs { get; set; }
 
         [Menu("Chaos Recipe 1", 500, 5000)]
-        public ListNode ChaosRecipeLvlOne { get; set; }
+        public ListIndexNode ChaosRecipeLvlOne { get; set; }
 
         [Menu("Chaos Recipe 2", 501, 5000)]
-        public ListNode ChaosRecipeLvlTwo { get; set; }
+        public ListIndexNode ChaosRecipeLvlTwo { get; set; }
 
         [Menu("Chaos Recipe 3", 502, 5000)]
-        public ListNode ChaosRecipeLvlThree { get; set; }
+        public ListIndexNode ChaosRecipeLvlThree { get; set; }
 
         [Menu("Chisel Recipe", 503, 5000)]
-        public ListNode ChiselRecipe { get; set; }
+        public ListIndexNode ChiselRecipe { get; set; }
 
         [Menu("Quality Flasks", 504, 5000)]
-        public ListNode QualityFlasks { get; set; }
+        public ListIndexNode QualityFlasks { get; set; }
 
         [Menu("Quality Gems", 505, 5000)]
-        public ListNode QualityGems { get; set; }
+        public ListIndexNode QualityGems { get; set; }
 
         #endregion
 
@@ -201,19 +202,19 @@ namespace Stashie
         public ToggleNode MapTabsHolder { get; set; }
 
         [Menu("Shaped Strands", 600, 6000)]
-        public ListNode StrandShaped { get; set; }
+        public ListIndexNode StrandShaped { get; set; }
 
         [Menu("Shaped Shores", 601, 6000)]
-        public ListNode ShoreShaped { get; set; }
+        public ListIndexNode ShoreShaped { get; set; }
 
         [Menu("Unique Maps", 602, 6000)]
-        public ListNode UniqueMaps { get; set; }
+        public ListIndexNode UniqueMaps { get; set; }
 
         [Menu("Other Maps", 603, 6000)]
-        public ListNode OtherMaps { get; set; }
+        public ListIndexNode OtherMaps { get; set; }
 
         [Menu("Shaped Maps", 604, 6000)]
-        public ListNode ShapedMaps { get; set; }
+        public ListIndexNode ShapedMaps { get; set; }
 
         #endregion
 
@@ -244,5 +245,7 @@ namespace Stashie
         public RangeNode<int> LatencySlider { get; set; }
 
         #endregion
+
+        public List<string> AllStashNames = new List<string>();
     }
 }
