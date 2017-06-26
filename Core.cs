@@ -269,7 +269,7 @@ namespace Stashie
             //WinApi.BlockInput(false);
         }
 
-        
+
         public bool IsCellIgnored(RectangleF position)
         {
             var inventoryPanel = GetInventoryPanel();
@@ -321,7 +321,6 @@ namespace Stashie
 
             MoveItemsToStash(sortedItems);
         }
-
 
         private Inventory GetStashTab(int index)
         {
@@ -396,6 +395,167 @@ namespace Stashie
                 Thread.Sleep(latency);
             }
             Keyboard.KeyUp(Keys.ControlKey);
+        }
+
+        private void SplitStackAndMoveToFreeCell(Element element, int latency, int wantedStackSize,
+            RectangleF freeCell)
+        {
+            var stackSizeOfItemToMove = wantedStackSize;
+
+            //WinApi.BlockInput(true);
+
+            Keyboard.KeyDown(Keys.ShiftKey);
+            Mouse.SetCursorPosAndLeftClick(element.GetClientRect().Center, _gameWindow);
+            Keyboard.KeyUp(Keys.ShiftKey);
+
+
+            #region Enter split size.
+
+            if (stackSizeOfItemToMove < 10)
+            {
+                var keyToPress = (int) Keys.D0 + stackSizeOfItemToMove;
+                Keyboard.KeyPress((Keys) keyToPress);
+            }
+            else
+            {
+                var keyToPress = (int) Keys.D0 + stackSizeOfItemToMove / 10;
+                Keyboard.KeyPress((Keys) keyToPress);
+                Thread.Sleep(latency);
+                keyToPress = (int) Keys.D0 + stackSizeOfItemToMove % 10;
+                Keyboard.KeyPress((Keys) keyToPress);
+            }
+
+            #endregion
+
+            Thread.Sleep(latency);
+            Keyboard.KeyPress(Keys.Enter);
+            Thread.Sleep(latency);
+
+            Mouse.SetCursorPosAndLeftClick(freeCell.Center, _gameWindow);
+        }
+
+
+        private string GetStashNameFromIndex(int index)
+        {
+            try
+            {
+                var stashNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
+                return stashNames[index];
+            }
+            catch
+            {
+                return "Ignore";
+            }
+        }
+
+        private int GetInventIndexByStashName(string name)
+        {
+            var index = _renamedAllStashNames.IndexOf(name);
+            if (index != -1)
+            {
+                index--;
+            }
+            return index;
+        }
+
+        private void UpdateStashNames(List<string> newNames)
+        {
+            Settings.AllStashNames = newNames;
+            _renamedAllStashNames = new List<string> {"Ignore"};
+
+            for (var i = 0; i < Settings.AllStashNames.Count; i++)
+            {
+                var realStashName = Settings.AllStashNames[i];
+
+                if (_renamedAllStashNames.Contains(realStashName))
+                {
+                    realStashName += " (" + i + ")";
+                    LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
+                }
+
+                _renamedAllStashNames.Add(realStashName);
+            }
+
+            Settings.AllStashNames.Insert(0, "Ignore");
+
+            foreach (var listIndexNode in _settingsListNodes)
+            {
+                listIndexNode.SetListValues(_renamedAllStashNames);
+
+                var inventoryIndex = GetInventIndexByStashName(listIndexNode.Value);
+
+                if (inventoryIndex == -1) //If the value doesn't exist in list (renamed)
+                {
+                    if (listIndexNode.Index != -1) //If the value doesn't exist in list and the value was not Ignore
+                    {
+                        LogMessage(
+                            "Tab renamed? : " + listIndexNode.Value + " to " +
+                            _renamedAllStashNames[listIndexNode.Index + 1],
+                            5);
+
+                        listIndexNode.Value =
+                            _renamedAllStashNames[listIndexNode.Index + 1]; //    Just update it's name
+                    }
+                    else
+                    {
+                        listIndexNode.Value =
+                            _renamedAllStashNames[0]; //Actually it was "Ignore", we just update it (can be removed)
+                    }
+                }
+                else //tab just change it's index
+                {
+                    if (listIndexNode.Index != inventoryIndex)
+                    {
+                        LogMessage("Tab moved: " + listIndexNode.Index + " to " + inventoryIndex, 5);
+                    }
+
+                    listIndexNode.Index = inventoryIndex;
+                    listIndexNode.Value = _renamedAllStashNames[inventoryIndex + 1];
+                }
+            }
+        }
+
+        public void StashTabNamesUpdater()
+        {
+            while (!_tabNamesUpdaterThread.IsBackground)
+            {
+                var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
+                if (stashPanel == null)
+                {
+                    continue;
+                }
+
+                if (!stashPanel.IsVisible)
+                {
+                    Thread.Sleep(1000);
+                    continue;
+                }
+
+                var cachedNames = Settings.AllStashNames;
+                var realNames = stashPanel.AllStashNames;
+
+                if (realNames.Count + 1 != cachedNames.Count)
+                {
+                    UpdateStashNames(realNames);
+                    continue;
+                }
+
+                for (var index = 0; index < realNames.Count; ++index)
+                {
+                    var cachedName = cachedNames[index + 1];
+                    if (cachedName.Equals(realNames[index]))
+                    {
+                        continue;
+                    }
+
+                    UpdateStashNames(realNames);
+                    break;
+                }
+
+                Thread.Sleep(500);
+            }
+
+            _tabNamesUpdaterThread.Interrupt();
         }
 
         #region Functions for switching between tabs / 'going' to a tab.
@@ -518,12 +678,11 @@ namespace Stashie
         #endregion
 
 
-
         #region Functions related to moving stash tab items to inventory and then putting them back in stash tab in sorted order.
 
         public RectangleF FindEmptyOneCell(Element element)
         {
-            var latency = (int)GameController.Game.IngameState.CurLatency;
+            var latency = (int) GameController.Game.IngameState.CurLatency;
             Thread.Sleep(latency + 50);
             var inventoryPanel = GetInventoryPanel();
             var inventoryRec = inventoryPanel.GetClientRect();
@@ -534,8 +693,8 @@ namespace Stashie
             var widthCell = inventoryRec.Width / 12 - borderSize;
             var heightCell = inventoryRec.Height / 5 - borderSize;
 
-            var elementCellWidth = (int)(element.GetClientRect().Width / widthCell);
-            var elementCellHeight = (int)(element.GetClientRect().Height / heightCell);
+            var elementCellWidth = (int) (element.GetClientRect().Width / widthCell);
+            var elementCellHeight = (int) (element.GetClientRect().Height / heightCell);
 
             for (var widthDirection = 0; widthDirection < 12; widthDirection++)
             {
@@ -671,8 +830,6 @@ namespace Stashie
         }
 
         #endregion
-
-        
 
 
         #region Assigning an index to an item (which tab should the item be placed in?)
@@ -1011,167 +1168,6 @@ namespace Stashie
         }
 
         #endregion
-
-        private void SplitStackAndMoveToFreeCell(Element element, int latency, int wantedStackSize,
-            RectangleF freeCell)
-        {
-            var stackSizeOfItemToMove = wantedStackSize;
-
-            //WinApi.BlockInput(true);
-
-            Keyboard.KeyDown(Keys.ShiftKey);
-            Mouse.SetCursorPosAndLeftClick(element.GetClientRect().Center, _gameWindow);
-            Keyboard.KeyUp(Keys.ShiftKey);
-
-
-            #region Enter split size.
-
-            if (stackSizeOfItemToMove < 10)
-            {
-                var keyToPress = (int) Keys.D0 + stackSizeOfItemToMove;
-                Keyboard.KeyPress((Keys) keyToPress);
-            }
-            else
-            {
-                var keyToPress = (int) Keys.D0 + stackSizeOfItemToMove / 10;
-                Keyboard.KeyPress((Keys) keyToPress);
-                Thread.Sleep(latency);
-                keyToPress = (int) Keys.D0 + stackSizeOfItemToMove % 10;
-                Keyboard.KeyPress((Keys) keyToPress);
-            }
-
-            #endregion
-
-            Thread.Sleep(latency);
-            Keyboard.KeyPress(Keys.Enter);
-            Thread.Sleep(latency);
-
-            Mouse.SetCursorPosAndLeftClick(freeCell.Center, _gameWindow);
-        }
-
-
-        private string GetStashNameFromIndex(int index)
-        {
-            try
-            {
-                var stashNames = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
-                return stashNames[index];
-            }
-            catch
-            {
-                return "Ignore";
-            }
-        }
-
-        private int GetInventIndexByStashName(string name)
-        {
-            var index = _renamedAllStashNames.IndexOf(name);
-            if (index != -1)
-            {
-                index--;
-            }
-            return index;
-        }
-
-        private void UpdateStashNames(List<string> newNames)
-        {
-            Settings.AllStashNames = newNames;
-            _renamedAllStashNames = new List<string> {"Ignore"};
-
-            for (var i = 0; i < Settings.AllStashNames.Count; i++)
-            {
-                var realStashName = Settings.AllStashNames[i];
-
-                if (_renamedAllStashNames.Contains(realStashName))
-                {
-                    realStashName += " (" + i + ")";
-                    LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
-                }
-
-                _renamedAllStashNames.Add(realStashName);
-            }
-
-            Settings.AllStashNames.Insert(0, "Ignore");
-
-            foreach (var listIndexNode in _settingsListNodes)
-            {
-                listIndexNode.SetListValues(_renamedAllStashNames);
-
-                var inventoryIndex = GetInventIndexByStashName(listIndexNode.Value);
-
-                if (inventoryIndex == -1) //If the value doesn't exist in list (renamed)
-                {
-                    if (listIndexNode.Index != -1) //If the value doesn't exist in list and the value was not Ignore
-                    {
-                        LogMessage(
-                            "Tab renamed? : " + listIndexNode.Value + " to " + _renamedAllStashNames[listIndexNode.Index + 1],
-                            5);
-
-                        listIndexNode.Value = _renamedAllStashNames[listIndexNode.Index + 1]; //    Just update it's name
-                    }
-                    else
-                    {
-                        listIndexNode.Value =
-                            _renamedAllStashNames[0]; //Actually it was "Ignore", we just update it (can be removed)
-                    }
-                }
-                else //tab just change it's index
-                {
-                    if (listIndexNode.Index != inventoryIndex)
-                    {
-                        LogMessage("Tab moved: " + listIndexNode.Index + " to " + inventoryIndex, 5);
-                    }
-
-                    listIndexNode.Index = inventoryIndex;
-                    listIndexNode.Value = _renamedAllStashNames[inventoryIndex + 1];
-                }
-            }
-        }
-
-        public void StashTabNamesUpdater()
-        {
-            while (!_tabNamesUpdaterThread.IsBackground)
-            {
-                var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
-                if (stashPanel == null)
-                {
-                    continue;
-                }
-
-                if (!stashPanel.IsVisible)
-                {
-                    Thread.Sleep(1000);
-                    continue;
-                }
-
-                var cachedNames = Settings.AllStashNames;
-                var realNames = stashPanel.AllStashNames;
-
-                if (realNames.Count + 1 != cachedNames.Count)
-                {
-                    UpdateStashNames(realNames);
-                    continue;
-                }
-
-                for (var index = 0; index < realNames.Count; ++index)
-                {
-                    var cachedName = cachedNames[index + 1];
-                    if (cachedName.Equals(realNames[index]))
-                    {
-                        continue;
-                    }
-
-                    UpdateStashNames(realNames);
-                    break;
-                }
-
-                Thread.Sleep(500);
-            }
-
-            _tabNamesUpdaterThread.Interrupt();
-        }
-        
-
 
 
         #region Advanced Portal and Wisdom Scroll 'Manager', for the time being this is not worth the implementation time.
