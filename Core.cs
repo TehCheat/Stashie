@@ -32,10 +32,13 @@ namespace Stashie
         private List<ListIndexNode> _settingsListNodes;
         private Thread _tabNamesUpdaterThread;
 
-        public override void Initialise()
+        public Core()
         {
             PluginName = "STASHIE";
+        }
 
+        public override void Initialise()
+        {
             SetupOrClose();
             Settings.Enable.OnValueChanged += SetupOrClose;
         }
@@ -269,7 +272,6 @@ namespace Stashie
             //WinApi.BlockInput(false);
         }
 
-
         public bool IsCellIgnored(RectangleF position)
         {
             var inventoryPanel = GetInventoryPanel();
@@ -433,7 +435,6 @@ namespace Stashie
 
             Mouse.SetCursorPosAndLeftClick(freeCell.Center, _gameWindow);
         }
-
 
         private string GetStashNameFromIndex(int index)
         {
@@ -641,6 +642,12 @@ namespace Stashie
 
                 // Obs, this method only works with 31 stashtabs on 1920x1080, since you have to scroll at 32 tabs, and the frame stays in place.
                 var viewAllTabsButton = stashPanel.ViewAllStashButton;
+                if (stashPanel.IsVisible && !viewAllTabsButton.IsVisible)
+                {
+                    // The user doesn't have a view all tabs button, eg. 4 tabs, this means that we can click on the tab we want to go to.
+                    GoToTabLeftArrow(tabIndex);
+                    return;
+                }
 
                 var openLeftPanel = GameController.Game.IngameState.IngameUi.OpenLeftPanel;
                 var parent = openLeftPanel.Children[2].Children[0].Children[1].Children[3];
@@ -676,7 +683,6 @@ namespace Stashie
         }
 
         #endregion
-
 
         #region Functions related to moving stash tab items to inventory and then putting them back in stash tab in sorted order.
 
@@ -830,7 +836,6 @@ namespace Stashie
         }
 
         #endregion
-
 
         #region Assigning an index to an item (which tab should the item be placed in?)
 
@@ -1168,7 +1173,6 @@ namespace Stashie
         }
 
         #endregion
-
 
         #region Advanced Portal and Wisdom Scroll 'Manager', for the time being this is not worth the implementation time.
 
