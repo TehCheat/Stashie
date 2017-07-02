@@ -57,49 +57,44 @@ namespace Stashie
 
         public override void Initialise()
         {
-            _settingsListNodes = new List<ListIndexNode>();
-
-            LoadCustomRefills();
-            LoadCustomFilters();
-
-            var names = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
-            UpdateStashNames(names);
-
-            foreach (var lOption in _settingsListNodes)
-            {
-                var option = lOption; //Enumerator delegate fix
-                option.OnValueSelected += delegate(string newValue) { OnSettingsStashNameChanged(option, newValue); };
-            }
-
-            LoadIgnoredCells();
             Settings.Enable.OnValueChanged += SetupOrClose;
             SetupOrClose();
         }
 
-        private void SaveDefaultConfigsToDisk()
+        private void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
         {
-            var path = $"{PluginDirectory}\\RefillCurrency.txt";
-            if (!File.Exists(path))
-            {
-                const string refillCurrency =
-                    "//MenuName:\t\t\tClassName,\t\t\tStackSize,\tInventoryX,\tInventoryY\r\n" +
-                    "Portal Scrolls:\t\tPortal Scroll,\t\t40,\t\t\t12,\t\t\t1\r\n" +
-                    "Scrolls of Wisdom:\tScroll of Wisdom,\t40,\t\t\t12,\t\t\t2\r\n" +
-                    "//Chances:\t\t\tOrb of Chance,\t\t20,\t\t\t12,\t\t\t3";
-                using (var streamWriter = new StreamWriter(path, true))
-                {
-                    streamWriter.Write(refillCurrency);
-                    streamWriter.Close();
-                }
-            }
-
-
-            path = $"{PluginDirectory}\\FitersConfig.txt";
-
             if (File.Exists(path))
             {
                 return;
             }
+
+            using (var streamWriter = new StreamWriter(path, true))
+            {
+                streamWriter.Write(content);
+                streamWriter.Close();
+            }
+        }
+
+        private void SaveDefaultConfigsToDisk()
+        {
+            var path = $"{PluginDirectory}\\GitUpdateConfig.txt";
+            const string gitUpdateConfig = "Owner:nymann\r\n" +
+                                           "Name:Stashie\r\n" +
+                                           "Release\r\n";
+            CreateFileAndAppendTextIfItDoesNotExitst(path, gitUpdateConfig);
+
+            path = $"{PluginDirectory}\\RefillCurrency.txt";
+
+            const string refillCurrency =
+                "//MenuName:\t\t\tClassName,\t\t\tStackSize,\tInventoryX,\tInventoryY\r\n" +
+                "Portal Scrolls:\t\tPortal Scroll,\t\t40,\t\t\t12,\t\t\t1\r\n" +
+                "Scrolls of Wisdom:\tScroll of Wisdom,\t40,\t\t\t12,\t\t\t2\r\n" +
+                "//Chances:\t\t\tOrb of Chance,\t\t20,\t\t\t12,\t\t\t3";
+
+            CreateFileAndAppendTextIfItDoesNotExitst(path, refillCurrency);
+
+
+            path = $"{PluginDirectory}\\FitersConfig.txt";
 
             const string filtersConfig =
                 "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionaly, will be created automatially for grouping)\r\n" +
@@ -128,25 +123,12 @@ namespace Stashie
                 "//<\t\t(less)\r\n//<=\t(less or qual)\r\n//>=\t(bigger or qual)\r\n/////////\tBoolean operations:\r\n//!\t\t(not/invert)\r\n/////////////////////////////////////////////////////////////\r\n\r\n//Default Tabs\r\nDivination Cards:\tClassName=DivinationCard\t\t\t\t\t:Default Tabs\r\nGems:\t\t\t\tClassName^Skill Gem,ItemQuality=0\t\t\t:Default Tabs\r\nCurrency:\t\t\tClassName=StackableCurrency,path!^Essence\t:Default Tabs\r\nLeaguestones:\t\tClassName=Leaguestone\t\t\t\t\t\t:Default Tabs\r\nEssences:\t\t\tBaseName^Essence,ClassName=StackableCurrency:Default Tabs\r\nJewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t:Default Tabs\r\nFlasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t:Default Tabs\r\nTalisman:\t\t\tClassName=Amulet,BaseName^Talisman\t\t\t:Default Tabs\r\nJewelery:\t\t\tClassName=Amulet|ClassName=Ring\t\t\t\t:Default Tabs\r\n//White Items:\t\tRarity=Normal\t\t\t\t\t\t\t\t:Default Tabs\r\n\r\n//Chance Items\r\nSorcerer Boots:\tBaseName=Sorcerer Boots,Rarity=Normal\t:Chance Items\r\nLeather Belt:\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n\r\n//Vendor Recipes\r\nChisel Recipe:\t\tBaseName=Stone Hammer|BaseName=Rock Breaker,ItemQuality=20\t:Vendor Recipes\r\nQuality Gems:\t\tClassName^Skill Gem,ItemQuality>0\t\t\t\t\t\t\t:Vendor Recipes\r\nQuality Flasks:\t\tClassName^Flask,ItemQuality>0\t\t\t\t\t\t\t\t:Vendor Recipes\r\n\r\n//Maps\r\nShore Shaped:\tClassName=Map,BaseName=Shaped Shore Map\t:Maps\r\nStrand Shaped:\tClassName=Map,BaseName=Shaped Strand Map:Maps\r\nShaped Maps:\tClassName=Map,BaseName^Shaped\t\t\t:Maps\r\nUniq Maps:\t\tClassName=Map,Rarity=Unique\t\t\t\t:Maps\r\nOther Maps:\t\tClassName=Map\t\t\t\t\t\t\t:Maps\r\n\r\n//Chaos Recipe LVL 2 (unindentified and ilvl 60 or above)\r\nWeapons:\t\t!identified,Rarity=Rare,ilvl>=60,ClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield :Chaos Recipe\r\nJewelry:\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Ring|ClassName=Amulet \t:Chaos Recipe\r\nBelts:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Belt \t\t\t\t\t:Chaos Recipe\r\nHelms:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Helmet \t\t\t\t\t:Chaos Recipe\r\nBody Armours:\t!identified,Rarity=Rare,ilvl>=60,ClassName=Body Armour \t\t\t\t:Chaos Recipe\r\nBoots:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Boots \t\t\t\t\t:Chaos Recipe\r\n" +
                 "Gloves:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Gloves \t\t\t\t\t:Chaos Recipe";
 
-            using (var streamWriter = new StreamWriter(path, true))
-            {
-                streamWriter.Write(filtersConfig);
-                streamWriter.Close();
-            }
+            CreateFileAndAppendTextIfItDoesNotExitst(path, filtersConfig);
         }
 
         private void LoadCustomFilters()
         {
             var filterPath = Path.Combine(PluginDirectory, FITERS_CONFIG_FILE);
-
-            if (!File.Exists(filterPath))
-            {
-                LogMessage("Can't find " + FITERS_CONFIG_FILE + " file.\n" +
-                           "We are creating it for you, hold on!", 5);
-                SaveDefaultConfigsToDisk();
-                Thread.Sleep(500);
-                LogMessage("Configs created.", 5);
-            }
 
             var filtersLines = File.ReadAllLines(filterPath);
 
@@ -874,6 +856,24 @@ namespace Stashie
                 CloseThreads();
                 return;
             }
+
+            SaveDefaultConfigsToDisk();
+
+            _settingsListNodes = new List<ListIndexNode>();
+
+            LoadCustomRefills();
+            LoadCustomFilters();
+
+            var names = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
+            UpdateStashNames(names);
+
+            foreach (var lOption in _settingsListNodes)
+            {
+                var option = lOption; //Enumerator delegate fix
+                option.OnValueSelected += delegate(string newValue) { OnSettingsStashNameChanged(option, newValue); };
+            }
+
+            LoadIgnoredCells();
 
             _tabNamesUpdaterThread = new Thread(StashTabNamesUpdater_Thread);
             _tabNamesUpdaterThread.Start();
