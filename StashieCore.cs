@@ -505,7 +505,7 @@ namespace Stashie
                 }
             }
 
-            var inventoryRec = inventory.InventoryRootElement.GetClientRect();
+            var inventoryRec = inventory.InventoryUiElement.GetClientRect();
             var cellSize = inventoryRec.Width / 12;
 
 
@@ -652,7 +652,7 @@ namespace Stashie
 
         private Vector2 GetInventoryClickPosByCellIndex(Inventory inventory, int indexX, int indexY, float cellSize)
         {
-            return inventory.InventoryRootElement.GetClientRect().TopLeft +
+            return inventory.InventoryUiElement.GetClientRect().TopLeft +
                    new Vector2(cellSize * (indexX + 0.5f), cellSize * (indexY + 0.5f));
         }
 
@@ -707,19 +707,22 @@ namespace Stashie
             var latency = (int) GameController.Game.IngameState.CurLatency;
             // We don't want to Switch to a tab that we are already on
             var openLeftPanel = GameController.Game.IngameState.IngameUi.OpenLeftPanel;
-            var stashTabToGoTo = openLeftPanel
-                .Children[2]
-                .Children[0]
-                .Children[1]
-                .Children[1]
-                .Children[tabIndex]
-                .Children[0];
-
-            if (stashTabToGoTo.IsVisible)
+            try
             {
-                return true;
-            }
+                var stashTabToGoTo =
+                    GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(tabIndex)
+                        .InventoryUiElement;
 
+                if (stashTabToGoTo.IsVisible)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                LogError($"Error: tabIndex is = {tabIndex}", 3);
+                // Someone 
+            }
 
             // We want to maximum wait 4 times the Current Latency before giving up in our while loops.
             var maxNumberOfTries = latency * 4 / WHILE_DELAY;
