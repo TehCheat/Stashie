@@ -720,8 +720,7 @@ namespace Stashie
             }
             catch
             {
-                LogError($"Error: tabIndex is = {tabIndex}", 3);
-                // Someone 
+                // Nothing to see here officer.
             }
 
             // We want to maximum wait 4 times the Current Latency before giving up in our while loops.
