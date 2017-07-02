@@ -86,7 +86,11 @@ namespace Stashie
                     "Portal Scrolls:\t\tPortal Scroll,\t\t40,\t\t\t12,\t\t\t1\r\n" +
                     "Scrolls of Wisdom:\tScroll of Wisdom,\t40,\t\t\t12,\t\t\t2\r\n" +
                     "//Chances:\t\t\tOrb of Chance,\t\t20,\t\t\t12,\t\t\t3";
-                File.AppendAllText(path, refillCurrency);
+                using (var streamWriter = new StreamWriter(path, true))
+                {
+                    streamWriter.Write(refillCurrency);
+                    streamWriter.Close();
+                }
             }
 
 
@@ -124,8 +128,11 @@ namespace Stashie
                 "//<\t\t(less)\r\n//<=\t(less or qual)\r\n//>=\t(bigger or qual)\r\n/////////\tBoolean operations:\r\n//!\t\t(not/invert)\r\n/////////////////////////////////////////////////////////////\r\n\r\n//Default Tabs\r\nDivination Cards:\tClassName=DivinationCard\t\t\t\t\t:Default Tabs\r\nGems:\t\t\t\tClassName^Skill Gem,ItemQuality=0\t\t\t:Default Tabs\r\nCurrency:\t\t\tClassName=StackableCurrency,path!^Essence\t:Default Tabs\r\nLeaguestones:\t\tClassName=Leaguestone\t\t\t\t\t\t:Default Tabs\r\nEssences:\t\t\tBaseName^Essence,ClassName=StackableCurrency:Default Tabs\r\nJewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t:Default Tabs\r\nFlasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t:Default Tabs\r\nTalisman:\t\t\tClassName=Amulet,BaseName^Talisman\t\t\t:Default Tabs\r\nJewelery:\t\t\tClassName=Amulet|ClassName=Ring\t\t\t\t:Default Tabs\r\n//White Items:\t\tRarity=Normal\t\t\t\t\t\t\t\t:Default Tabs\r\n\r\n//Chance Items\r\nSorcerer Boots:\tBaseName=Sorcerer Boots,Rarity=Normal\t:Chance Items\r\nLeather Belt:\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n\r\n//Vendor Recipes\r\nChisel Recipe:\t\tBaseName=Stone Hammer|BaseName=Rock Breaker,ItemQuality=20\t:Vendor Recipes\r\nQuality Gems:\t\tClassName^Skill Gem,ItemQuality>0\t\t\t\t\t\t\t:Vendor Recipes\r\nQuality Flasks:\t\tClassName^Flask,ItemQuality>0\t\t\t\t\t\t\t\t:Vendor Recipes\r\n\r\n//Maps\r\nShore Shaped:\tClassName=Map,BaseName=Shaped Shore Map\t:Maps\r\nStrand Shaped:\tClassName=Map,BaseName=Shaped Strand Map:Maps\r\nShaped Maps:\tClassName=Map,BaseName^Shaped\t\t\t:Maps\r\nUniq Maps:\t\tClassName=Map,Rarity=Unique\t\t\t\t:Maps\r\nOther Maps:\t\tClassName=Map\t\t\t\t\t\t\t:Maps\r\n\r\n//Chaos Recipe LVL 2 (unindentified and ilvl 60 or above)\r\nWeapons:\t\t!identified,Rarity=Rare,ilvl>=60,ClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield :Chaos Recipe\r\nJewelry:\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Ring|ClassName=Amulet \t:Chaos Recipe\r\nBelts:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Belt \t\t\t\t\t:Chaos Recipe\r\nHelms:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Helmet \t\t\t\t\t:Chaos Recipe\r\nBody Armours:\t!identified,Rarity=Rare,ilvl>=60,ClassName=Body Armour \t\t\t\t:Chaos Recipe\r\nBoots:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Boots \t\t\t\t\t:Chaos Recipe\r\n" +
                 "Gloves:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Gloves \t\t\t\t\t:Chaos Recipe";
 
-
-            File.AppendAllText(path, filtersConfig);
+            using (var streamWriter = new StreamWriter(path, true))
+            {
+                streamWriter.Write(filtersConfig);
+                streamWriter.Close();
+            }
         }
 
         private void LoadCustomFilters()
@@ -134,12 +141,11 @@ namespace Stashie
 
             if (!File.Exists(filterPath))
             {
-                
                 LogMessage("Can't find " + FITERS_CONFIG_FILE + " file.\n" +
                            "We are creating it for you, hold on!", 5);
                 SaveDefaultConfigsToDisk();
                 Thread.Sleep(500);
-                LogMessage("Configs created, restart PoeHud.", 5);
+                LogMessage("Configs created.", 5);
             }
 
             var filtersLines = File.ReadAllLines(filterPath);
@@ -482,7 +488,7 @@ namespace Stashie
                     if (bit.BaseName != refill.CurrencyClass)
                     {
                         continue;
-                    } 
+                    }
 
                     var stack = item.GetComponent<Stack>();
                     refill.OwnedCount = stack.Size;
@@ -655,8 +661,8 @@ namespace Stashie
             var delay = (int) GameController.Game.IngameState.CurLatency + Settings.ExtraDelay;
 
             Keyboard.KeyDown(Keys.ShiftKey);
-            
-            while(!Keyboard.IsKeyDown((int) Keys.ShiftKey))
+
+            while (!Keyboard.IsKeyDown((int) Keys.ShiftKey))
             {
                 Thread.Sleep(5);
             }
@@ -698,7 +704,7 @@ namespace Stashie
 
         public bool SwitchToTab(int tabIndex)
         {
-            var latency = (int)GameController.Game.IngameState.CurLatency;
+            var latency = (int) GameController.Game.IngameState.CurLatency;
             // We don't want to Switch to a tab that we are already on
             var openLeftPanel = GameController.Game.IngameState.IngameUi.OpenLeftPanel;
             var stashTabToGoTo = openLeftPanel
@@ -714,8 +720,6 @@ namespace Stashie
                 return true;
             }
 
-            
-            
 
             // We want to maximum wait 4 times the Current Latency before giving up in our while loops.
             var maxNumberOfTries = latency * 4 / WHILE_DELAY;
@@ -819,7 +823,7 @@ namespace Stashie
                 Keyboard.KeyPress(negative ? Keys.Left : Keys.Right);
                 Thread.Sleep(latency);
             }
-            
+
             return true;
         }
 
