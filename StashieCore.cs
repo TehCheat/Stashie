@@ -76,13 +76,13 @@ namespace Stashie
 
         private void SaveDefaultConfigsToDisk()
         {
-            var path = string.Format("{0}\\GitUpdateConfig.txt", PluginDirectory);
+            var path = $"{PluginDirectory}\\GitUpdateConfig.txt";
             const string gitUpdateConfig = "Owner:nymann\r\n" +
                                            "Name:Stashie\r\n" +
                                            "Release\r\n";
             CreateFileAndAppendTextIfItDoesNotExitst(path, gitUpdateConfig);
 
-            path = string.Format("{0}\\RefillCurrency.txt", PluginDirectory);
+            path = $"{PluginDirectory}\\RefillCurrency.txt";
 
             const string refillCurrency =
                 "//MenuName:\t\t\tClassName,\t\t\tStackSize,\tInventoryX,\tInventoryY\r\n" +
@@ -93,7 +93,7 @@ namespace Stashie
             CreateFileAndAppendTextIfItDoesNotExitst(path, refillCurrency);
 
 
-            path = string.Format("{0}\\FitersConfig.txt", PluginDirectory);
+            path = $"{PluginDirectory}\\FitersConfig.txt";
 
             const string filtersConfig =
                 "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionaly, will be created automatially for grouping)\r\n" +
@@ -470,7 +470,7 @@ namespace Stashie
                             }
                             else
                             {
-                                LogMessage(string.Format("Out of range: {0} {1}", x, y), 10);
+                                LogMessage($"Out of range: {x} {y}", 10);
                             }
                         }
                     }
@@ -498,8 +498,7 @@ namespace Stashie
                     if (refill.OwnedCount < 0 || refill.OwnedCount > 40)
                     {
                         LogError(
-                            string.Format("Ignoring refill: {0}: Stacksize {1} not in range 0-40 ",
-                                refill.CurrencyClass, refill.OwnedCount),
+                            $"Ignoring refill: {refill.CurrencyClass}: Stacksize {refill.OwnedCount} not in range 0-40 ",
                             5);
                         refill.OwnedCount = -1;
                     }
@@ -588,8 +587,7 @@ namespace Stashie
                             {
                                 moveCount--;
                                 LogMessage(
-                                    string.Format("Inventoy ({0}, {1}) is occupied by the wrong item!",
-                                        refill.InventPos.X, refill.InventPos.Y),
+                                    $"Inventoy ({refill.InventPos.X}, {refill.InventPos.Y}) is occupied by the wrong item!",
                                     5);
                                 continue;
                             }
@@ -607,8 +605,7 @@ namespace Stashie
                     if (moveCount > 0)
                     {
                         LogMessage(
-                            string.Format("Not enough currency (need {0} more) to fill {1} stack", moveCount,
-                                refill.CurrencyClass), 5);
+                            $"Not enough currency (need {moveCount} more) to fill {refill.CurrencyClass} stack", 5);
                     }
                 }
 
@@ -771,7 +768,7 @@ namespace Stashie
                         {
                             continue;
                         }
-                        LogMessage(string.Format("1. Error in SwitchToTab: {0}.", tabIndex), 5);
+                        LogMessage($"1. Error in SwitchToTab: {tabIndex}.", 5);
                         return false;
                     }
 
@@ -790,7 +787,7 @@ namespace Stashie
             }
             catch (Exception e)
             {
-                LogError(string.Format("Error in GoToTab {0}: {1}", tabIndex, e.Message), 5);
+                LogError($"Error in GoToTab {tabIndex}: {e.Message}", 5);
                 return false;
             }
 

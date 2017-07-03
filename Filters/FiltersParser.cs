@@ -171,7 +171,11 @@ namespace Stashie.Filters
                 return true;
             }
 
-            if (!ParseCommand(command, out var parameter, out var operation, out var value))
+            string parameter;
+            string operation;
+            string value;
+
+            if (!ParseCommand(command, out parameter, out operation, out value))
             {
                 BasePlugin.LogMessage("Filter parser: Can't parse filter part: " + command, 5);
                 return false;
@@ -203,7 +207,8 @@ namespace Stashie.Filters
                     stringComp.StringParameter = data => data.ItemLevel.ToString();
                     break;
                 default:
-                    BasePlugin.LogMessage($"Filter parser: Parameter is not defined in code: {parameter}", 10);
+                    BasePlugin.LogMessage(
+                        $"Filter parser: Parameter is not defined in code: {parameter}", 10);
                     return false;
             }
 
@@ -266,7 +271,8 @@ namespace Stashie.Filters
                     break;
 
                 default:
-                    BasePlugin.LogMessage($"Filter parser: Operation is not defined in code: {operation}", 10);
+                    BasePlugin.LogMessage(
+                        $"Filter parser: Operation is not defined in code: {operation}", 10);
                     return false;
             }
 

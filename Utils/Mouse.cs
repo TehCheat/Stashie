@@ -85,7 +85,8 @@ namespace Stashie.Utils
 
         public static Point GetCursorPosition()
         {
-            GetCursorPos(out var lpPoint);
+            POINT lpPoint;
+            GetCursorPos(out lpPoint);
             return lpPoint;
         }
 

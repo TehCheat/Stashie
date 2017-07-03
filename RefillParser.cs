@@ -1,9 +1,11 @@
 ﻿#region Header
+
 //-----------------------------------------------------------------
 //   Class:          RefillParser
 //   Description:    Parsing custom refill processors from config
 //   Author:         Stridemann        Date: 08.26.2017
 //-----------------------------------------------------------------
+
 #endregion
 
 using System;
@@ -43,7 +45,7 @@ namespace Stashie
                 {
                     continue;
                 }
-                if(configLine.StartsWith(SYMBOL_IGNORE) || configLine.StartsWith(SYMBOL_IGNORE2))
+                if (configLine.StartsWith(SYMBOL_IGNORE) || configLine.StartsWith(SYMBOL_IGNORE2))
                 {
                     continue;
                 }
@@ -54,7 +56,8 @@ namespace Stashie
 
                 if (nameIndex == -1)
                 {
-                    BasePlugin.LogMessage($"Refill parser: Can't find refill name in line: {configLine}. Name should have \":\" divider.", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: Can't find refill name in line: {configLine}. Name should have \":\" divider.", 10);
                     continue;
                 }
 
@@ -65,9 +68,10 @@ namespace Stashie
 
                 var configLineParams = configLine.Split(SYMBOL_PARAMETERSDIVIDER);
 
-                if(configLineParams.Length != 4)
+                if (configLineParams.Length != 4)
                 {
-                    BasePlugin.LogMessage($"Refill parser: Config line should have 4 parameters (ClassName,StackSize,InventoryX,InventoryY): {configLine}, Ignoring refill..", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: Config line should have 4 parameters (ClassName,StackSize,InventoryX,InventoryY): {configLine}, Ignoring refill..", 10);
                     continue;
                 }
 
@@ -76,29 +80,39 @@ namespace Stashie
 
                 if (!int.TryParse(configLineParams[1], out newRefill.StackSize))
                 {
-                    BasePlugin.LogMessage($"Refill parser: Can't parse StackSize from 2nd parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: Can't parse StackSize from 2nd parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..",
+                        10);
                     continue;
                 }
 
                 if (!int.TryParse(configLineParams[2], out newRefill.InventPos.X))
                 {
-                    BasePlugin.LogMessage($"Refill parser: Can't parse InventoryX from 3rd parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: Can't parse InventoryX from 3rd parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..",
+                        10);
                     continue;
                 }
                 if (newRefill.InventPos.X < 1 || newRefill.InventPos.X > 12)
                 {
-                    BasePlugin.LogMessage($"Refill parser: InventoryX should be in range 1-12, current value: {newRefill.InventPos.X}  (line num: {i + 1}), Ignoring refill..", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: InventoryX should be in range 1-12, current value: {newRefill.InventPos.X}  (line num: {i + 1}), Ignoring refill..",
+                        10);
                     continue;
                 }
 
                 if (!int.TryParse(configLineParams[3], out newRefill.InventPos.Y))
                 {
-                    BasePlugin.LogMessage($"Refill parser: Can't parse InventoryY from 4th parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: Can't parse InventoryY from 4th parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..",
+                        10);
                     continue;
                 }
                 if (newRefill.InventPos.Y < 1 || newRefill.InventPos.Y > 5)
                 {
-                    BasePlugin.LogMessage($"Refill parser: InventPosY should be in range 1-5, current value: {newRefill.InventPos.Y} (line num: {i + 1}), Ignoring refill..", 10);
+                    BasePlugin.LogMessage(
+                        $"Refill parser: InventPosY should be in range 1-5, current value: {newRefill.InventPos.Y} (line num: {i + 1}), Ignoring refill..",
+                        10);
                     continue;
                 }
 
@@ -116,7 +130,6 @@ namespace Stashie
             name = name.TrimEnd(' ');
             name = name.TrimStart(' ');
         }
-
     }
 
     public class RefillProcessor
@@ -129,6 +142,7 @@ namespace Stashie
 
         //Temp values:
         public int OwnedCount;
+
         public Vector2 ClickPos;
 
         public void Clear()
@@ -141,8 +155,7 @@ namespace Stashie
     public class RefillSettings
     {
         public string RefillName;
-        
+
         public int Amount;
-    
     }
 }
