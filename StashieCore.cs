@@ -411,6 +411,8 @@ namespace Stashie
             if (Settings.BlockInput.Value)
             {
                 WinApi.BlockInput(false);
+                Keyboard.KeyUp(Settings.DropHotkey.Value);
+                Thread.Sleep(INPUT_DELAY);
             }
         }
 
