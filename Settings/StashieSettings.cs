@@ -15,14 +15,15 @@ using PoeHUD.Plugins;
 
 namespace Stashie.Settings
 {
-    public class StashieLogicSettings : SettingsBase
+    public class StashieSettings : SettingsBase
     {
-        public StashieLogicSettings()
+        public StashieSettings()
         {
             Enable = false;
             RequireHotkey = true;
             DropHotkey = Keys.F3;
             ExtraDelay = new RangeNode<int>(0, 0, 2000);
+            BlockInput = new ToggleNode(false);
 
             RefillCurrency = false;
             CurrencyStashTab = new ListIndexNode();
@@ -39,6 +40,9 @@ namespace Stashie.Settings
 
         [Menu("Extra Delay", 2000)]
         public RangeNode<int> ExtraDelay { get; set; }
+
+        [Menu("Block Input", 3000)]
+        public ToggleNode BlockInput { get; set; }
 
         public ToggleNode RefillCurrency { get; set; }
         public ListIndexNode CurrencyStashTab { get; set; }

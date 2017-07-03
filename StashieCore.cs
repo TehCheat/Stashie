@@ -16,7 +16,6 @@ using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json;
-using PoeHUD.Framework;
 using PoeHUD.Hud.Menu;
 using PoeHUD.Hud.Settings;
 using PoeHUD.Models.Enums;
@@ -33,7 +32,7 @@ using MenuItem = PoeHUD.Hud.Menu.MenuItem;
 
 namespace Stashie
 {
-    public class StashieCore : BaseSettingsPlugin<StashieLogicSettings>
+    public class StashieCore : BaseSettingsPlugin<StashieSettings>
     {
         public StashieCore()
         {
@@ -264,7 +263,7 @@ namespace Stashie
                 return;
             }
 
-            if (Settings.RequireHotkey.Value && !WinApi.IsKeyDown(Settings.DropHotkey.Value))
+            if (Settings.RequireHotkey.Value && !Keyboard.IsKeyDown((int) Settings.DropHotkey.Value))
             {
                 _bDropOnce = false;
                 return;
@@ -365,6 +364,12 @@ namespace Stashie
         private void DropToStash()
         {
             var cursorPosPreMoving = Mouse.GetCursorPosition();
+
+            if (Settings.BlockInput.Value)
+            {
+                WinApi.BlockInput(true);
+            }
+
             if (_dropItems.Count > 0)
             {
                 var sortedByStash = (from itemResult in _dropItems
@@ -376,6 +381,7 @@ namespace Stashie
 
                 Keyboard.KeyDown(Keys.LControlKey);
                 Thread.Sleep(INPUT_DELAY);
+                
                 foreach (var stashResults in sortedByStash)
                 {
                     if (!SwitchToTab(stashResults.Key))
@@ -390,11 +396,17 @@ namespace Stashie
                         Thread.Sleep(latency);
                     }
                 }
+                
                 Keyboard.KeyUp(Keys.LControlKey);
             }
 
             ProcessRefills();
             Mouse.SetCursorPos(cursorPosPreMoving.X, cursorPosPreMoving.Y);
+
+            if (Settings.BlockInput.Value)
+            {
+                WinApi.BlockInput(false);
+            }
         }
 
         #region Refill
@@ -640,13 +652,13 @@ namespace Stashie
 
         private void SplitStack(int amount, Vector2 from, Vector2 to)
         {
-            var delay = (int) GameController.Game.IngameState.CurLatency + Settings.ExtraDelay;
+            var delay = (int) GameController.Game.IngameState.CurLatency * 2 + Settings.ExtraDelay;
 
             Keyboard.KeyDown(Keys.ShiftKey);
 
             while (!Keyboard.IsKeyDown((int) Keys.ShiftKey))
             {
-                Thread.Sleep(5);
+                Thread.Sleep(WHILE_DELAY);
             }
 
             Mouse.SetCursorPosAndLeftClick(from + _clickWindowOffset, Settings.ExtraDelay.Value);
@@ -705,14 +717,11 @@ namespace Stashie
                 // Nothing to see here officer.
             }
 
-            // We want to maximum wait 4 times the Current Latency before giving up in our while loops.
-            var maxNumberOfTries = latency * 4 / WHILE_DELAY;
+            // We want to maximum wait 10 times the Current Latency before giving up in our while loops.
+            var maxNumberOfTries = latency * 10 / WHILE_DELAY;
 
             if (tabIndex > 30)
             {
-                LogError(
-                    $"WARNING (can be ignored): {tabIndex}. tab requested, using old method since it's greater than 30 which requires scrolling!\n\tHint, it's suggested to use tabs under stashTabIndex 30.",
-                    5);
                 return SwitchToTabViaArrowKeys(tabIndex);
             }
 
@@ -720,7 +729,6 @@ namespace Stashie
             try
             {
                 // Obs, this method only works with 31 stashtabs on 1920x1080, since you have to scroll at 32 tabs, and the frame stays in place.
-
                 var viewAllTabsButton = GameController.Game.IngameState.ServerData.StashPanel.ViewAllStashButton;
 
                 if (stashPanel.IsVisible && !viewAllTabsButton.IsVisible)
@@ -753,7 +761,7 @@ namespace Stashie
                         {
                             continue;
                         }
-                        LogMessage("1. Error opening stash: " + tabIndex, 5);
+                        LogMessage($"1. Error in SwitchToTab: {tabIndex}.", 5);
                         return false;
                     }
 

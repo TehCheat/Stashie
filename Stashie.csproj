@@ -80,9 +80,10 @@
     <Compile Include="Settings\ListIndexNode.cs" />
     <Compile Include="StashieCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Settings\StashieLogicSettings.cs" />
+    <Compile Include="Settings\StashieSettings.cs" />
     <Compile Include="Utils\Mouse.cs" />
     <Compile Include="Utils\Keyboard.cs" />
+    <Compile Include="Utils\WinApi.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
