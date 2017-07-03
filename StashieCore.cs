@@ -76,13 +76,13 @@ namespace Stashie
 
         private void SaveDefaultConfigsToDisk()
         {
-            var path = $"{PluginDirectory}\\GitUpdateConfig.txt";
+            var path = string.Format("{0}\\GitUpdateConfig.txt", PluginDirectory);
             const string gitUpdateConfig = "Owner:nymann\r\n" +
                                            "Name:Stashie\r\n" +
                                            "Release\r\n";
             CreateFileAndAppendTextIfItDoesNotExitst(path, gitUpdateConfig);
 
-            path = $"{PluginDirectory}\\RefillCurrency.txt";
+            path = string.Format("{0}\\RefillCurrency.txt", PluginDirectory);
 
             const string refillCurrency =
                 "//MenuName:\t\t\tClassName,\t\t\tStackSize,\tInventoryX,\tInventoryY\r\n" +
@@ -93,7 +93,7 @@ namespace Stashie
             CreateFileAndAppendTextIfItDoesNotExitst(path, refillCurrency);
 
 
-            path = $"{PluginDirectory}\\FitersConfig.txt";
+            path = string.Format("{0}\\FitersConfig.txt", PluginDirectory);
 
             const string filtersConfig =
                 "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionaly, will be created automatially for grouping)\r\n" +
@@ -140,7 +140,10 @@ namespace Stashie
 
             foreach (var customFilter in _customFilters)
             {
-                if (!Settings.CustomFilterOptions.TryGetValue(customFilter.Name, out var indexNode))
+                ListIndexNode indexNode;
+
+
+                if (!Settings.CustomFilterOptions.TryGetValue(customFilter.Name, out indexNode))
                 {
                     indexNode = new ListIndexNode
                     {
@@ -183,7 +186,9 @@ namespace Stashie
 
             foreach (var refill in _customRefills)
             {
-                if (!Settings.CustomRefillOptions.TryGetValue(refill.MenuName, out var amountOption))
+                RangeNode<int> amountOption;
+
+                if (!Settings.CustomRefillOptions.TryGetValue(refill.MenuName, out amountOption))
                 {
                     amountOption = new RangeNode<int>(0, 0, refill.StackSize);
                     Settings.CustomRefillOptions.Add(refill.MenuName, amountOption);
@@ -381,7 +386,7 @@ namespace Stashie
 
                 Keyboard.KeyDown(Keys.LControlKey);
                 Thread.Sleep(INPUT_DELAY);
-                
+
                 foreach (var stashResults in sortedByStash)
                 {
                     if (!SwitchToTab(stashResults.Key))
@@ -396,7 +401,7 @@ namespace Stashie
                         Thread.Sleep(latency);
                     }
                 }
-                
+
                 Keyboard.KeyUp(Keys.LControlKey);
             }
 
@@ -463,7 +468,7 @@ namespace Stashie
                             }
                             else
                             {
-                                LogMessage($"Out of range: {x} {y}", 10);
+                                LogMessage(string.Format("Out of range: {0} {1}", x, y), 10);
                             }
                         }
                     }
@@ -491,7 +496,8 @@ namespace Stashie
                     if (refill.OwnedCount < 0 || refill.OwnedCount > 40)
                     {
                         LogError(
-                            $"Ignoring refill: {refill.CurrencyClass}: Stacksize {refill.OwnedCount} not in range 0-40 ",
+                            string.Format("Ignoring refill: {0}: Stacksize {1} not in range 0-40 ",
+                                refill.CurrencyClass, refill.OwnedCount),
                             5);
                         refill.OwnedCount = -1;
                     }
@@ -580,7 +586,8 @@ namespace Stashie
                             {
                                 moveCount--;
                                 LogMessage(
-                                    $"Inventoy ({refill.InventPos.X}, {refill.InventPos.Y}) is occupied by the wrong item!",
+                                    string.Format("Inventoy ({0}, {1}) is occupied by the wrong item!",
+                                        refill.InventPos.X, refill.InventPos.Y),
                                     5);
                                 continue;
                             }
@@ -597,8 +604,9 @@ namespace Stashie
 
                     if (moveCount > 0)
                     {
-                        LogMessage($"Not enough currency (need {moveCount} more) to fill {refill.CurrencyClass} stack",
-                            5);
+                        LogMessage(
+                            string.Format("Not enough currency (need {0} more) to fill {1} stack", moveCount,
+                                refill.CurrencyClass), 5);
                     }
                 }
 
@@ -761,7 +769,7 @@ namespace Stashie
                         {
                             continue;
                         }
-                        LogMessage($"1. Error in SwitchToTab: {tabIndex}.", 5);
+                        LogMessage(string.Format("1. Error in SwitchToTab: {0}.", tabIndex), 5);
                         return false;
                     }
 
@@ -780,7 +788,7 @@ namespace Stashie
             }
             catch (Exception e)
             {
-                LogError($"Error in GoToTab {tabIndex}: {e.Message}", 5);
+                LogError(string.Format("Error in GoToTab {0}: {1}", tabIndex, e.Message), 5);
                 return false;
             }
 
@@ -799,7 +807,7 @@ namespace Stashie
                 }
                 LogMessage("2. Error opening stash: " + tabIndex, 5);
                 return false;
-            } while (stash?.VisibleInventoryItems == null);
+            } while (stash.VisibleInventoryItems == null);
             return true;
         }
 
