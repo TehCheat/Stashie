@@ -806,7 +806,7 @@ namespace Stashie
                 }
                 LogMessage("2. Error opening stash: " + tabIndex, 5);
                 return false;
-            } while (stash.VisibleInventoryItems == null);
+            } while (stash?.VisibleInventoryItems == null);
             return true;
         }
 
