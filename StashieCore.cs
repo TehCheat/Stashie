@@ -724,8 +724,8 @@ namespace Stashie
                 // Nothing to see here officer.
             }
 
-            // We want to maximum wait 10 times the Current Latency before giving up in our while loops.
-            var maxNumberOfTries = latency * 10 / WHILE_DELAY;
+            // We want to maximum wait 20 times the Current Latency before giving up in our while loops.
+            var maxNumberOfTries = latency * 20 > 2000 ? latency * 20 / WHILE_DELAY : 2000 / WHILE_DELAY;
 
             if (tabIndex > 30)
             {
