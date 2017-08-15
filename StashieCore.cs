@@ -735,7 +735,6 @@ namespace Stashie
             var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
             try
             {
-                // Obs, this method only works with 31 stashtabs on 1920x1080, since you have to scroll at 32 tabs, and the frame stays in place.
                 var viewAllTabsButton = GameController.Game.IngameState.ServerData.StashPanel.ViewAllStashButton;
 
                 if (stashPanel.IsVisible && !viewAllTabsButton.IsVisible)
@@ -744,14 +743,7 @@ namespace Stashie
                     return SwitchToTabViaArrowKeys(tabIndex);
                 }
 
-                var parent = openLeftPanel.Children[2].Children[0].Children[1].Children[3];
-                var dropDownTabElements = parent.Children[2];
-
-                var totalStashes = GameController.Game.IngameState.ServerData.StashPanel.TotalStashes;
-                if (totalStashes > 30)
-                {
-                    dropDownTabElements = parent.Children[1];
-                }
+                var dropDownTabElements = GameController.Game.IngameState.ServerData.StashPanel.ViewAllStashPanel
 
                 if (!dropDownTabElements.IsVisible)
                 {
@@ -772,7 +764,7 @@ namespace Stashie
                         return false;
                     }
 
-                    if (totalStashes > 30)
+                    if (GameController.Game.IngameState.ServerData.StashPanel.TotalStashes > 30)
                     {
                         // TODO:Zafaar implemented something that allows us to get in contact with the ScrollBar.
                         Mouse.VerticalScroll(true, 5);
