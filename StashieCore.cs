@@ -764,7 +764,7 @@ namespace Stashie
                         return false;
                     }
 
-                    if (totalStashes > 30)
+                    if (GameController.Game.IngameState.ServerData.StashPanel.TotalStashes > 30)
                     {
                         // TODO:Zafaar implemented something that allows us to get in contact with the ScrollBar.
                         Mouse.VerticalScroll(true, 5);
