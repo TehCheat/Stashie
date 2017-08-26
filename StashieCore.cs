@@ -743,7 +743,7 @@ namespace Stashie
                     return SwitchToTabViaArrowKeys(tabIndex);
                 }
 
-                var dropDownTabElements = GameController.Game.IngameState.ServerData.StashPanel.ViewAllStashPanel
+                var dropDownTabElements = GameController.Game.IngameState.ServerData.StashPanel.ViewAllStashPanel;
 
                 if (!dropDownTabElements.IsVisible)
                 {
