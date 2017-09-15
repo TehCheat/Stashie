@@ -37,6 +37,7 @@ namespace Stashie.Filters
 
         private const string PARAMETER_RARITY = "rarity";
         private const string PARAMETER_ILVL = "ilvl";
+        private const string PARAMETER_MapTier = "tier";
 
         //Boolean
         private const string PARAMETER_IDENTIFIED = "identified";
@@ -201,6 +202,10 @@ namespace Stashie.Filters
                 case PARAMETER_QUALITY:
                     stringComp.IntParameter = data => data.ItemQuality;
                     stringComp.StringParameter = data => data.ItemQuality.ToString();
+                    break;
+                case PARAMETER_MapTier:
+                    stringComp.IntParameter = data => data.MapTier;
+                    stringComp.StringParameter = data => data.MapTier.ToString();
                     break;
                 case PARAMETER_ILVL:
                     stringComp.IntParameter = data => data.ItemLevel;

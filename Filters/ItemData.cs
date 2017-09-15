@@ -27,6 +27,7 @@ namespace Stashie.Filters
         public int ItemQuality;
         public bool BIdentified;
         public int ItemLevel;
+        public int MapTier;
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
         {
@@ -43,6 +44,11 @@ namespace Stashie.Filters
             ItemQuality = quality.ItemQuality;
             ClassName = baseItemType.ClassName;
             BaseName = baseItemType.BaseName;
+
+            if (item.HasComponent<PoeHUD.Poe.Components.Map>())
+                MapTier = item.GetComponent<PoeHUD.Poe.Components.Map>().Tier;
+            else
+                MapTier = 0;
         }
 
         public Vector2 GetClickPos()
