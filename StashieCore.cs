@@ -36,7 +36,7 @@ namespace Stashie
     {
         public StashieCore()
         {
-            PluginName = "Stashie (BETA)";
+            PluginName = "Stashie";
         }
 
         private const string FITERS_CONFIG_FILE = "FitersConfig.txt";
@@ -60,7 +60,7 @@ namespace Stashie
             SetupOrClose();
         }
 
-        private void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
+        private static void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
         {
             if (File.Exists(path))
             {
@@ -408,6 +408,12 @@ namespace Stashie
             ProcessRefills();
             Mouse.SetCursorPos(cursorPosPreMoving.X, cursorPosPreMoving.Y);
 
+            // TODO:Go back to a specific tab, if user has that setting enabled.
+            if (Settings.VisitTabWhenDone.Value)
+            {
+                SwitchToTab(Settings.TabToVisitWhenDone.Value);
+            }
+
             if (Settings.BlockInput.Value)
             {
                 WinApi.BlockInput(false);
@@ -707,7 +713,6 @@ namespace Stashie
         {
             var latency = (int) GameController.Game.IngameState.CurLatency;
             // We don't want to Switch to a tab that we are already on
-            var openLeftPanel = GameController.Game.IngameState.IngameUi.OpenLeftPanel;
             try
             {
                 var stashTabToGoTo =
@@ -796,9 +801,9 @@ namespace Stashie
                 {
                     continue;
                 }
-                LogMessage("2. Error opening stash: " + tabIndex, 5);
+                LogMessage($"2. Error opening stash: {Settings.AllStashNames[tabIndex + 1]}. Inventory type is: {stash.InvType.ToString()}", 5);
                 return false;
-            } while (stash?.VisibleInventoryItems == null);
+            } while (stash?.VisibleInventoryItems == null && stash?.InvType != InventoryType.DivinationStash);
             return true;
         }
 
@@ -807,11 +812,11 @@ namespace Stashie
             var latency = (int) GameController.Game.IngameState.CurLatency;
             var indexOfCurrentVisibleTab = GetIndexOfCurrentVisibleTab();
             var difference = tabIndex - indexOfCurrentVisibleTab;
-            var negative = difference < 0;
+            var tabIsToTheLeft = difference < 0;
 
             for (var i = 0; i < Math.Abs(difference); i++)
             {
-                Keyboard.KeyPress(negative ? Keys.Left : Keys.Right);
+                Keyboard.KeyPress(tabIsToTheLeft ? Keys.Left : Keys.Right);
                 Thread.Sleep(latency);
             }
 
@@ -870,6 +875,7 @@ namespace Stashie
 
             LoadCustomRefills();
             LoadCustomFilters();
+            Settings.TabToVisitWhenDone.Max = (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
 
             var names = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
             UpdateStashNames(names);
