@@ -95,32 +95,103 @@ namespace Stashie
 
             path = $"{PluginDirectory}\\FitersConfig.txt";
 
+            #region default config
+
             const string filtersConfig =
                 "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionaly, will be created automatially for grouping)\r\n" +
                 "//Filter parts should divided by coma or | (for OR operation(any filter part can pass))\r\n" +
                 "\r\n" +
                 "////////////\tAvailable properties:\t/////////////////////\r\n" +
-                "/////////\tString (name) properties:\r\n" +
-                "//classname\r\n" +
+                "/////////\tString (name) properties:\r\n//classname\r\n" +
                 "//basename\r\n" +
                 "//path\r\n" +
                 "/////////\tNumerical properties:\r\n" +
-                "//itemquality\r\n//rarity\r\n//ilvl\r\n" +
+                "//itemquality\r\n" +
+                "//rarity\r\n" +
+                "//ilvl\r\n" +
                 "/////////\tBoolean properties:\r\n" +
                 "//identified\r\n" +
                 "/////////////////////////////////////////////////////////////\r\n" +
                 "////////////\tAvailable operations:\t/////////////////////\r\n" +
                 "/////////\tString (name) operations:\r\n" +
-                "//!=\t(not equal)\r\n" +
-                "//=\t\t(equal)\r\n" +
-                "//^\t\t(contains)\r\n" +
-                "//!^\t(not contains)\r\n" +
+                "//!=\t(not equal)\r\n//=\t\t(equal)\r\n" +
+                "//^\t\t(contains)\r\n//!^\t(not contains)\r\n" +
                 "/////////\tNumerical operations:\r\n" +
-                "//!=\t(not equal)\r\n" +
-                "//=\t\t(equal)\r\n" +
-                "//>\t\t(bigger)\r\n" +
-                "//<\t\t(less)\r\n//<=\t(less or qual)\r\n//>=\t(bigger or qual)\r\n/////////\tBoolean operations:\r\n//!\t\t(not/invert)\r\n/////////////////////////////////////////////////////////////\r\n\r\n//Default Tabs\r\nDivination Cards:\tClassName=DivinationCard\t\t\t\t\t:Default Tabs\r\nGems:\t\t\t\tClassName^Skill Gem,ItemQuality=0\t\t\t:Default Tabs\r\nCurrency:\t\t\tClassName=StackableCurrency,path!^Essence\t:Default Tabs\r\nLeaguestones:\t\tClassName=Leaguestone\t\t\t\t\t\t:Default Tabs\r\nEssences:\t\t\tBaseName^Essence,ClassName=StackableCurrency:Default Tabs\r\nJewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t:Default Tabs\r\nFlasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t:Default Tabs\r\nTalisman:\t\t\tClassName=Amulet,BaseName^Talisman\t\t\t:Default Tabs\r\nJewelery:\t\t\tClassName=Amulet|ClassName=Ring\t\t\t\t:Default Tabs\r\n//White Items:\t\tRarity=Normal\t\t\t\t\t\t\t\t:Default Tabs\r\n\r\n//Chance Items\r\nSorcerer Boots:\tBaseName=Sorcerer Boots,Rarity=Normal\t:Chance Items\r\nLeather Belt:\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n\r\n//Vendor Recipes\r\nChisel Recipe:\t\tBaseName=Stone Hammer|BaseName=Rock Breaker,ItemQuality=20\t:Vendor Recipes\r\nQuality Gems:\t\tClassName^Skill Gem,ItemQuality>0\t\t\t\t\t\t\t:Vendor Recipes\r\nQuality Flasks:\t\tClassName^Flask,ItemQuality>0\t\t\t\t\t\t\t\t:Vendor Recipes\r\n\r\n//Maps\r\nShore Shaped:\tClassName=Map,BaseName=Shaped Shore Map\t:Maps\r\nStrand Shaped:\tClassName=Map,BaseName=Shaped Strand Map:Maps\r\nShaped Maps:\tClassName=Map,BaseName^Shaped\t\t\t:Maps\r\nUniq Maps:\t\tClassName=Map,Rarity=Unique\t\t\t\t:Maps\r\nOther Maps:\t\tClassName=Map\t\t\t\t\t\t\t:Maps\r\n\r\n//Chaos Recipe LVL 2 (unindentified and ilvl 60 or above)\r\nWeapons:\t\t!identified,Rarity=Rare,ilvl>=60,ClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield :Chaos Recipe\r\nJewelry:\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Ring|ClassName=Amulet \t:Chaos Recipe\r\nBelts:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Belt \t\t\t\t\t:Chaos Recipe\r\nHelms:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Helmet \t\t\t\t\t:Chaos Recipe\r\nBody Armours:\t!identified,Rarity=Rare,ilvl>=60,ClassName=Body Armour \t\t\t\t:Chaos Recipe\r\nBoots:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Boots \t\t\t\t\t:Chaos Recipe\r\n" +
-                "Gloves:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Gloves \t\t\t\t\t:Chaos Recipe";
+                "//!=\t(not equal)\r\n//=\t\t(equal)\r\n" +
+                "//>\t\t(bigger)\r\n//<\t\t(less)\r\n" +
+                "//<=\t(less or equal)\r\n" +
+                "//>=\t(greater or equal)\r\n" +
+                "/////////\tBoolean operations:\r\n" +
+                "//!\t\t(not/invert)\r\n" +
+                "/////////////////////////////////////////////////////////////\r\n" +
+                "\r\n" +
+                "//Default Tabs\r\n" +
+                "Divination Cards:\tClassName=DivinationCard\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Gems:\t\t\t\tClassName^Skill Gem,ItemQuality=0\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Currency:\t\t\tClassName=StackableCurrency,path!^Essence\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Abyss Jewels:\t\tClassName=AbyssJewel\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Essences:\t\t\tBaseName^Essence,ClassName=StackableCurrency\t\t\t\t\t:Default Tabs\r\n" +
+                "Jewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Flasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "//Chance Items\r\n" +
+                "Sorcerer Boots:\tBaseName=Sorcerer Boots,Rarity=Normal\t:Chance Items\r\n" +
+                "Leather Belt:\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n" +
+                "\r\n" +
+                "//Vendor Recipes\r\n" +
+                "Chisel Recipe:\t\tBaseName=Stone Hammer|BaseName=Rock Breaker,ItemQuality=20\t:Vendor Recipes\r\n" +
+                "Quality Gems:\t\tClassName^Skill Gem,ItemQuality>0\t\t\t\t\t\t\t:Vendor Recipes\r\n" +
+                "Quality Flasks:\t\tClassName^Flask,ItemQuality>0\t\t\t\t\t\t\t\t:Vendor Recipes\r\n" +
+                "\r\n//Chaos Recipe LVL 2 (unindentified and ilvl 60 or above)\r\n" +
+                "CR-Weapons:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Chaos Recipe\r\n" +
+                "CR-Amulets:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Amulet \t\t\t\t:Chaos Recipe\r\n" +
+                "CR-Rings:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Ring \t\t\t\t:Chaos Recipe\r\n" +
+                "CR-Belts:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Belt \t\t\t\t:Chaos Recipe\r\n" +
+                "CR-Helmets:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Helmet \t\t\t\t:Chaos Recipe\r\n" +
+                "CR-Chests:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Body Armour \t\t\t:Chaos Recipe\r\n" +
+                "CR-Boots:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Boots \t\t\t\t:Chaos Recipe\r\n" +
+                "CR-Gloves:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName=Gloves \t\t\t\t:Chaos Recipe\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "// Non-Chaos Recipe Rares (eg. unindentified|ilvl<60)\r\n" +
+                "Idd-Weapons:\t\tidentified|ilvl<60,Rarity=Rare,ClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Rares\r\n" +
+                "Idd-Amulets:\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Amulet \t\t\t\t:Rares\r\n" +
+                "Idd-Rings:\t\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Ring \t\t\t\t\t:Rares\r\n" +
+                "Idd-Belts:\t\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Belt \t\t\t\t\t:Rares\r\n" +
+                "Idd-Helms:\t\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Helmet \t\t\t\t:Rares\r\n" +
+                "Idd-Body Armours:\tidentified|ilvl<60,Rarity=Rare,ClassName=Body Armour \t\t\t:Rares\r\n" +
+                "Idd-Boots:\t\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Boots \t\t\t\t\t:Rares\r\n" +
+                "Idd-Gloves:\t\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Gloves \t\t\t\t:Rares\r\n" +
+                "\r\n" +
+                "// Craftable stuff\r\n" +
+                "Craft-Weapons:\t\t\tRarity=Normal,\tClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Crafting\r\n" +
+                "Craft-Amulets:\t\t\tRarity=Normal,\tClassName=Amulet \t\t:Crafting\r\n" +
+                "Craft-Rings:\t\t\tRarity=Normal,\tClassName=Ring \t\t\t:Crafting\r\n" +
+                "Craft-Belts:\t\t\tRarity=Normal,\tClassName=Belt \t\t\t:Crafting\r\n" +
+                "Craft-Helms:\t\t\tRarity=Normal,\tClassName=Helmet \t\t:Crafting\r\n" +
+                "Craft-Chests:\t\t\tRarity=Normal,\tClassName=Body Armour \t:Crafting\r\n" +
+                "Craft-Boots:\t\t\tRarity=Normal,\tClassName=Boots \t\t:Crafting\r\n" +
+                "Craft-Gloves:\t\t\tRarity=Normal,\tClassName=Gloves \t\t:Crafting\r\n" +
+                "\r\n" +
+                "// Uniques\r\n" +
+                "Uniques-Weapons:\t\t\tRarity=Unique,\tClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Uniques\r\n" +
+                "Uniques-Amulets:\t\t\tRarity=Unique,\tClassName=Amulet \t\t:Uniques\r\n" +
+                "Uniques-Rings:\t\t\tRarity=Unique,\tClassName=Ring \t\t\t\t:Uniques\r\n" +
+                "Uniques-Belts:\t\t\tRarity=Unique,\tClassName=Belt \t\t\t\t:Uniques\r\n" +
+                "Uniques-Helms:\t\t\tRarity=Unique,\tClassName=Helmet \t\t\t:Uniques\r\n" +
+                "Uniques-Chests:\t\t\tRarity=Unique,\tClassName=Body Armour \t\t:Uniques\r\n" +
+                "Uniques-Boots:\t\t\tRarity=Unique,\tClassName=Boots \t\t\t:Uniques\r\n" +
+                "Uniques-Gloves:\t\t\tRarity=Unique,\tClassName=Gloves \t\t\t:Uniques\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "// Maps & Stuff\r\n" +
+                "Maps:\t\t\t\tClassName=Map\t\t\t\t\t\t\t:Maps & Stuff\r\n" +
+                "Fragments:\t\t\tClassName=MapFragment\t\t\t\t\t:Maps & Stuff\r\n" +
+                "Labyrinth:\t\t\tClassName=LabyrinthMapItem\t\t\t\t:Maps & Stuff";
+
+            #endregion
+
 
             CreateFileAndAppendTextIfItDoesNotExitst(path, filtersConfig);
         }
@@ -772,8 +843,9 @@ namespace Stashie
                     if (GameController.Game.IngameState.ServerData.StashPanel.TotalStashes > 30)
                     {
                         // TODO:Zafaar implemented something that allows us to get in contact with the ScrollBar.
+                        Thread.Sleep(50);
                         Mouse.VerticalScroll(true, 5);
-                        Thread.Sleep(latency + 50);
+                        Thread.Sleep(50);
                     }
                 }
 
@@ -801,9 +873,11 @@ namespace Stashie
                 {
                     continue;
                 }
-                LogMessage($"2. Error opening stash: {Settings.AllStashNames[tabIndex + 1]}. Inventory type is: {stash.InvType.ToString()}", 5);
+                LogMessage(
+                    $"2. Error opening stash: {Settings.AllStashNames[tabIndex + 1]}. Inventory type is: {stash.InvType.ToString()}",
+                    5);
                 return false;
-            } while (stash?.VisibleInventoryItems == null && stash?.InvType != InventoryType.DivinationStash);
+            } while (stash?.VisibleInventoryItems == null);
             return true;
         }
 
@@ -875,7 +949,8 @@ namespace Stashie
 
             LoadCustomRefills();
             LoadCustomFilters();
-            Settings.TabToVisitWhenDone.Max = (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
+            Settings.TabToVisitWhenDone.Max =
+                (int) GameController.Game.IngameState.ServerData.StashPanel.TotalStashes - 1;
 
             var names = GameController.Game.IngameState.ServerData.StashPanel.AllStashNames;
             UpdateStashNames(names);

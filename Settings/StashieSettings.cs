@@ -57,7 +57,6 @@ namespace Stashie.Settings
 
         [Menu("tab (index)", 4001, 4000)]
         public RangeNode<int> TabToVisitWhenDone { get; set; }
-        
 
         public ToggleNode RefillCurrency { get; set; }
         public ListIndexNode CurrencyStashTab { get; set; }
