@@ -165,14 +165,14 @@ namespace Stashie
                 "Idd-Gloves:\t\t\tidentified|ilvl<60,Rarity=Rare,ClassName=Gloves \t\t\t\t:Rares\r\n" +
                 "\r\n" +
                 "// Craftable stuff\r\n" +
-                "Craft-Weapons:\t\t\tRarity=Normal,\tClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Crafting\r\n" +
-                "Craft-Amulets:\t\t\tRarity=Normal,\tClassName=Amulet \t\t:Crafting\r\n" +
-                "Craft-Rings:\t\t\tRarity=Normal,\tClassName=Ring \t\t\t:Crafting\r\n" +
-                "Craft-Belts:\t\t\tRarity=Normal,\tClassName=Belt \t\t\t:Crafting\r\n" +
-                "Craft-Helms:\t\t\tRarity=Normal,\tClassName=Helmet \t\t:Crafting\r\n" +
-                "Craft-Chests:\t\t\tRarity=Normal,\tClassName=Body Armour \t:Crafting\r\n" +
-                "Craft-Boots:\t\t\tRarity=Normal,\tClassName=Boots \t\t:Crafting\r\n" +
-                "Craft-Gloves:\t\t\tRarity=Normal,\tClassName=Gloves \t\t:Crafting\r\n" +
+                "Craft-Weapons:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Crafting\r\n" +
+                "Craft-Amulets:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Amulet \t\t:Crafting\r\n" +
+                "Craft-Rings:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Ring \t\t\t:Crafting\r\n" +
+                "Craft-Belts:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Belt \t\t\t:Crafting\r\n" +
+                "Craft-Helms:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Helmet \t\t:Crafting\r\n" +
+                "Craft-Chests:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Body Armour \t:Crafting\r\n" +
+                "Craft-Boots:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Boots \t\t:Crafting\r\n" +
+                "Craft-Gloves:\t\t\tilvl>=84,Rarity=Normal|Rarity=Magic,\tClassName=Gloves \t\t:Crafting\r\n" +
                 "\r\n" +
                 "// Uniques\r\n" +
                 "Uniques-Weapons:\t\t\tRarity=Unique,\tClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Uniques\r\n" +

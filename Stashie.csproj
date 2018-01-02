@@ -39,7 +39,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="PoeHUD">
-      <HintPath>D:\PoEHUD-x64\Release\PoeHUD.exe</HintPath>
+      <HintPath>..\..\..\..\PoEHUD-x64\release\lib\PoeHUD.exe</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
