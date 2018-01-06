@@ -17,6 +17,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using PoeHUD.Hud.Menu;
+using PoeHUD.Hud.PluginExtension;
 using PoeHUD.Hud.Settings;
 using PoeHUD.Models.Enums;
 using PoeHUD.Plugins;
@@ -39,6 +40,8 @@ namespace Stashie
             PluginName = "Stashie";
         }
 
+        private System.Reflection.MethodInfo _callPluginEventMethod;
+
         private const string FITERS_CONFIG_FILE = "FitersConfig.txt";
 
         private bool _bDropOnce;
@@ -56,6 +59,8 @@ namespace Stashie
 
         public override void Initialise()
         {
+            _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
+
             Settings.Enable.OnValueChanged += SetupOrClose;
             SetupOrClose();
         }
@@ -470,6 +475,13 @@ namespace Stashie
                         Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
                             Settings.ExtraDelay);
                         Thread.Sleep(latency);
+                    }
+
+                    // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
+                    if (_callPluginEventMethod != null)
+                    {
+                        // We want to call all other plugins that are subscribed to "StashUpdate".
+                        _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
                     }
                 }
 
