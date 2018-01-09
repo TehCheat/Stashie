@@ -8,7 +8,6 @@
 
 #endregion
 
-#define DebugMode
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1046,12 +1045,10 @@ namespace Stashie
                 }
                 else //tab just change it's index
                 {
-#if DebugMode
                     if (lOption.Index != inventoryIndex)
                     {
                         LogMessage("Tab moved: " + lOption.Index + " to " + inventoryIndex, 5);
                     }
-#endif
                     lOption.Index = inventoryIndex;
                     lOption.Value = _renamedAllStashNames[inventoryIndex + 1];
                 }
@@ -1077,7 +1074,7 @@ namespace Stashie
                 }
 
                 var stashPanel = GameController.Game.IngameState.ServerData.StashPanel;
-                if (!stashPanel.IsVisible)
+                if (!GameController.InGame || !stashPanel.IsVisible)
                 {
                     Thread.Sleep(500);
                     continue;
