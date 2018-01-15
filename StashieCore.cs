@@ -855,10 +855,12 @@ namespace Stashie
                     // Make sure that we are scrolled to the top in the menu.
                     if (GameController.Game.IngameState.ServerData.StashPanel.TotalStashes > 30)
                     {
+                        Keyboard.KeyUp(Keys.LControlKey);
                         Thread.Sleep(WHILE_DELAY);
                         Mouse.VerticalScroll(true, 10);
                         Thread.Sleep(WHILE_DELAY);
                         Mouse.VerticalScroll(true, 10);
+                        Keyboard.KeyDown(Keys.LControlKey);
                     }
                 }
 
