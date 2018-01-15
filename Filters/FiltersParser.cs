@@ -18,13 +18,13 @@ namespace Stashie.Filters
 {
     public class FilterParser
     {
-        private const char CYMBOL_COMMANDSDIVIDE = ',';
-        private const char CYMBOL_COMMAND_FILTER_OR = '|';
-        private const char CYMBOL_NAMEDIVIDE = ':';
-        private const char CYMBOL_SUBMENUNAME = ':';
-        private const char CYMBOL_NOT = '!';
-        private const string COMMENTCYMBOL = "#";
-        private const string COMMENTCYMBOLALT = "//";
+        private const char SYMBOL_COMMANDSDIVIDE = ',';
+        private const char SYMBOL_COMMAND_FILTER_OR = '|';
+        private const char SYMBOL_NAMEDIVIDE = ':';
+        private const char SYMBOL_SUBMENUNAME = ':';
+        private const char SYMBOL_NOT = '!';
+        private const string COMMENTSYMBOL = "#";
+        private const string COMMENTSYMBOLALT = "//";
 
         //String compare
         private const string PARAMETER_CLASSNAME = "classname";
@@ -37,7 +37,7 @@ namespace Stashie.Filters
 
         private const string PARAMETER_RARITY = "rarity";
         private const string PARAMETER_ILVL = "ilvl";
-        private const string PARAMETER_MapTier = "tier";
+        private const string PARAMETER_MAP_TIER = "tier";
 
         //Boolean
         private const string PARAMETER_IDENTIFIED = "identified";
@@ -79,11 +79,11 @@ namespace Stashie.Filters
 
                 filterLine = filterLine.Replace("\t", "");
 
-                if (filterLine.StartsWith(COMMENTCYMBOL))
+                if (filterLine.StartsWith(COMMENTSYMBOL))
                 {
                     continue;
                 }
-                if (filterLine.StartsWith(COMMENTCYMBOLALT))
+                if (filterLine.StartsWith(COMMENTSYMBOLALT))
                 {
                     continue;
                 }
@@ -93,7 +93,7 @@ namespace Stashie.Filters
                     continue;
                 }
 
-                var nameIndex = filterLine.IndexOf(CYMBOL_NAMEDIVIDE);
+                var nameIndex = filterLine.IndexOf(SYMBOL_NAMEDIVIDE);
                 if (nameIndex == -1)
                 {
                     BasePlugin.LogMessage("Filter parser: Can't find filter name in line: " + (i + 1), 5);
@@ -104,14 +104,14 @@ namespace Stashie.Filters
 
                 var filterCommandsLine = filterLine.Substring(nameIndex + 1);
 
-                var submenuIndex = filterCommandsLine.IndexOf(CYMBOL_SUBMENUNAME);
+                var submenuIndex = filterCommandsLine.IndexOf(SYMBOL_SUBMENUNAME);
                 if (submenuIndex != -1)
                 {
                     newFilter.SubmenuName = filterCommandsLine.Substring(submenuIndex + 1);
                     filterCommandsLine = filterCommandsLine.Substring(0, submenuIndex);
                 }
 
-                var filterCommands = filterCommandsLine.Split(CYMBOL_COMMANDSDIVIDE);
+                var filterCommands = filterCommandsLine.Split(SYMBOL_COMMANDSDIVIDE);
 
                 var filterErrorParse = false;
 
@@ -122,9 +122,9 @@ namespace Stashie.Filters
                         continue;
                     }
 
-                    if (command.Contains(CYMBOL_COMMAND_FILTER_OR))
+                    if (command.Contains(SYMBOL_COMMAND_FILTER_OR))
                     {
-                        var orFilterCommands = command.Split(CYMBOL_COMMAND_FILTER_OR);
+                        var orFilterCommands = command.Split(SYMBOL_COMMAND_FILTER_OR);
                         var newOrFilter = new BaseFilter { BAny = true };
                         newFilter.Filters.Add(newOrFilter);
 
@@ -169,21 +169,21 @@ namespace Stashie.Filters
 
             if (command.Contains(PARAMETER_IDENTIFIED))
             {
-                var identCommand = new IdentifiedItemFilter { BIdentified = command[0] != CYMBOL_NOT };
+                var identCommand = new IdentifiedItemFilter { BIdentified = command[0] != SYMBOL_NOT };
                 newFilter.Filters.Add(identCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISELDER))
             {
-                var elderCommand = new ElderItemFiler { IsElder = command[0] != CYMBOL_NOT };
+                var elderCommand = new ElderItemFiler { IsElder = command[0] != SYMBOL_NOT };
                 newFilter.Filters.Add(elderCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISSHAPER))
             {
-                var shaperCommand = new ShaperItemFiler { IsShaper = command[0] != CYMBOL_NOT };
+                var shaperCommand = new ShaperItemFiler { IsShaper = command[0] != SYMBOL_NOT };
                 newFilter.Filters.Add(shaperCommand);
                 return true;
             }
@@ -218,7 +218,7 @@ namespace Stashie.Filters
                     stringComp.IntParameter = data => data.ItemQuality;
                     stringComp.StringParameter = data => data.ItemQuality.ToString();
                     break;
-                case PARAMETER_MapTier:
+                case PARAMETER_MAP_TIER:
                     stringComp.IntParameter = data => data.MapTier;
                     stringComp.StringParameter = data => data.MapTier.ToString();
                     break;
@@ -357,14 +357,7 @@ namespace Stashie.Filters
 
         public bool CompareItem(ItemData itemData)
         {
-            if (BAny)
-            {
-                return Filters.Any(x => x.CompareItem(itemData));
-            }
-            else
-            {
-                return Filters.All(x => x.CompareItem(itemData));
-            }
+            return BAny ? Filters.Any(x => x.CompareItem(itemData)) : Filters.All(x => x.CompareItem(itemData));
         }
     }
 

@@ -122,6 +122,8 @@ namespace Stashie
                 "//ilvl\r\n" +
                 "/////////\tBoolean properties:\r\n" +
                 "//identified\r\n" +
+                "//Shaped\r\n" +
+                "//Elder\r\n" +
                 "/////////////////////////////////////////////////////////////\r\n" +
                 "////////////\tAvailable operations:\t/////////////////////\r\n" +
                 "/////////\tString (name) operations:\r\n" +
