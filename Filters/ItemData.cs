@@ -12,6 +12,7 @@ using PoeHUD.Models;
 using PoeHUD.Models.Enums;
 using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
+using PoeHUD.Poe.EntityComponents;
 using SharpDX;
 
 namespace Stashie.Filters
@@ -28,13 +29,17 @@ namespace Stashie.Filters
         public bool BIdentified;
         public int ItemLevel;
         public int MapTier;
+        public bool IsElder;
+        public bool IsShaper;
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
         {
             _inventoryItem = inventoryItem;
             var item = inventoryItem.Item;
             Path = item.Path;
-
+            var @base = item.GetComponent<Base>();
+            IsElder = @base.isElder;
+            IsShaper = @base.isShaper;
             var mods = item.GetComponent<Mods>();
             Rarity = mods.ItemRarity;
             BIdentified = mods.Identified;
@@ -45,10 +50,7 @@ namespace Stashie.Filters
             ClassName = baseItemType.ClassName;
             BaseName = baseItemType.BaseName;
 
-            if (item.HasComponent<PoeHUD.Poe.Components.Map>())
-                MapTier = item.GetComponent<PoeHUD.Poe.Components.Map>().Tier;
-            else
-                MapTier = 0;
+            MapTier = item.HasComponent<PoeHUD.Poe.Components.Map>() ? item.GetComponent<PoeHUD.Poe.Components.Map>().Tier : 0;
         }
 
         public Vector2 GetClickPos()
