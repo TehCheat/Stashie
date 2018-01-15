@@ -921,7 +921,6 @@ namespace Stashie
             var indexOfCurrentVisibleTab = GetIndexOfCurrentVisibleTab();
             if (indexOfCurrentVisibleTab == -1)
             {
-                LogMessage($"Tried to visit tabIndex {tabIndex}, but couldn't get index of current visible tab, going to first tab!", 2000);
                 SwitchToFirstTab();
                 indexOfCurrentVisibleTab = GetIndexOfCurrentVisibleTab();
             }
@@ -966,7 +965,6 @@ namespace Stashie
             {
                 if (!switchedOnce)
                 {
-                    LogMessage("Reached cache in 965, trying again", 1000);
                     var latency = (int)GameController.Game.IngameState.CurLatency;
                     Thread.Sleep(latency);
                     GetIndexOfCurrentVisibleTab(true);
@@ -1046,9 +1044,7 @@ namespace Stashie
                 if (_renamedAllStashNames.Contains(realStashName))
                 {
                     realStashName += " (" + i + ")";
-#if DebugMode
                     LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
-#endif
                 }
 
                 _renamedAllStashNames.Add(realStashName);
@@ -1066,10 +1062,9 @@ namespace Stashie
                 {
                     if (lOption.Index != -1) //If the value doesn't exist in list and the value was not Ignore
                     {
-#if DebugMode
                         LogMessage(
                             "Tab renamed : " + lOption.Value + " to " + _renamedAllStashNames[lOption.Index + 1], 5);
-#endif
+
 
                         if (lOption.Index >= _renamedAllStashNames.Count)
                         {
