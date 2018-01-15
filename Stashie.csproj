@@ -41,7 +41,6 @@
     </Reference>
     <Reference Include="PoeHUD">
       <HintPath>..\..\..\..\PoEHUD\Release\lib\PoeHUD.exe</HintPath>
-      <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX">
       <HintPath>..\..\..\..\PoEHUD\Release\SharpDX.dll</HintPath>
