@@ -406,7 +406,8 @@ namespace Stashie
             var inventPosX = inventItem.InventPosX;
             var inventPosY = inventItem.InventPosY;
 
-            if (Settings.RefillCurrency.Value && _customRefills.Any(x => x.InventPos.X == inventPosX && x.InventPos.Y == inventPosY))
+            if (Settings.RefillCurrency.Value &&
+                _customRefills.Any(x => x.InventPos.X == inventPosX && x.InventPos.Y == inventPosY))
             {
                 return true;
             }
@@ -462,26 +463,33 @@ namespace Stashie
                 Keyboard.KeyDown(Keys.LControlKey);
                 Thread.Sleep(INPUT_DELAY);
 
-                foreach (var stashResults in sortedByStash)
+                try
                 {
-                    if (!SwitchToTab(stashResults.Key))
+                    foreach (var stashResults in sortedByStash)
                     {
-                        continue;
-                    }
+                        if (!SwitchToTab(stashResults.Key))
+                        {
+                            continue;
+                        }
 
-                    foreach (var stashResult in stashResults.Value)
-                    {
-                        Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
-                            Settings.ExtraDelay);
-                        Thread.Sleep(latency);
-                    }
+                        foreach (var stashResult in stashResults.Value)
+                        {
+                            Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
+                                Settings.ExtraDelay);
+                            Thread.Sleep(latency);
+                        }
 
-                    // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
-                    if (_callPluginEventMethod != null)
-                    {
-                        // We want to call all other plugins that are subscribed to "StashUpdate".
-                        _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
+                        // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
+                        if (_callPluginEventMethod != null)
+                        {
+                            // We want to call all other plugins that are subscribed to "StashUpdate".
+                            _callPluginEventMethod.Invoke(API, new object[] { "StashUpdate", new object[0] });
+                        }
                     }
+                }
+                catch
+                {
+                    Keyboard.KeyUp(Keys.LControlKey);
                 }
 
                 Keyboard.KeyUp(Keys.LControlKey);
@@ -952,7 +960,8 @@ namespace Stashie
             {
                 for (var i = totalStashes - 1; i > 0; i--)
                 {
-                    var stashTabToGoTo = GameController.Game.IngameState.ServerData.StashPanel.GetStashInventoryByIndex(i)
+                    var stashTabToGoTo = GameController.Game.IngameState.ServerData.StashPanel
+                        .GetStashInventoryByIndex(i)
                         .InventoryUiElement;
 
                     if (stashTabToGoTo.IsVisible)
@@ -967,7 +976,7 @@ namespace Stashie
             {
                 if (!switchedOnce)
                 {
-                    var latency = (int)GameController.Game.IngameState.CurLatency;
+                    var latency = (int) GameController.Game.IngameState.CurLatency;
                     Thread.Sleep(latency);
                     GetIndexOfCurrentVisibleTab(true);
                 }
