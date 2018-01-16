@@ -66,9 +66,8 @@ namespace Stashie
 
             Settings.Enable.OnValueChanged += SetupOrClose;
             SetupOrClose();
-            
+
             _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 30;
-            
         }
 
         private static void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
@@ -469,39 +468,39 @@ namespace Stashie
 
                 var latency = (int) _ingameState.CurLatency + Settings.ExtraDelay;
 
-                Keyboard.KeyDown(Keys.LControlKey);
-                Thread.Sleep(INPUT_DELAY);
 
-                try
+                foreach (var stashResults in sortedByStash)
                 {
-                    foreach (var stashResults in sortedByStash)
+                    // If we are more than 2 tabs away from our target, then use dropdown approach if user has it.
+
+                    if (!SwitchToTab(stashResults.Key))
                     {
-                        // If we are more than 2 tabs away from our target, then use dropdown approach if user has it.
-
-                        if (!SwitchToTab(stashResults.Key))
-                        {
-                            continue;
-                        }
-
+                        continue;
+                    }
+                    try
+                    {
+                        Keyboard.KeyDown(Keys.LControlKey);
+                        Thread.Sleep(INPUT_DELAY);
                         foreach (var stashResult in stashResults.Value)
                         {
                             Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
                                 Settings.ExtraDelay);
                             Thread.Sleep(latency);
                         }
+                    }
+                    catch
+                    {
+                        Keyboard.KeyUp(Keys.LControlKey);
+                    }
 
-                        // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
-                        if (_callPluginEventMethod != null)
-                        {
-                            // We want to call all other plugins that are subscribed to "StashUpdate".
-                            _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
-                        }
+                    // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
+                    if (_callPluginEventMethod != null)
+                    {
+                        // We want to call all other plugins that are subscribed to "StashUpdate".
+                        _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
                     }
                 }
-                catch
-                {
-                    Keyboard.KeyUp(Keys.LControlKey);
-                }
+
 
                 Keyboard.KeyUp(Keys.LControlKey);
             }
@@ -921,7 +920,7 @@ namespace Stashie
             {
                 return SwitchToTabViaDropdownMenu(indexOfTabToVisit);
             }
-            
+
             return SwitchToTabViaArrowKeys(indexOfTabToVisit);
         }
 
