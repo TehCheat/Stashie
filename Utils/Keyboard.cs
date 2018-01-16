@@ -8,6 +8,7 @@
 
 #endregion
 
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -21,7 +22,8 @@ namespace Stashie.Utils
 
         private const int KEYEVENTF_EXTENDEDKEY = 0x0001;
         private const int KEYEVENTF_KEYUP = 0x0002;
-
+        private const int KEY_TOGGLED = 0x0001;
+        private const int KEY_PRESSED = 0x8000;
         private const int ACTION_DELAY = 1;
 
         
@@ -49,6 +51,17 @@ namespace Stashie.Utils
         public static bool IsKeyDown(int nVirtKey)
         {
             return GetKeyState(nVirtKey) < 0;
+        }
+
+        public static bool IsKeyPressed(Keys key)
+        {
+            return Convert.ToBoolean(GetKeyState((int)key) & KEY_PRESSED);
+        }
+
+
+        public static bool IsKeyToggled(Keys key)
+        {
+            return Convert.ToBoolean(GetKeyState((int)key) & KEY_TOGGLED);
         }
     }
 }

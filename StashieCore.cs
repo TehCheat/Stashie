@@ -41,7 +41,6 @@ namespace Stashie
         private IngameState _ingameState;
         private bool _playerHasDropdownMenu = false;
 
-        private bool _bDropOnce;
         private Vector2 _clickWindowOffset;
         private List<FilterResult> _dropItems;
         private int[,] _ignoredCells;
@@ -59,6 +58,8 @@ namespace Stashie
             PluginName = "Stashie";
         }
 
+        #region override
+
         public override void Initialise()
         {
             _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
@@ -69,6 +70,40 @@ namespace Stashie
 
             _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 30;
         }
+
+        public override void Render()
+        {
+            if (!Settings.Enable)
+            {
+                return;
+            }
+
+            var uiTabsOpened = _ingameState.IngameUi.InventoryPanel.IsVisible &&
+                               _ingameState.ServerData.StashPanel.IsVisible;
+
+            if (!uiTabsOpened)
+            {
+                return;
+            }
+
+            if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+            {
+                return;
+            }
+
+            ProcessInventoryItems();
+
+            if (_dropItems.Count == 0)
+            {
+                return;
+            }
+
+            DropToStash();
+
+            Keyboard.KeyPress(Settings.DropHotkey.Value);
+        }
+
+        #endregion
 
         private static void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
         {
@@ -208,6 +243,8 @@ namespace Stashie
             CreateFileAndAppendTextIfItDoesNotExitst(path, filtersConfig);
         }
 
+        #region Loads
+
         private void LoadCustomFilters()
         {
             var filterPath = Path.Combine(PluginDirectory, FITERS_CONFIG_FILE);
@@ -335,36 +372,7 @@ namespace Stashie
             File.WriteAllText(filePath, defaultSettings);
         }
 
-        public override void Render()
-        {
-            if (!Settings.Enable)
-            {
-                return;
-            }
-
-            var uiTabsOpened = _ingameState.IngameUi.InventoryPanel.IsVisible &&
-                               _ingameState.ServerData.StashPanel.IsVisible;
-
-            if (!uiTabsOpened)
-            {
-                _bDropOnce = false;
-                return;
-            }
-
-            if (Settings.RequireHotkey.Value && !Keyboard.IsKeyDown((int) Settings.DropHotkey.Value))
-            {
-                _bDropOnce = false;
-                return;
-            }
-
-            if (_bDropOnce)
-            {
-                return;
-            }
-
-            _bDropOnce = true;
-            ProcessInventoryItems();
-        }
+        #endregion
 
         private void ProcessInventoryItems()
         {
@@ -377,35 +385,33 @@ namespace Stashie
             if (invItems == null)
             {
                 LogMessage("Player inventory->VisibleInventoryItems is null!", 5);
+                return;
             }
-            else
+
+            _dropItems = new List<FilterResult>();
+            _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
+
+            foreach (var invItem in invItems)
             {
-                _dropItems = new List<FilterResult>();
-                _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
-
-                foreach (var invItem in invItems)
+                if (invItem.Item == null)
                 {
-                    if (invItem.Item == null)
-                    {
-                        continue;
-                    }
-
-                    if (CheckIgnoreCells(invItem))
-                    {
-                        continue;
-                    }
-
-                    var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
-                    var testItem = new ItemData(invItem, baseItemType);
-
-                    var result = CheckFilters(testItem);
-
-                    if (result != null)
-                    {
-                        _dropItems.Add(result);
-                    }
+                    continue;
                 }
-                DropToStash();
+
+                if (CheckIgnoreCells(invItem))
+                {
+                    continue;
+                }
+
+                var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
+                var testItem = new ItemData(invItem, baseItemType);
+
+                var result = CheckFilters(testItem);
+
+                if (result != null)
+                {
+                    _dropItems.Add(result);
+                }
             }
         }
 
@@ -472,6 +478,10 @@ namespace Stashie
                 foreach (var stashResults in sortedByStash)
                 {
                     // If we are more than 2 tabs away from our target, then use dropdown approach if user has it.
+                    if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+                    {
+                        return;
+                    }
 
                     if (!SwitchToTab(stashResults.Key))
                     {
@@ -501,7 +511,6 @@ namespace Stashie
                     }
                 }
 
-
                 Keyboard.KeyUp(Keys.LControlKey);
             }
 
@@ -517,7 +526,6 @@ namespace Stashie
             if (Settings.BlockInput.Value)
             {
                 WinApi.BlockInput(false);
-                Keyboard.KeyUp(Settings.DropHotkey.Value);
                 Thread.Sleep(INPUT_DELAY);
             }
         }
