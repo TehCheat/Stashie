@@ -83,6 +83,11 @@ namespace Stashie
 
             if (!uiTabsOpened)
             {
+                if (Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+                {
+                    Keyboard.KeyPress(Settings.DropHotkey.Value);
+                }
+
                 return;
             }
 

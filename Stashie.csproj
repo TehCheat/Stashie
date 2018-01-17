@@ -36,7 +36,7 @@
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\PoEHUD\Release\lib\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\PoEHUD\Release\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="PoeHud">
@@ -44,19 +44,19 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX">
-      <HintPath>..\..\..\..\PoEHUD\Release\lib\SharpDX.dll</HintPath>
+      <HintPath>..\..\..\..\PoEHUD\Release\SharpDX.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX.Desktop">
-      <HintPath>..\..\..\..\PoEHUD\Release\lib\SharpDX.Desktop.dll</HintPath>
+      <HintPath>..\..\..\..\PoEHUD\Release\SharpDX.Desktop.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX.Direct3D9">
-      <HintPath>..\..\..\..\PoEHUD\Release\lib\SharpDX.Direct3D9.dll</HintPath>
+      <HintPath>..\..\..\..\PoEHUD\Release\SharpDX.Direct3D9.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX.Mathematics">
-      <HintPath>..\..\..\..\PoEHUD\Release\lib\SharpDX.Mathematics.dll</HintPath>
+      <HintPath>..\..\..\..\PoEHUD\Release\SharpDX.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
