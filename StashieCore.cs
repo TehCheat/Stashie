@@ -1089,34 +1089,37 @@ namespace Stashie
                     continue;
                 }
 
-                var stashPanel = _ingameState.ServerData.StashPanel;
-                if (!GameController.InGame || !stashPanel.IsVisible)
+                if (_ingameState.ServerData.StashPanel != null)
                 {
-                    Thread.Sleep(500);
-                    continue;
+                        var stashPanel = _ingameState.ServerData.StashPanel;
+                        if (!GameController.InGame || !stashPanel.IsVisible)
+                        {
+                            Thread.Sleep(500);
+                            continue;
+                        }
+
+                        var cachedNames = Settings.AllStashNames;
+                        var realNames = stashPanel.AllStashNames;
+
+                        if (realNames.Count + 1 != cachedNames.Count)
+                        {
+                            UpdateStashNames(realNames);
+                            continue;
+                        }
+
+                        for (var index = 0; index < realNames.Count; ++index)
+                        {
+                            var cachedName = cachedNames[index + 1];
+                            if (cachedName.Equals(realNames[index]))
+                            {
+                                continue;
+                            }
+
+                            UpdateStashNames(realNames);
+                            break;
+                        }
                 }
-
-                var cachedNames = Settings.AllStashNames;
-                var realNames = stashPanel.AllStashNames;
-
-                if (realNames.Count + 1 != cachedNames.Count)
-                {
-                    UpdateStashNames(realNames);
-                    continue;
-                }
-
-                for (var index = 0; index < realNames.Count; ++index)
-                {
-                    var cachedName = cachedNames[index + 1];
-                    if (cachedName.Equals(realNames[index]))
-                    {
-                        continue;
-                    }
-
-                    UpdateStashNames(realNames);
-                    break;
-                }
-
+                
                 Thread.Sleep(300);
             }
 
