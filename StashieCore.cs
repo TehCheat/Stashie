@@ -1,17 +1,8 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          StashieLogic
-//   Description:    PoeHUD plugin. Main plugin logic.
-//   Author:         Stridemann, nymann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json;
@@ -34,81 +25,28 @@ namespace Stashie
 {
     public class StashieCore : BaseSettingsPlugin<StashieSettings>
     {
-        private System.Reflection.MethodInfo _callPluginEventMethod;
-
         private const string FITERS_CONFIG_FILE = "FitersConfig.txt";
-
-        private IngameState _ingameState;
-        private bool _playerHasDropdownMenu = false;
-
-        private Vector2 _clickWindowOffset;
-        private List<FilterResult> _dropItems;
-        private int[,] _ignoredCells;
-        private List<ListIndexNode> _settingsListNodes;
-        private Thread _tabNamesUpdaterThread;
 
         private const int WHILE_DELAY = 5;
         private const int INPUT_DELAY = 15;
+        private MethodInfo _callPluginEventMethod;
+
+        private Vector2 _clickWindowOffset;
 
         private List<CustomFilter> _customFilters;
         private List<RefillProcessor> _customRefills;
+        private List<FilterResult> _dropItems;
+        private int[,] _ignoredCells;
+
+        private IngameState _ingameState;
+        private bool _playerHasDropdownMenu;
+        private List<ListIndexNode> _settingsListNodes;
+        private Thread _tabNamesUpdaterThread;
 
         public StashieCore()
         {
             PluginName = "Stashie";
         }
-
-        #region override
-
-        public override void Initialise()
-        {
-            _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
-            _ingameState = GameController.Game.IngameState;
-
-            Settings.Enable.OnValueChanged += SetupOrClose;
-            SetupOrClose();
-
-            _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 30;
-        }
-
-        public override void Render()
-        {
-            if (!Settings.Enable)
-            {
-                return;
-            }
-
-            var uiTabsOpened = _ingameState.IngameUi.InventoryPanel.IsVisible &&
-                               _ingameState.ServerData.StashPanel.IsVisible;
-
-            if (!uiTabsOpened)
-            {
-                if (Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
-                {
-                    Keyboard.KeyPress(Settings.DropHotkey.Value);
-                }
-
-                return;
-            }
-
-            if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
-            {
-                return;
-            }
-
-            ProcessInventoryItems();
-
-            if (_dropItems.Count == 0)
-            {
-                return;
-            }
-
-            DropToStash();
-
-            Keyboard.KeyPress(Settings.DropHotkey.Value);
-        }
-
-        #endregion
 
         private static void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
         {
@@ -248,6 +186,215 @@ namespace Stashie
             CreateFileAndAppendTextIfItDoesNotExitst(path, filtersConfig);
         }
 
+        private void ProcessInventoryItems()
+        {
+            var inventory =
+                _ingameState.IngameUi.InventoryPanel[
+                    InventoryIndex.PlayerInventory];
+
+            var invItems = inventory.VisibleInventoryItems;
+
+            if (invItems == null)
+            {
+                LogMessage("Player inventory->VisibleInventoryItems is null!", 5);
+                return;
+            }
+
+            _dropItems = new List<FilterResult>();
+            _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
+
+            foreach (var invItem in invItems)
+            {
+                if (invItem.Item == null)
+                {
+                    continue;
+                }
+
+                if (CheckIgnoreCells(invItem))
+                {
+                    continue;
+                }
+
+                var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
+                var testItem = new ItemData(invItem, baseItemType);
+
+                var result = CheckFilters(testItem);
+
+                if (result != null)
+                {
+                    _dropItems.Add(result);
+                }
+            }
+        }
+
+        private bool CheckIgnoreCells(NormalInventoryItem inventItem)
+        {
+            var inventPosX = inventItem.InventPosX;
+            var inventPosY = inventItem.InventPosY;
+
+            if (Settings.RefillCurrency.Value &&
+                _customRefills.Any(x => x.InventPos.X == inventPosX && x.InventPos.Y == inventPosY))
+            {
+                return true;
+            }
+
+            if (inventPosX < 0 || inventPosX >= 12)
+            {
+                return true;
+            }
+            if (inventPosY < 0 || inventPosY >= 5)
+            {
+                return true;
+            }
+
+            return _ignoredCells[inventPosY, inventPosX] != 0; //No need to check all item size
+        }
+
+        private FilterResult CheckFilters(ItemData itemData)
+        {
+            foreach (var filter in _customFilters)
+            {
+                if (!filter.AllowProcess)
+                {
+                    continue;
+                }
+
+                if (filter.CompareItem(itemData))
+                {
+                    return new FilterResult(filter.StashIndexNode, itemData);
+                }
+            }
+
+            return null;
+        }
+
+        private void DropToStash()
+        {
+            var cursorPosPreMoving = Mouse.GetCursorPosition();
+
+            if (Settings.BlockInput.Value)
+            {
+                WinApi.BlockInput(true);
+            }
+
+            if (_dropItems.Count > 0)
+            {
+                // Dictionary where key is the index (stashtab index) and Value is the items to drop.
+                var itemsToDrop = (from dropItem in _dropItems
+                    group dropItem by dropItem.StashIndex
+                    into itemsToDropByTab
+                    select itemsToDropByTab).ToDictionary(tab => tab.Key, tab => tab.ToList());
+
+                var latency = (int) _ingameState.CurLatency;
+
+                foreach (var stashResults in itemsToDrop)
+                {
+                    // If we are more than 2 tabs away from our target, then use dropdown approach if user has it.
+                    if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+                    {
+                        return;
+                    }
+
+                    if (!SwitchToTab(stashResults.Key))
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        Keyboard.KeyDown(Keys.LControlKey);
+                        Thread.Sleep(INPUT_DELAY);
+
+                        foreach (var stashResult in stashResults.Value)
+                        {
+                            Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
+                                Settings.ExtraDelay);
+                            Thread.Sleep(latency + Settings.ExtraDelay.Value);
+                        }
+                    }
+                    catch
+                    {
+                        Keyboard.KeyUp(Keys.LControlKey);
+                    }
+
+                    // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
+                    if (_callPluginEventMethod != null)
+                    {
+                        // We want to call all other plugins that are subscribed to "StashUpdate".
+                        _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
+                    }
+                }
+
+                Keyboard.KeyUp(Keys.LControlKey);
+            }
+
+            ProcessRefills();
+            Mouse.SetCursorPos(cursorPosPreMoving.X, cursorPosPreMoving.Y);
+
+            // TODO:Go back to a specific tab, if user has that setting enabled.
+            if (Settings.VisitTabWhenDone.Value)
+            {
+                SwitchToTab(Settings.TabToVisitWhenDone.Value);
+            }
+
+            if (Settings.BlockInput.Value)
+            {
+                WinApi.BlockInput(false);
+                Thread.Sleep(INPUT_DELAY);
+            }
+        }
+
+        #region override
+
+        public override void Initialise()
+        {
+            _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
+            _ingameState = GameController.Game.IngameState;
+
+            Settings.Enable.OnValueChanged += SetupOrClose;
+            SetupOrClose();
+
+            _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 30;
+        }
+
+        public override void Render()
+        {
+            if (!Settings.Enable)
+            {
+                return;
+            }
+
+            var uiTabsOpened = _ingameState.IngameUi.InventoryPanel.IsVisible &&
+                               _ingameState.ServerData.StashPanel.IsVisible;
+
+            if (!uiTabsOpened)
+            {
+                if (Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+                {
+                    Keyboard.KeyPress(Settings.DropHotkey.Value);
+                }
+
+                return;
+            }
+
+            if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+            {
+                return;
+            }
+
+            ProcessInventoryItems();
+
+            if (_dropItems.Count == 0)
+            {
+                return;
+            }
+
+            DropToStash();
+
+            Keyboard.KeyPress(Settings.DropHotkey.Value);
+        }
+
+        #endregion
+
         #region Loads
 
         private void LoadCustomFilters()
@@ -255,8 +402,6 @@ namespace Stashie
             var filterPath = Path.Combine(PluginDirectory, FITERS_CONFIG_FILE);
 
             var filtersLines = File.ReadAllLines(filterPath);
-
-            var unused = new FilterParser();
 
             _customFilters = FilterParser.Parse(filtersLines);
 
@@ -378,162 +523,6 @@ namespace Stashie
         }
 
         #endregion
-
-        private void ProcessInventoryItems()
-        {
-            var inventory =
-                _ingameState.IngameUi.InventoryPanel[
-                    InventoryIndex.PlayerInventory];
-
-            var invItems = inventory.VisibleInventoryItems;
-
-            if (invItems == null)
-            {
-                LogMessage("Player inventory->VisibleInventoryItems is null!", 5);
-                return;
-            }
-
-            _dropItems = new List<FilterResult>();
-            _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
-
-            foreach (var invItem in invItems)
-            {
-                if (invItem.Item == null)
-                {
-                    continue;
-                }
-
-                if (CheckIgnoreCells(invItem))
-                {
-                    continue;
-                }
-
-                var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
-                var testItem = new ItemData(invItem, baseItemType);
-
-                var result = CheckFilters(testItem);
-
-                if (result != null)
-                {
-                    _dropItems.Add(result);
-                }
-            }
-        }
-
-        private bool CheckIgnoreCells(NormalInventoryItem inventItem)
-        {
-            var inventPosX = inventItem.InventPosX;
-            var inventPosY = inventItem.InventPosY;
-
-            if (Settings.RefillCurrency.Value &&
-                _customRefills.Any(x => x.InventPos.X == inventPosX && x.InventPos.Y == inventPosY))
-            {
-                return true;
-            }
-
-            if (inventPosX < 0 || inventPosX >= 12)
-            {
-                return true;
-            }
-            if (inventPosY < 0 || inventPosY >= 5)
-            {
-                return true;
-            }
-
-            return _ignoredCells[inventPosY, inventPosX] != 0; //No need to check all item size
-        }
-
-        private FilterResult CheckFilters(ItemData itemData)
-        {
-            foreach (var filter in _customFilters)
-            {
-                if (!filter.AllowProcess)
-                {
-                    continue;
-                }
-
-                if (filter.CompareItem(itemData))
-                {
-                    return new FilterResult(filter.StashIndexNode, itemData);
-                }
-            }
-
-            return null;
-        }
-
-        private void DropToStash()
-        {
-            var cursorPosPreMoving = Mouse.GetCursorPosition();
-
-            if (Settings.BlockInput.Value)
-            {
-                WinApi.BlockInput(true);
-            }
-
-            if (_dropItems.Count > 0)
-            {
-                var sortedByStash = (from itemResult in _dropItems
-                    group itemResult by itemResult.StashIndex
-                    into groupedDemoClass
-                    select groupedDemoClass).ToDictionary(gdc => gdc.Key, gdc => gdc.ToList());
-
-                var latency = (int) _ingameState.CurLatency + Settings.ExtraDelay;
-
-
-                foreach (var stashResults in sortedByStash)
-                {
-                    // If we are more than 2 tabs away from our target, then use dropdown approach if user has it.
-                    if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
-                    {
-                        return;
-                    }
-
-                    if (!SwitchToTab(stashResults.Key))
-                    {
-                        continue;
-                    }
-                    try
-                    {
-                        Keyboard.KeyDown(Keys.LControlKey);
-                        Thread.Sleep(INPUT_DELAY);
-                        foreach (var stashResult in stashResults.Value)
-                        {
-                            Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
-                                Settings.ExtraDelay);
-                            Thread.Sleep(latency);
-                        }
-                    }
-                    catch
-                    {
-                        Keyboard.KeyUp(Keys.LControlKey);
-                    }
-
-                    // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
-                    if (_callPluginEventMethod != null)
-                    {
-                        // We want to call all other plugins that are subscribed to "StashUpdate".
-                        _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
-                    }
-                }
-
-                Keyboard.KeyUp(Keys.LControlKey);
-            }
-
-            ProcessRefills();
-            Mouse.SetCursorPos(cursorPosPreMoving.X, cursorPosPreMoving.Y);
-
-            // TODO:Go back to a specific tab, if user has that setting enabled.
-            if (Settings.VisitTabWhenDone.Value)
-            {
-                SwitchToTab(Settings.TabToVisitWhenDone.Value);
-            }
-
-            if (Settings.BlockInput.Value)
-            {
-                WinApi.BlockInput(false);
-                Thread.Sleep(INPUT_DELAY);
-            }
-        }
 
         #region Refill
 
@@ -941,7 +930,7 @@ namespace Stashie
             var indexOfCurrentVisibleTab = _ingameState.ServerData.StashPanel.IndexVisibleStash;
             var difference = indexOfTabToVisit - indexOfCurrentVisibleTab;
             var tabIsToTheLeft = difference < 0;
-            
+
             for (var i = 0; i < Math.Abs(difference); i++)
             {
                 Keyboard.KeyPress(tabIsToTheLeft ? Keys.Left : Keys.Right);
@@ -1091,35 +1080,35 @@ namespace Stashie
 
                 if (_ingameState.ServerData.StashPanel != null)
                 {
-                        var stashPanel = _ingameState.ServerData.StashPanel;
-                        if (!GameController.InGame || !stashPanel.IsVisible)
+                    var stashPanel = _ingameState.ServerData.StashPanel;
+                    if (!GameController.InGame || !stashPanel.IsVisible)
+                    {
+                        Thread.Sleep(500);
+                        continue;
+                    }
+
+                    var cachedNames = Settings.AllStashNames;
+                    var realNames = stashPanel.AllStashNames;
+
+                    if (realNames.Count + 1 != cachedNames.Count)
+                    {
+                        UpdateStashNames(realNames);
+                        continue;
+                    }
+
+                    for (var index = 0; index < realNames.Count; ++index)
+                    {
+                        var cachedName = cachedNames[index + 1];
+                        if (cachedName.Equals(realNames[index]))
                         {
-                            Thread.Sleep(500);
                             continue;
                         }
 
-                        var cachedNames = Settings.AllStashNames;
-                        var realNames = stashPanel.AllStashNames;
-
-                        if (realNames.Count + 1 != cachedNames.Count)
-                        {
-                            UpdateStashNames(realNames);
-                            continue;
-                        }
-
-                        for (var index = 0; index < realNames.Count; ++index)
-                        {
-                            var cachedName = cachedNames[index + 1];
-                            if (cachedName.Equals(realNames[index]))
-                            {
-                                continue;
-                            }
-
-                            UpdateStashNames(realNames);
-                            break;
-                        }
+                        UpdateStashNames(realNames);
+                        break;
+                    }
                 }
-                
+
                 Thread.Sleep(300);
             }
 

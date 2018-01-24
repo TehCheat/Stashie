@@ -1,14 +1,4 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          FilterParser
-//   Description:    Parsing custom filters from config
-//   Author:         Stridemann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using PoeHUD.Plugins;
@@ -43,7 +33,9 @@ namespace Stashie.Filters
         private const string PARAMETER_IDENTIFIED = "identified";
 
         private const string PARAMETER_ISELDER = "Elder";
+
         private const string PARAMETER_ISSHAPER = "Shaper";
+
         //Operations
         private const string OPERATION_NONEQUALITY = "!=";
 
@@ -66,7 +58,7 @@ namespace Stashie.Filters
             OPERATION_EQUALITY,
             OPERATION_BIGGER,
             OPERATION_LESS,
-            OPERATION_CONTAINS,
+            OPERATION_CONTAINS
         };
 
         public static List<CustomFilter> Parse(string[] filtersLines)
@@ -99,7 +91,7 @@ namespace Stashie.Filters
                     BasePlugin.LogMessage("Filter parser: Can't find filter name in line: " + (i + 1), 5);
                     continue;
                 }
-                var newFilter = new CustomFilter { Name = filterLine.Substring(0, nameIndex) };
+                var newFilter = new CustomFilter {Name = filterLine.Substring(0, nameIndex)};
                 TrimName(ref newFilter.Name);
 
                 var filterCommandsLine = filterLine.Substring(nameIndex + 1);
@@ -125,7 +117,7 @@ namespace Stashie.Filters
                     if (command.Contains(SYMBOL_COMMAND_FILTER_OR))
                     {
                         var orFilterCommands = command.Split(SYMBOL_COMMAND_FILTER_OR);
-                        var newOrFilter = new BaseFilter { BAny = true };
+                        var newOrFilter = new BaseFilter {BAny = true};
                         newFilter.Filters.Add(newOrFilter);
 
                         foreach (var t in orFilterCommands)
@@ -169,21 +161,21 @@ namespace Stashie.Filters
 
             if (command.Contains(PARAMETER_IDENTIFIED))
             {
-                var identCommand = new IdentifiedItemFilter { BIdentified = command[0] != SYMBOL_NOT };
+                var identCommand = new IdentifiedItemFilter {BIdentified = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(identCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISELDER))
             {
-                var elderCommand = new ElderItemFiler { IsElder = command[0] != SYMBOL_NOT };
+                var elderCommand = new ElderItemFiler {IsElder = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(elderCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISSHAPER))
             {
-                var shaperCommand = new ShaperItemFiler { IsShaper = command[0] != SYMBOL_NOT };
+                var shaperCommand = new ShaperItemFiler {IsShaper = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(shaperCommand);
                 return true;
             }
@@ -198,7 +190,7 @@ namespace Stashie.Filters
             }
 
 
-            var stringComp = new FilterParameterCompare { CompareString = value };
+            var stringComp = new FilterParameterCompare {CompareString = value};
 
             switch (parameter.ToLower())
             {
@@ -300,7 +292,6 @@ namespace Stashie.Filters
             return true;
         }
 
-
         private static bool ParseCommand(string command, out string parameter, out string operation, out string value)
         {
             parameter = "";
@@ -352,8 +343,8 @@ namespace Stashie.Filters
 
     public class BaseFilter : IIFilter
     {
-        public List<IIFilter> Filters = new List<IIFilter>();
         public bool BAny;
+        public List<IIFilter> Filters = new List<IIFilter>();
 
         public bool CompareItem(ItemData itemData)
         {
@@ -374,6 +365,7 @@ namespace Stashie.Filters
     public class ElderItemFiler : IIFilter
     {
         public bool IsElder;
+
         public bool CompareItem(ItemData itemData)
         {
             return itemData.IsElder == IsElder;
@@ -389,13 +381,14 @@ namespace Stashie.Filters
             return itemData.IsShaper == IsShaper;
         }
     }
+
     public class FilterParameterCompare : IIFilter
     {
-        public string CompareString;
         public int CompareInt;
-        public Func<ItemData, string> StringParameter;
-        public Func<ItemData, int> IntParameter;
+        public string CompareString;
         public Func<ItemData, bool> CompDeleg;
+        public Func<ItemData, int> IntParameter;
+        public Func<ItemData, string> StringParameter;
 
         public bool CompareItem(ItemData itemData)
         {

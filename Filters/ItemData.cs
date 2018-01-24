@@ -1,36 +1,27 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          ItemData
-//   Description:    Input item data for filter
-//   Author:         Stridemann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using PoeHUD.Models;
+﻿using PoeHUD.Models;
 using PoeHUD.Models.Enums;
 using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
 using PoeHUD.Poe.EntityComponents;
 using SharpDX;
+using Map = PoeHUD.Poe.Components.Map;
 
 namespace Stashie.Filters
 {
     public class ItemData
     {
         private readonly NormalInventoryItem _inventoryItem;
-
-        public string Path;
-        public string ClassName;
         public string BaseName;
-        public ItemRarity Rarity;
-        public int ItemQuality;
         public bool BIdentified;
-        public int ItemLevel;
-        public int MapTier;
+        public string ClassName;
         public bool IsElder;
         public bool IsShaper;
+        public int ItemLevel;
+        public int ItemQuality;
+        public int MapTier;
+
+        public string Path;
+        public ItemRarity Rarity;
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
         {
@@ -50,7 +41,7 @@ namespace Stashie.Filters
             ClassName = baseItemType.ClassName;
             BaseName = baseItemType.BaseName;
 
-            MapTier = item.HasComponent<PoeHUD.Poe.Components.Map>() ? item.GetComponent<PoeHUD.Poe.Components.Map>().Tier : 0;
+            MapTier = item.HasComponent<Map>() ? item.GetComponent<Map>().Tier : 0;
         }
 
         public Vector2 GetClickPos()

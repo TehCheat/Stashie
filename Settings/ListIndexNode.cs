@@ -1,14 +1,4 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          ListIndexNode
-//   Description:    Extending ListNode for holding an index.
-//   Author:         Stridemann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using PoeHUD.Hud.Settings;
+﻿using PoeHUD.Hud.Settings;
 
 namespace Stashie.Settings
 {
