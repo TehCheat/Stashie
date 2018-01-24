@@ -10,6 +10,7 @@ using PoeHUD.Hud.Menu;
 using PoeHUD.Hud.PluginExtension;
 using PoeHUD.Hud.Settings;
 using PoeHUD.Models.Enums;
+using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
@@ -31,7 +32,7 @@ namespace Stashie
         private const int INPUT_DELAY = 15;
         private MethodInfo _callPluginEventMethod;
 
-        private Vector2 _clickWindowOffset;
+        private Vector2 _windowOffset;
 
         private List<CustomFilter> _customFilters;
         private List<RefillProcessor> _customRefills;
@@ -201,7 +202,7 @@ namespace Stashie
             }
 
             _dropItems = new List<FilterResult>();
-            _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
+            _windowOffset = GameController.Window.GetWindowRectangle().TopLeft;
 
             foreach (var invItem in invItems)
             {
@@ -306,7 +307,7 @@ namespace Stashie
 
                         foreach (var stashResult in stashResults.Value)
                         {
-                            Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _clickWindowOffset,
+                            Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos + _windowOffset,
                                 Settings.ExtraDelay);
                             Thread.Sleep(latency + Settings.ExtraDelay.Value);
                         }
@@ -564,24 +565,7 @@ namespace Stashie
 
                 if (!Settings.AllowHaveMore.Value)
                 {
-                    var iPosX = inventItem.InventPosX;
-                    var iPosY = inventItem.InventPosY;
-                    var iBase = item.GetComponent<Base>();
-
-                    for (var x = iPosX; x <= iPosX + iBase.ItemCellsSizeX - 1; x++)
-                    {
-                        for (var y = iPosY; y <= iPosY + iBase.ItemCellsSizeY - 1; y++)
-                        {
-                            if (x >= 0 && x <= 11 && y >= 0 && y <= 4)
-                            {
-                                filledCells[y, x] = 1;
-                            }
-                            else
-                            {
-                                LogMessage($"Out of range: {x} {y}", 10);
-                            }
-                        }
-                    }
+                    filledCells = GetFilledCells(filledCells, inventItem, item);
                 }
 
                 if (!item.HasComponent<Stack>())
@@ -591,8 +575,6 @@ namespace Stashie
 
                 foreach (var refill in _customRefills)
                 {
-                    //if (refill.AmountOption.Value == 0) continue;
-
                     var bit = GameController.Files.BaseItemTypes.Translate(item.Path);
                     if (bit.BaseName != refill.CurrencyClass)
                     {
@@ -619,28 +601,11 @@ namespace Stashie
 
 
             var freeCellFound = false;
-            var freeCelPos = new Point();
+            var freeCellPos = new Point();
 
             if (!Settings.AllowHaveMore.Value)
             {
-                for (var x = 0; x <= 11; x++)
-                {
-                    for (var y = 0; y <= 4; y++)
-                    {
-                        if (filledCells[y, x] != 0)
-                        {
-                            continue;
-                        }
-
-                        freeCellFound = true;
-                        freeCelPos = new Point(x, y);
-                        break;
-                    }
-                    if (freeCellFound)
-                    {
-                        break;
-                    }
-                }
+                FreeCellFound(filledCells, ref freeCellFound, ref freeCellPos);
             }
 
             foreach (var refill in _customRefills)
@@ -654,11 +619,10 @@ namespace Stashie
                 {
                     continue;
                 }
+
                 if (refill.OwnedCount < refill.AmountOption.Value)
-
-                    #region Refill
-
                 {
+                    #region Refill
                     if (!currencyTabVisible)
                     {
                         if (!SwitchToTab(Settings.CurrencyStashTab.Index))
@@ -715,18 +679,15 @@ namespace Stashie
                         LogMessage(
                             $"Not enough currency (need {moveCount} more) to fill {refill.CurrencyClass} stack", 5);
                     }
+                    #endregion
                 }
 
-                #endregion
-
                 else if (!Settings.AllowHaveMore.Value && refill.OwnedCount > refill.AmountOption.Value)
-
-                    #region Devastate
-
                 {
+                    #region Remove excess items
                     if (!freeCellFound)
                     {
-                        LogMessage("Can\'t find free cell in player inventory to move excess currency.", 5);
+                        LogMessage(@"Can't find free cell in player inventory to move excess currency.", 5);
                         continue;
                     }
 
@@ -740,8 +701,7 @@ namespace Stashie
                         Thread.Sleep(delay);
                     }
 
-                    var destination = GetInventoryClickPosByCellIndex(inventory, freeCelPos.X, freeCelPos.Y, cellSize) +
-                                      _clickWindowOffset;
+                    var destination = GetInventoryClickPosByCellIndex(inventory, freeCellPos.X, freeCellPos.Y, cellSize);
                     var moveCount = refill.OwnedCount - refill.AmountOption.Value;
 
                     Thread.Sleep(delay);
@@ -749,17 +709,62 @@ namespace Stashie
                     Thread.Sleep(delay);
 
                     Keyboard.KeyDown(Keys.LControlKey);
-                    Mouse.SetCursorPosAndLeftClick(destination + _clickWindowOffset, Settings.ExtraDelay.Value);
+                    Mouse.SetCursorPosAndLeftClick(destination + _windowOffset, Settings.ExtraDelay.Value);
                     Keyboard.KeyUp(Keys.LControlKey);
 
                     Thread.Sleep(delay);
+                    #endregion
                 }
-
-                #endregion
             }
         }
 
-        private Vector2 GetInventoryClickPosByCellIndex(Inventory inventory, int indexX, int indexY, float cellSize)
+        private static void FreeCellFound(int[,] filledCells, ref bool freeCellFound, ref Point freeCellPos)
+        {
+            for (var x = 0; x <= 11; x++)
+            {
+                for (var y = 0; y <= 4; y++)
+                {
+                    if (filledCells[y, x] != 0)
+                    {
+                        continue;
+                    }
+
+                    freeCellFound = true;
+                    freeCellPos = new Point(x, y);
+                    break;
+                }
+                if (freeCellFound)
+                {
+                    break;
+                }
+            }
+        }
+
+        private static int[,] GetFilledCells(int[,] filledCells, NormalInventoryItem inventItem, IEntity item)
+        {
+            var iPosX = inventItem.InventPosX;
+            var iPosY = inventItem.InventPosY;
+            var iBase = item.GetComponent<Base>();
+
+            for (var x = iPosX; x <= iPosX + iBase.ItemCellsSizeX - 1; x++)
+            {
+                for (var y = iPosY; y <= iPosY + iBase.ItemCellsSizeY - 1; y++)
+                {
+                    if (x >= 0 && x <= 11 && y >= 0 && y <= 4)
+                    {
+                        filledCells[y, x] = 1;
+                    }
+                    else
+                    {
+                        LogMessage($"Out of range: {x} {y}", 10);
+                    }
+                }
+            }
+
+            return filledCells;
+        }
+
+        private static Vector2 GetInventoryClickPosByCellIndex(Inventory inventory, int indexX, int indexY, float cellSize)
         {
             return inventory.InventoryUiElement.GetClientRect().TopLeft +
                    new Vector2(cellSize * (indexX + 0.5f), cellSize * (indexY + 0.5f));
@@ -776,7 +781,7 @@ namespace Stashie
                 Thread.Sleep(WHILE_DELAY);
             }
 
-            Mouse.SetCursorPosAndLeftClick(from + _clickWindowOffset, Settings.ExtraDelay.Value);
+            Mouse.SetCursorPosAndLeftClick(from + _windowOffset, Settings.ExtraDelay.Value);
             Thread.Sleep(INPUT_DELAY);
             Keyboard.KeyUp(Keys.ShiftKey);
             Thread.Sleep(delay + 50);
@@ -803,7 +808,7 @@ namespace Stashie
             Keyboard.KeyPress(Keys.Enter);
             Thread.Sleep(delay + 50);
 
-            Mouse.SetCursorPosAndLeftClick(to + _clickWindowOffset, Settings.ExtraDelay.Value);
+            Mouse.SetCursorPosAndLeftClick(to + _windowOffset, Settings.ExtraDelay.Value);
             Thread.Sleep(delay + 50);
         }
 
@@ -833,7 +838,7 @@ namespace Stashie
                 if (!dropdownMenu.IsVisible)
                 {
                     var pos = viewAllTabsButton.GetClientRect();
-                    Mouse.SetCursorPosAndLeftClick(pos.Center + _clickWindowOffset, Settings.ExtraDelay);
+                    Mouse.SetCursorPosAndLeftClick(pos.Center + _windowOffset, Settings.ExtraDelay);
 
                     var brCounter = 0;
 
@@ -861,7 +866,7 @@ namespace Stashie
 
                 var tabPos = dropdownMenu.Children[indexOfTabToVisit].GetClientRect();
 
-                Mouse.SetCursorPosAndLeftClick(tabPos.Center + _clickWindowOffset, Settings.ExtraDelay);
+                Mouse.SetCursorPosAndLeftClick(tabPos.Center + _windowOffset, Settings.ExtraDelay);
                 Thread.Sleep(latency);
             }
             catch (Exception e)
