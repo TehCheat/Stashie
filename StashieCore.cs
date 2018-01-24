@@ -385,6 +385,7 @@ namespace Stashie
 
             if (_dropItems.Count == 0)
             {
+                ProcessRefills();
                 return;
             }
 
