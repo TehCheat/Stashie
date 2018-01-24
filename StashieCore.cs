@@ -543,19 +543,18 @@ namespace Stashie
             var currencyTabVisible = false;
 
             var inventory = _ingameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
-            var stashItems = inventory.VisibleInventoryItems;
+            var inventoryItems = inventory.VisibleInventoryItems;
 
-            if (stashItems == null)
+            if (inventoryItems == null)
             {
                 LogError("Can't process refill: VisibleInventoryItems is null!", 5);
                 return;
             }
-
             _customRefills.ForEach(x => x.Clear());
 
             var filledCells = new int[5, 12];
 
-            foreach (var inventItem in stashItems)
+            foreach (var inventItem in inventoryItems)
             {
                 var item = inventItem.Item;
                 if (item == null)
