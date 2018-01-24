@@ -59,8 +59,7 @@ namespace Stashie.Utils
 
         public static Point GetCursorPosition()
         {
-            POINT lpPoint;
-            GetCursorPos(out lpPoint);
+            GetCursorPos(out var lpPoint);
             return lpPoint;
         }
 
@@ -84,10 +83,10 @@ namespace Stashie.Utils
             mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
         }
 
-        public static void SetCursorPosAndLeftClick(Vector2 coords, int extraDelay)
+        public static void SetCursorPosAndLeftClick(Vector2 coords, int extraDelay, Vector2 gameWindow)
         {
-            var posX = (int) coords.X;
-            var posY = (int) coords.Y;
+            var posX = (int) (coords.X + gameWindow.X);
+            var posY = (int) (coords.Y + gameWindow.Y);
             SetCursorPos(posX, posY);
             Thread.Sleep(MOVEMENT_DELAY + extraDelay);
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
@@ -106,8 +105,6 @@ namespace Stashie.Utils
                 mouse_event(MOUSE_EVENT_WHEEL, 0, 0, -(clicks * 120), 0);
             }
         }
-        ////////////////////////////////////////////////////////////
-
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
