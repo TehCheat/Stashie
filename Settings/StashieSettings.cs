@@ -1,14 +1,4 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          StashieLogicSettings
-//   Description:    Main settings for a plugin.
-//   Author:         Stridemann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Windows.Forms;
 using PoeHUD.Hud.Settings;
 using PoeHUD.Plugins;
@@ -17,6 +7,10 @@ namespace Stashie.Settings
 {
     public class StashieSettings : SettingsBase
     {
+        public List<string> AllStashNames = new List<string>();
+        public Dictionary<string, ListIndexNode> CustomFilterOptions;
+        public Dictionary<string, RangeNode<int>> CustomRefillOptions;
+
         public StashieSettings()
         {
             Enable = false;
@@ -38,14 +32,13 @@ namespace Stashie.Settings
         [Menu("Settings", 500)]
         public EmptyNode Settings { get; set; }
 
-
-        [Menu("Require Hotkey","If you just want Stashie to drop items to stash, as soon as you open it.", 1000, 500)]
+        [Menu("Require Hotkey", "If you just want Stashie to drop items to stash, as soon as you open it.", 1000, 500)]
         public ToggleNode RequireHotkey { get; set; }
 
         [Menu("Hotkey", 1001, 1000)]
         public HotkeyNode DropHotkey { get; set; }
 
-        [Menu("Extra Delay","Is it going too fast? Then add a delay (in ms).", 2000, 500)]
+        [Menu("Extra Delay", "Is it going too fast? Then add a delay (in ms).", 2000, 500)]
         public RangeNode<int> ExtraDelay { get; set; }
 
         [Menu("Block Input", "Block user input (except: Ctrl+Alt+Delete) when dropping items to stash.", 3000, 500)]
@@ -61,10 +54,5 @@ namespace Stashie.Settings
         public ToggleNode RefillCurrency { get; set; }
         public ListIndexNode CurrencyStashTab { get; set; }
         public ToggleNode AllowHaveMore { get; set; }
-
-
-        public List<string> AllStashNames = new List<string>();
-        public Dictionary<string, ListIndexNode> CustomFilterOptions;
-        public Dictionary<string, RangeNode<int>> CustomRefillOptions;
     }
 }

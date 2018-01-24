@@ -1,14 +1,4 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          RefillParser
-//   Description:    Parsing custom refill processors from config
-//   Author:         Stridemann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using PoeHUD.Hud.Settings;
@@ -57,7 +47,8 @@ namespace Stashie
                 if (nameIndex == -1)
                 {
                     BasePlugin.LogMessage(
-                        $"Refill parser: Can't find refill name in line: {configLine}. Name should have \":\" divider.", 10);
+                        $"Refill parser: Can't find refill name in line: {configLine}. Name should have \":\" divider.",
+                        10);
                     continue;
                 }
 
@@ -71,7 +62,8 @@ namespace Stashie
                 if (configLineParams.Length != 4)
                 {
                     BasePlugin.LogMessage(
-                        $"Refill parser: Config line should have 4 parameters (ClassName,StackSize,InventoryX,InventoryY): {configLine}, Ignoring refill..", 10);
+                        $"Refill parser: Config line should have 4 parameters (ClassName,StackSize,InventoryX,InventoryY): {configLine}, Ignoring refill..",
+                        10);
                     continue;
                 }
 
@@ -134,16 +126,17 @@ namespace Stashie
 
     public class RefillProcessor
     {
-        public string MenuName;
-        public string CurrencyClass;
-        public int StackSize;
-        public Point InventPos;
         public RangeNode<int> AmountOption;
+
+        public Vector2 ClickPos;
+        public string CurrencyClass;
+        public Point InventPos;
+        public string MenuName;
 
         //Temp values:
         public int OwnedCount;
 
-        public Vector2 ClickPos;
+        public int StackSize;
 
         public void Clear()
         {
@@ -154,8 +147,7 @@ namespace Stashie
 
     public class RefillSettings
     {
-        public string RefillName;
-
         public int Amount;
+        public string RefillName;
     }
 }

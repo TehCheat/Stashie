@@ -1,14 +1,4 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          VirtualKeyboard
-//   Description:    Keyboard control utils.
-//   Author:         Stridemann, nymann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -26,7 +16,6 @@ namespace Stashie.Utils
         private const int KEY_PRESSED = 0x8000;
         private const int ACTION_DELAY = 1;
 
-        
 
         public static void KeyDown(Keys key)
         {
@@ -55,13 +44,13 @@ namespace Stashie.Utils
 
         public static bool IsKeyPressed(Keys key)
         {
-            return Convert.ToBoolean(GetKeyState((int)key) & KEY_PRESSED);
+            return Convert.ToBoolean(GetKeyState((int) key) & KEY_PRESSED);
         }
 
 
         public static bool IsKeyToggled(Keys key)
         {
-            return Convert.ToBoolean(GetKeyState((int)key) & KEY_TOGGLED);
+            return Convert.ToBoolean(GetKeyState((int) key) & KEY_TOGGLED);
         }
     }
 }

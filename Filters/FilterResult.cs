@@ -1,14 +1,4 @@
-﻿#region Header
-
-//-----------------------------------------------------------------
-//   Class:          FilterResult
-//   Description:    Result data from filter
-//   Author:         Stridemann        Date: 08.26.2017
-//-----------------------------------------------------------------
-
-#endregion
-
-using SharpDX;
+﻿using SharpDX;
 using Stashie.Settings;
 
 namespace Stashie.Filters
