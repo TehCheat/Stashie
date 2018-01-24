@@ -33,7 +33,6 @@ namespace Stashie.Filters
         private const string PARAMETER_IDENTIFIED = "identified";
 
         private const string PARAMETER_ISELDER = "Elder";
-
         private const string PARAMETER_ISSHAPER = "Shaper";
 
         //Operations
@@ -41,7 +40,6 @@ namespace Stashie.Filters
 
         private const string OPERATION_LESSEQUAL = "<=";
         private const string OPERATION_BIGGERQUAL = ">=";
-
         private const string OPERATION_EQUALITY = "=";
         private const string OPERATION_BIGGER = ">";
         private const string OPERATION_LESS = "<";
@@ -54,7 +52,6 @@ namespace Stashie.Filters
             OPERATION_LESSEQUAL,
             OPERATION_BIGGERQUAL,
             OPERATION_NOTCONTAINS,
-
             OPERATION_EQUALITY,
             OPERATION_BIGGER,
             OPERATION_LESS,
@@ -179,18 +176,19 @@ namespace Stashie.Filters
                 newFilter.Filters.Add(shaperCommand);
                 return true;
             }
-            string parameter;
-            string operation;
-            string value;
 
-            if (!ParseCommand(command, out parameter, out operation, out value))
+            if (!ParseCommand(command, out var parameter, out var operation, out var value))
             {
                 BasePlugin.LogMessage("Filter parser: Can't parse filter part: " + command, 5);
                 return false;
             }
 
-
             var stringComp = new FilterParameterCompare {CompareString = value};
+            var isNumeric = int.TryParse(value, out var n);
+            if (isNumeric)
+            {
+                stringComp.CompareInt = n;
+            }
 
             switch (parameter.ToLower())
             {
