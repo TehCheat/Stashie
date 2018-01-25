@@ -282,8 +282,6 @@ namespace Stashie {
                     // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
                     if (_callPluginEventMethod != null)
                     {
-                        dynamic callPluginEvent = "CallPluginEvent";
-                        callPluginEvent.CallPluginEvent("StashUpdate");
                         _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
                     }
                 }
