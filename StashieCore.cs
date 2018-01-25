@@ -281,7 +281,11 @@ namespace Stashie {
 
                     // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
                     if (_callPluginEventMethod != null)
+                    {
+                        dynamic callPluginEvent = "CallPluginEvent";
+                        callPluginEvent.CallPluginEvent("StashUpdate");
                         _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
+                    }
                 }
 
                 Keyboard.KeyUp(Keys.LControlKey);
@@ -304,6 +308,7 @@ namespace Stashie {
 
         public override void Initialise()
         {
+            
             _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
             _ingameState = GameController.Game.IngameState;
 
@@ -335,6 +340,7 @@ namespace Stashie {
 
             if (_dropItems.Count == 0) {
                 ProcessRefills();
+                Keyboard.KeyPress(Settings.DropHotkey.Value);
                 return;
             }
 
