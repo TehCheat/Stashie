@@ -313,7 +313,7 @@ namespace Stashie {
             Settings.Enable.OnValueChanged += SetupOrClose;
             SetupOrClose();
 
-            _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 30;
+            _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
         }
 
         public override void Render()
