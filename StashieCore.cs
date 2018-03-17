@@ -20,10 +20,12 @@ using SharpDX;
 using Stashie.Filters;
 using Stashie.Settings;
 using Stashie.Utils;
-using MenuItem = PoeHUD.Hud.Menu.MenuItem;
+using PoeHUD.Hud.Menu.SettingsDrawers;
 
-namespace Stashie {
-    public class StashieCore : BaseSettingsPlugin<StashieSettings> {
+namespace Stashie
+{
+    public class StashieCore : BaseSettingsPlugin<StashieSettings>
+    {
         private const string FITERS_CONFIG_FILE = "FitersConfig.txt";
 
         private const int WHILE_DELAY = 5;
@@ -47,12 +49,52 @@ namespace Stashie {
             PluginName = "Stashie";
         }
 
+        public override void Initialise()
+        {
+            _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
+            _ingameState = GameController.Game.IngameState;
+
+            Settings.Enable.OnValueChanged += SetupOrClose;
+            SetupOrClose();
+
+            SaveDefaultConfigsToDisk();
+
+            _settingsListNodes = new List<ListIndexNode>();
+
+            _customRefills = RefillParser.Parse(PluginDirectory);
+
+            LogMessage("Refills loaded: " + (_customRefills != null), 5);
+
+            var filtersLines = File.ReadAllLines(Path.Combine(PluginDirectory, FITERS_CONFIG_FILE));
+            _customFilters = FilterParser.Parse(filtersLines);
+
+            LogMessage("_customFilters loaded: " + (_customFilters != null), 5);
+
+
+            Settings.TabToVisitWhenDone.Max =
+                (int)_ingameState.ServerData.StashPanel.TotalStashes - 1;
+
+            var names = _ingameState.ServerData.StashPanel.AllStashNames;
+            UpdateStashNames(names);
+
+            foreach (var lOption in _settingsListNodes)
+            {
+                var option = lOption; //Enumerator delegate fix
+                option.OnValueSelected += delegate (string newValue) { OnSettingsStashNameChanged(option, newValue); };
+            }
+
+            LoadIgnoredCells();
+
+            _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
+        }
+
         private static void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
         {
             if (File.Exists(path))
                 return;
 
-            using (var streamWriter = new StreamWriter(path, true)) {
+            using (var streamWriter = new StreamWriter(path, true))
+            {
                 streamWriter.Write(content);
                 streamWriter.Close();
             }
@@ -188,7 +230,8 @@ namespace Stashie {
 
             var invItems = inventory.VisibleInventoryItems;
 
-            if (invItems == null) {
+            if (invItems == null)
+            {
                 LogMessage("Player inventory->VisibleInventoryItems is null!", 5);
                 return;
             }
@@ -196,7 +239,8 @@ namespace Stashie {
             _dropItems = new List<FilterResult>();
             _windowOffset = GameController.Window.GetWindowRectangle().TopLeft;
 
-            foreach (var invItem in invItems) {
+            foreach (var invItem in invItems)
+            {
                 if (invItem.Item == null)
                     continue;
 
@@ -232,7 +276,8 @@ namespace Stashie {
 
         private FilterResult CheckFilters(ItemData itemData)
         {
-            foreach (var filter in _customFilters) {
+            foreach (var filter in _customFilters)
+            {
                 if (!filter.AllowProcess)
                     continue;
 
@@ -250,39 +295,44 @@ namespace Stashie {
             if (Settings.BlockInput.Value)
                 WinApi.BlockInput(true);
 
-            if (_dropItems.Count > 0) {
+            if (_dropItems.Count > 0)
+            {
                 // Dictionary where key is the index (stashtab index) and Value is the items to drop.
                 var itemsToDrop = (from dropItem in _dropItems
-                    group dropItem by dropItem.StashIndex
+                                   group dropItem by dropItem.StashIndex
                     into itemsToDropByTab
-                    select itemsToDropByTab).ToDictionary(tab => tab.Key, tab => tab.ToList());
+                                   select itemsToDropByTab).ToDictionary(tab => tab.Key, tab => tab.ToList());
 
-                var latency = (int) _ingameState.CurLatency;
+                var latency = (int)_ingameState.CurLatency;
 
-                foreach (var stashResults in itemsToDrop) {
+                foreach (var stashResults in itemsToDrop)
+                {
                     // If we are more than 2 tabs away from our target, then use dropdown approach if user has it.
                     if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
                         return;
 
                     if (!SwitchToTab(stashResults.Key))
                         continue;
-                    try {
+                    try
+                    {
                         Keyboard.KeyDown(Keys.LControlKey);
                         Thread.Sleep(INPUT_DELAY);
 
-                        foreach (var stashResult in stashResults.Value) {
+                        foreach (var stashResult in stashResults.Value)
+                        {
                             Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos, Settings.ExtraDelay, _windowOffset);
                             Thread.Sleep(latency + Settings.ExtraDelay.Value);
                         }
                     }
-                    catch {
+                    catch
+                    {
                         Keyboard.KeyUp(Keys.LControlKey);
                     }
 
                     // QVIN's version of Hud doesn't support Subscription events, so we use reflection.
                     if (_callPluginEventMethod != null)
                     {
-                        _callPluginEventMethod.Invoke(API, new object[] {"StashUpdate", new object[0]});
+                        _callPluginEventMethod.Invoke(API, new object[] { "StashUpdate", new object[0] });
                     }
                 }
 
@@ -296,24 +346,11 @@ namespace Stashie {
             if (Settings.VisitTabWhenDone.Value)
                 SwitchToTab(Settings.TabToVisitWhenDone.Value);
 
-            if (Settings.BlockInput.Value) {
+            if (Settings.BlockInput.Value)
+            {
                 WinApi.BlockInput(false);
                 Thread.Sleep(INPUT_DELAY);
             }
-        }
-
-        #region override
-
-        public override void Initialise()
-        {
-            
-            _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
-            _ingameState = GameController.Game.IngameState;
-
-            Settings.Enable.OnValueChanged += SetupOrClose;
-            SetupOrClose();
-
-            _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
         }
 
         public override void Render()
@@ -324,7 +361,8 @@ namespace Stashie {
             var uiTabsOpened = _ingameState.IngameUi.InventoryPanel.IsVisible &&
                                _ingameState.ServerData.StashPanel.IsVisible;
 
-            if (!uiTabsOpened) {
+            if (!uiTabsOpened)
+            {
                 if (Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
                     Keyboard.KeyPress(Settings.DropHotkey.Value);
 
@@ -336,7 +374,8 @@ namespace Stashie {
 
             ProcessInventoryItems();
 
-            if (_dropItems.Count == 0) {
+            if (_dropItems.Count == 0)
+            {
                 ProcessRefills();
                 Keyboard.KeyPress(Settings.DropHotkey.Value);
                 return;
@@ -347,67 +386,84 @@ namespace Stashie {
             Keyboard.KeyPress(Settings.DropHotkey.Value);
         }
 
-        #endregion
-
         #region Loads
 
-        private void LoadCustomFilters()
+
+        public override void InitializeSettingsMenu()
         {
-            var filterPath = Path.Combine(PluginDirectory, FITERS_CONFIG_FILE);
+            GenerateStashieSettingsMenu();
+        }
 
-            var filtersLines = File.ReadAllLines(filterPath);
+        private BaseSettingsDrawer FiltersMenuRootMenu;
+        private BaseSettingsDrawer RefillMenuRootMenu;
+        private void GenerateStashieSettingsMenu()//Separate func cuz we can call it in anu moment to reload all menu
+        {
+            if(FiltersMenuRootMenu != null)
+                SettingsDrawers.Remove(FiltersMenuRootMenu);
+            if (RefillMenuRootMenu != null)
+                SettingsDrawers.Remove(RefillMenuRootMenu);
 
-            _customFilters = FilterParser.Parse(filtersLines);
 
-            var submenu = new Dictionary<string, MenuItem>();
+            FiltersMenuRootMenu = new BaseSettingsDrawer() { SettingName = "Filters" };
+            SettingsDrawers.Add(FiltersMenuRootMenu);
 
-            foreach (var customFilter in _customFilters) {
-                if (!Settings.CustomFilterOptions.TryGetValue(customFilter.Name, out var indexNode)) {
-                    indexNode = new ListIndexNode {
+            var submenu = new Dictionary<string, BaseSettingsDrawer>();
+            foreach (var customFilter in _customFilters)
+            {
+                if (!Settings.CustomFilterOptions.TryGetValue(customFilter.Name, out var indexNode))
+                {
+                    indexNode = new ListIndexNode
+                    {
                         Value = "Ignore",
                         Index = -1
                     };
                     Settings.CustomFilterOptions.Add(customFilter.Name, indexNode);
                 }
 
-                var parentMenu = PluginSettingsRootMenu;
-
+                var filterParent = FiltersMenuRootMenu;
                 if (!string.IsNullOrEmpty(customFilter.SubmenuName))
-                    if (!submenu.TryGetValue(customFilter.SubmenuName, out parentMenu)) {
-                        parentMenu = MenuPlugin.AddChild(PluginSettingsRootMenu, customFilter.SubmenuName);
-                        submenu.Add(customFilter.SubmenuName, parentMenu);
+                {
+                    if (!submenu.TryGetValue(customFilter.SubmenuName, out filterParent))
+                    {
+                        filterParent = new BaseSettingsDrawer() { SettingName = customFilter.SubmenuName };
+                        FiltersMenuRootMenu.Children.Add(filterParent);
+                        submenu.Add(customFilter.SubmenuName, filterParent);
                     }
-                MenuPlugin.AddChild(parentMenu, customFilter.Name, indexNode);
+                }
 
+                filterParent.Children.Add(new ComboBoxSettingDrawer(indexNode) { SettingName = customFilter.Name });
                 customFilter.StashIndexNode = indexNode;
-
                 _settingsListNodes.Add(indexNode);
             }
-        }
 
-        private void LoadCustomRefills()
-        {
-            _customRefills = RefillParser.Parse(PluginDirectory);
 
-            if (_customRefills.Count == 0)
-                return;
+            if (_customRefills.Count > 0)
+            {
 
-            var refillMenu = MenuPlugin.AddChild(PluginSettingsRootMenu, "Refill Currency", Settings.RefillCurrency);
-            MenuPlugin.AddChild(refillMenu, "Currency Tab", Settings.CurrencyStashTab);
-            MenuPlugin.AddChild(refillMenu, "Allow Have More", Settings.AllowHaveMore);
+                RefillMenuRootMenu = new BaseSettingsDrawer() { SettingName = "Refill Currency" };
+                SettingsDrawers.Add(RefillMenuRootMenu);
 
-            foreach (var refill in _customRefills) {
-                if (!Settings.CustomRefillOptions.TryGetValue(refill.MenuName, out var amountOption)) {
-                    amountOption = new RangeNode<int>(0, 0, refill.StackSize);
-                    Settings.CustomRefillOptions.Add(refill.MenuName, amountOption);
+                RefillMenuRootMenu.Children.Add(new ComboBoxSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab" });
+                RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More" });
+
+                foreach (var refill in _customRefills)
+                {
+                    if (!Settings.CustomRefillOptions.TryGetValue(refill.MenuName, out var amountOption))
+                    {
+                        amountOption = new RangeNode<int>(0, 0, refill.StackSize);
+                        Settings.CustomRefillOptions.Add(refill.MenuName, amountOption);
+                    }
+                    amountOption.Max = refill.StackSize;
+                    refill.AmountOption = amountOption;
+                    RefillMenuRootMenu.Children.Add(new IntegerSettingsDrawer(amountOption) { SettingName = refill.MenuName });
                 }
-                amountOption.Max = refill.StackSize;
 
-                refill.AmountOption = amountOption;
-                MenuPlugin.AddChild(refillMenu, refill.MenuName, amountOption);
+                _settingsListNodes.Add(Settings.CurrencyStashTab);
             }
 
-            _settingsListNodes.Add(Settings.CurrencyStashTab);
+
+            var names = _ingameState.ServerData.StashPanel.AllStashNames;
+            UpdateStashNames(names);
         }
 
         private void LoadIgnoredCells()
@@ -415,9 +471,11 @@ namespace Stashie {
             const string fileName = @"/IgnoredCells.json";
             var filePath = PluginDirectory + fileName;
 
-            if (File.Exists(filePath)) {
+            if (File.Exists(filePath))
+            {
                 var json = File.ReadAllText(filePath);
-                try {
+                try
+                {
                     _ignoredCells = JsonConvert.DeserializeObject<int[,]>(json);
 
                     var ignoredHeight = _ignoredCells.GetLength(0);
@@ -428,7 +486,8 @@ namespace Stashie {
                     else
                         return;
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     LogError(
                         "Stashie: Can't decode IgnoredCells settings in " + fileName +
                         ". Reseting to default. Error: " + ex.Message, 5);
@@ -458,18 +517,20 @@ namespace Stashie {
         {
             if (!Settings.RefillCurrency.Value || _customRefills.Count == 0)
                 return;
-            if (Settings.CurrencyStashTab.Index == -1) {
+            if (Settings.CurrencyStashTab.Index == -1)
+            {
                 LogError("Can't process refill: CurrencyStashTab is not set.", 5);
                 return;
             }
 
-            var delay = (int) _ingameState.CurLatency + Settings.ExtraDelay.Value;
+            var delay = (int)_ingameState.CurLatency + Settings.ExtraDelay.Value;
             var currencyTabVisible = false;
 
             var inventory = _ingameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
             var inventoryItems = inventory.VisibleInventoryItems;
 
-            if (inventoryItems == null) {
+            if (inventoryItems == null)
+            {
                 LogError("Can't process refill: VisibleInventoryItems is null!", 5);
                 return;
             }
@@ -477,7 +538,8 @@ namespace Stashie {
 
             var filledCells = new int[5, 12];
 
-            foreach (var inventItem in inventoryItems) {
+            foreach (var inventItem in inventoryItems)
+            {
                 var item = inventItem.Item;
                 if (item == null)
                     continue;
@@ -488,7 +550,8 @@ namespace Stashie {
                 if (!item.HasComponent<Stack>())
                     continue;
 
-                foreach (var refill in _customRefills) {
+                foreach (var refill in _customRefills)
+                {
                     var bit = GameController.Files.BaseItemTypes.Translate(item.Path);
                     if (bit.BaseName != refill.CurrencyClass)
                         continue;
@@ -497,7 +560,8 @@ namespace Stashie {
                     refill.OwnedCount = stack.Size;
                     refill.ClickPos = inventItem.GetClientRect().Center;
 
-                    if (refill.OwnedCount < 0 || refill.OwnedCount > 40) {
+                    if (refill.OwnedCount < 0 || refill.OwnedCount > 40)
+                    {
                         LogError(
                             $"Ignoring refill: {refill.CurrencyClass}: Stacksize {refill.OwnedCount} not in range 0-40 ",
                             5);
@@ -516,17 +580,20 @@ namespace Stashie {
             if (!Settings.AllowHaveMore.Value)
                 FreeCellFound(filledCells, ref freeCellFound, ref freeCellPos);
 
-            foreach (var refill in _customRefills) {
+            foreach (var refill in _customRefills)
+            {
                 if (refill.OwnedCount == -1)
                     continue;
 
                 if (refill.OwnedCount == refill.AmountOption.Value)
                     continue;
 
-                if (refill.OwnedCount < refill.AmountOption.Value) {
+                if (refill.OwnedCount < refill.AmountOption.Value)
+                {
                     #region Refill
 
-                    if (!currencyTabVisible) {
+                    if (!currencyTabVisible)
+                    {
                         if (!SwitchToTab(Settings.CurrencyStashTab.Index))
                             continue;
                         currencyTabVisible = true;
@@ -541,19 +608,22 @@ namespace Stashie {
                         .Where(x => GameController.Files.BaseItemTypes.Translate(x.Item.Path).BaseName ==
                                     refill.CurrencyClass).ToList();
 
-                    foreach (var sourceOfRefill in foundSourceOfRefill) {
+                    foreach (var sourceOfRefill in foundSourceOfRefill)
+                    {
                         var stackSize = sourceOfRefill.Item.GetComponent<Stack>().Size;
                         var getCurCount = moveCount > stackSize ? stackSize : moveCount;
 
                         var destination = refill.ClickPos;
 
-                        if (refill.OwnedCount == 0) {
+                        if (refill.OwnedCount == 0)
+                        {
                             destination = GetInventoryClickPosByCellIndex(inventory, refill.InventPos.X,
                                 refill.InventPos.Y, cellSize);
 
                             // If cells is not free then continue.
                             if (_ingameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory]
-                                    [refill.InventPos.X, refill.InventPos.Y, 12] != null) {
+                                    [refill.InventPos.X, refill.InventPos.Y, 12] != null)
+                            {
                                 moveCount--;
                                 LogMessage(
                                     $"Inventoy ({refill.InventPos.X}, {refill.InventPos.Y}) is occupied by the wrong item!",
@@ -576,15 +646,18 @@ namespace Stashie {
                     #endregion
                 }
 
-                else if (!Settings.AllowHaveMore.Value && refill.OwnedCount > refill.AmountOption.Value) {
+                else if (!Settings.AllowHaveMore.Value && refill.OwnedCount > refill.AmountOption.Value)
+                {
                     #region Remove excess items
 
-                    if (!freeCellFound) {
+                    if (!freeCellFound)
+                    {
                         LogMessage(@"Can't find free cell in player inventory to move excess currency.", 5);
                         continue;
                     }
 
-                    if (!currencyTabVisible) {
+                    if (!currencyTabVisible)
+                    {
                         if (!SwitchToTab(Settings.CurrencyStashTab.Index))
                             continue;
                         currencyTabVisible = true;
@@ -612,8 +685,10 @@ namespace Stashie {
 
         private static void FreeCellFound(int[,] filledCells, ref bool freeCellFound, ref Point freeCellPos)
         {
-            for (var x = 0; x <= 11; x++) {
-                for (var y = 0; y <= 4; y++) {
+            for (var x = 0; x <= 11; x++)
+            {
+                for (var y = 0; y <= 4; y++)
+                {
                     if (filledCells[y, x] != 0)
                         continue;
 
@@ -633,11 +708,11 @@ namespace Stashie {
             var iBase = item.GetComponent<Base>();
 
             for (var x = iPosX; x <= iPosX + iBase.ItemCellsSizeX - 1; x++)
-            for (var y = iPosY; y <= iPosY + iBase.ItemCellsSizeY - 1; y++)
-                if (x >= 0 && x <= 11 && y >= 0 && y <= 4)
-                    filledCells[y, x] = 1;
-                else
-                    LogMessage($"Out of range: {x} {y}", 10);
+                for (var y = iPosY; y <= iPosY + iBase.ItemCellsSizeY - 1; y++)
+                    if (x >= 0 && x <= 11 && y >= 0 && y <= 4)
+                        filledCells[y, x] = 1;
+                    else
+                        LogMessage($"Out of range: {x} {y}", 10);
 
             return filledCells;
         }
@@ -651,32 +726,35 @@ namespace Stashie {
 
         private void SplitStack(int amount, Vector2 from, Vector2 to)
         {
-            var delay = (int) _ingameState.CurLatency * 2 + Settings.ExtraDelay;
+            var delay = (int)_ingameState.CurLatency * 2 + Settings.ExtraDelay;
 
             Keyboard.KeyDown(Keys.ShiftKey);
 
-            while (!Keyboard.IsKeyDown((int) Keys.ShiftKey))
+            while (!Keyboard.IsKeyDown((int)Keys.ShiftKey))
                 Thread.Sleep(WHILE_DELAY);
 
             Mouse.SetCursorPosAndLeftClick(from, Settings.ExtraDelay.Value, _windowOffset);
             Thread.Sleep(INPUT_DELAY);
             Keyboard.KeyUp(Keys.ShiftKey);
             Thread.Sleep(delay + 50);
-            if (amount > 40) {
+            if (amount > 40)
+            {
                 LogMessage("Can't select amount more than 40, current value: " + amount, 5);
                 amount = 40;
             }
 
-            if (amount < 10) {
-                var keyToPress = (int) Keys.D0 + amount;
-                Keyboard.KeyPress((Keys) keyToPress);
+            if (amount < 10)
+            {
+                var keyToPress = (int)Keys.D0 + amount;
+                Keyboard.KeyPress((Keys)keyToPress);
             }
-            else {
-                var keyToPress = (int) Keys.D0 + amount / 10;
-                Keyboard.KeyPress((Keys) keyToPress);
+            else
+            {
+                var keyToPress = (int)Keys.D0 + amount / 10;
+                Keyboard.KeyPress((Keys)keyToPress);
                 Thread.Sleep(delay);
-                keyToPress = (int) Keys.D0 + amount % 10;
-                Keyboard.KeyPress((Keys) keyToPress);
+                keyToPress = (int)Keys.D0 + amount % 10;
+                Keyboard.KeyPress((Keys)keyToPress);
             }
             Thread.Sleep(delay);
             Keyboard.KeyPress(Keys.Enter);
@@ -692,12 +770,13 @@ namespace Stashie {
 
         public bool SwitchToTabViaDropdownMenu(int indexOfTabToVisit)
         {
-            var latency = (int) _ingameState.CurLatency;
+            var latency = (int)_ingameState.CurLatency;
             var stashPanel = _ingameState.ServerData.StashPanel;
 
             // We want to maximum wait 20 times the Current Latency before giving up in our while loops.
             var maxNumberOfTries = latency * 20 > 2000 ? latency * 20 / WHILE_DELAY : 2000 / WHILE_DELAY;
-            try {
+            try
+            {
                 var viewAllTabsButton = _ingameState.ServerData.StashPanel.ViewAllStashButton;
 
                 if (stashPanel.IsVisible && !viewAllTabsButton.IsVisible)
@@ -705,13 +784,15 @@ namespace Stashie {
 
                 var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
 
-                if (!dropdownMenu.IsVisible) {
+                if (!dropdownMenu.IsVisible)
+                {
                     var pos = viewAllTabsButton.GetClientRect();
                     Mouse.SetCursorPosAndLeftClick(pos.Center, Settings.ExtraDelay, _windowOffset);
 
                     var brCounter = 0;
 
-                    while (!dropdownMenu.IsVisible) {
+                    while (!dropdownMenu.IsVisible)
+                    {
                         Thread.Sleep(WHILE_DELAY);
 
                         if (brCounter++ <= maxNumberOfTries)
@@ -721,7 +802,8 @@ namespace Stashie {
                     }
 
                     // Make sure that we are scrolled to the top in the menu.
-                    if (_ingameState.ServerData.StashPanel.TotalStashes > 30) {
+                    if (_ingameState.ServerData.StashPanel.TotalStashes > 30)
+                    {
                         Thread.Sleep(WHILE_DELAY);
                         Mouse.VerticalScroll(true, 10);
                         Thread.Sleep(WHILE_DELAY);
@@ -734,7 +816,8 @@ namespace Stashie {
                 Mouse.SetCursorPosAndLeftClick(tabPos.Center, Settings.ExtraDelay, _windowOffset);
                 Thread.Sleep(latency);
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogError($"Error in GoToTab {indexOfTabToVisit}: {e.Message}", 5);
                 return false;
             }
@@ -743,7 +826,8 @@ namespace Stashie {
 
             var counter = 0;
 
-            do {
+            do
+            {
                 Thread.Sleep(WHILE_DELAY);
                 stash = stashPanel.VisibleStash;
 
@@ -771,7 +855,8 @@ namespace Stashie {
             var indexOfVisibleStash = stashPanel.IndexVisibleStash;
             var travelDistance = Math.Abs(indexOfTabToVisit - indexOfVisibleStash);
 
-            if (indexOfTabToVisit > 30 && indexOfVisibleStash < 30) {
+            if (indexOfTabToVisit > 30 && indexOfVisibleStash < 30)
+            {
                 SwitchToTab(30);
                 return SwitchToTabViaArrowKeys(indexOfTabToVisit);
             }
@@ -784,12 +869,13 @@ namespace Stashie {
 
         private bool SwitchToTabViaArrowKeys(int indexOfTabToVisit)
         {
-            var latency = (int) _ingameState.CurLatency;
+            var latency = (int)_ingameState.CurLatency;
             var indexOfCurrentVisibleTab = _ingameState.ServerData.StashPanel.IndexVisibleStash;
             var difference = indexOfTabToVisit - indexOfCurrentVisibleTab;
             var tabIsToTheLeft = difference < 0;
 
-            for (var i = 0; i < Math.Abs(difference); i++) {
+            for (var i = 0; i < Math.Abs(difference); i++)
+            {
                 Keyboard.KeyPress(tabIsToTheLeft ? Keys.Left : Keys.Right);
                 Thread.Sleep(latency);
             }
@@ -813,29 +899,11 @@ namespace Stashie {
 
         private void SetupOrClose()
         {
-            if (!Settings.Enable.Value) {
+            if (!Settings.Enable.Value)
+            {
                 CloseThreads();
                 return;
             }
-
-            SaveDefaultConfigsToDisk();
-
-            _settingsListNodes = new List<ListIndexNode>();
-
-            LoadCustomRefills();
-            LoadCustomFilters();
-            Settings.TabToVisitWhenDone.Max =
-                (int) _ingameState.ServerData.StashPanel.TotalStashes - 1;
-
-            var names = _ingameState.ServerData.StashPanel.AllStashNames;
-            UpdateStashNames(names);
-
-            foreach (var lOption in _settingsListNodes) {
-                var option = lOption; //Enumerator delegate fix
-                option.OnValueSelected += delegate(string newValue) { OnSettingsStashNameChanged(option, newValue); };
-            }
-
-            LoadIgnoredCells();
 
             _tabNamesUpdaterThread = new Thread(StashTabNamesUpdater_Thread);
             _tabNamesUpdaterThread.Start();
@@ -854,12 +922,14 @@ namespace Stashie {
         private void UpdateStashNames(List<string> newNames)
         {
             Settings.AllStashNames = newNames;
-            _renamedAllStashNames = new List<string> {"Ignore"};
+            _renamedAllStashNames = new List<string> { "Ignore" };
 
-            for (var i = 0; i < Settings.AllStashNames.Count; i++) {
+            for (var i = 0; i < Settings.AllStashNames.Count; i++)
+            {
                 var realStashName = Settings.AllStashNames[i];
 
-                if (_renamedAllStashNames.Contains(realStashName)) {
+                if (_renamedAllStashNames.Contains(realStashName))
+                {
                     realStashName += " (" + i + ")";
                     LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
                 }
@@ -869,7 +939,8 @@ namespace Stashie {
 
             Settings.AllStashNames.Insert(0, "Ignore");
 
-            foreach (var lOption in _settingsListNodes) {
+            foreach (var lOption in _settingsListNodes)
+            {
                 lOption.SetListValues(_renamedAllStashNames);
 
                 var inventoryIndex = GetInventIndexByStashName(lOption.Value);
@@ -881,15 +952,18 @@ namespace Stashie {
                         LogMessage(
                             "Tab renamed : " + lOption.Value + " to " + _renamedAllStashNames[lOption.Index + 1], 5);
 
-                        if (lOption.Index >= _renamedAllStashNames.Count) {
+                        if (lOption.Index >= _renamedAllStashNames.Count)
+                        {
                             lOption.Index = -1;
                             lOption.Value = _renamedAllStashNames[0];
                         }
-                        else {
+                        else
+                        {
                             lOption.Value = _renamedAllStashNames[lOption.Index + 1]; //    Just update it's name
                         }
                     }
-                    else {
+                    else
+                    {
                         lOption.Value =
                             _renamedAllStashNames[0]; //Actually it was "Ignore", we just update it (can be removed)
                     }
@@ -907,20 +981,28 @@ namespace Stashie {
         private void CloseThreads()
         {
             if (_tabNamesUpdaterThread != null && _tabNamesUpdaterThread.IsAlive)
+            {
+                //_tabNamesUpdaterThread.Abort();
+                //_tabNamesUpdaterThread = null;
                 _tabNamesUpdaterThread.IsBackground = true;
+            }
         }
 
         public void StashTabNamesUpdater_Thread()
         {
-            while (!_tabNamesUpdaterThread.IsBackground) {
-                if (!_ingameState.InGame) {
+            while (!_tabNamesUpdaterThread.IsBackground)
+            {
+                if (!_ingameState.InGame)
+                {
                     Thread.Sleep(500);
                     continue;
                 }
 
-                if (_ingameState.ServerData.StashPanel != null) {
+                if (_ingameState.ServerData.StashPanel != null)
+                {
                     var stashPanel = _ingameState.ServerData.StashPanel;
-                    if (!GameController.InGame || !stashPanel.IsVisible) {
+                    if (!GameController.InGame || !stashPanel.IsVisible)
+                    {
                         Thread.Sleep(500);
                         continue;
                     }
@@ -928,12 +1010,14 @@ namespace Stashie {
                     var cachedNames = Settings.AllStashNames;
                     var realNames = stashPanel.AllStashNames;
 
-                    if (realNames.Count + 1 != cachedNames.Count) {
+                    if (realNames.Count + 1 != cachedNames.Count)
+                    {
                         UpdateStashNames(realNames);
                         continue;
                     }
 
-                    for (var index = 0; index < realNames.Count; ++index) {
+                    for (var index = 0; index < realNames.Count; ++index)
+                    {
                         var cachedName = cachedNames[index + 1];
                         if (cachedName.Equals(realNames[index]))
                             continue;
@@ -946,7 +1030,9 @@ namespace Stashie {
                 Thread.Sleep(300);
             }
 
-            _tabNamesUpdaterThread.Interrupt();
+
+            //MessageBox.Show("Quiting");
+            _tabNamesUpdaterThread.Abort();
         }
 
         #endregion
