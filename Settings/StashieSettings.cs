@@ -13,13 +13,7 @@ namespace Stashie.Settings
         public StashieSettings()
         {
             Enable = false;
-            RequireHotkey = true;
-            DropHotkey = Keys.F3;
-            ExtraDelay = new RangeNode<int>(0, 0, 2000);
-            BlockInput = new ToggleNode(false);
-
-            RefillCurrency = false;
-            AllowHaveMore = false;
+            
             FilterOptions = new Dictionary<string, StashTabNode>();
             RefillOptions = new Dictionary<string, RangeNode<int>>();
 
@@ -30,26 +24,26 @@ namespace Stashie.Settings
         public EmptyNode Settings { get; set; }
 
         [Menu("Require Hotkey", "If you just want Stashie to drop items to stash, as soon as you open it.", 1000, 500)]
-        public ToggleNode RequireHotkey { get; set; }
+        public ToggleNode RequireHotkey { get; set; } = true;
 
         [Menu("Hotkey", 1001, 1000)]
-        public HotkeyNode DropHotkey { get; set; }
+        public HotkeyNode DropHotkey { get; set; } = Keys.F3;
 
         [Menu("Extra Delay", "Is it going too fast? Then add a delay (in ms).", 2000, 500)]
-        public RangeNode<int> ExtraDelay { get; set; }
+        public RangeNode<int> ExtraDelay { get; set; } = new RangeNode<int>(30, 0, 1000);
 
         [Menu("Block Input", "Block user input (except: Ctrl+Alt+Delete) when dropping items to stash.", 3000, 500)]
-        public ToggleNode BlockInput { get; set; }
+        public ToggleNode BlockInput { get; set; } = false;
 
         [Menu("When done, go to tab.",
             "After Stashie has dropped all items to their respective tabs, then go to the following tab.", 4000, 500)]
-        public ToggleNode VisitTabWhenDone { get; set; }
+        public ToggleNode VisitTabWhenDone { get; set; } = false;
 
         [Menu("tab (index)", 4001, 4000)]
         public StashTabNode TabToVisitWhenDone { get; set; } = new StashTabNode();
 
-        public ToggleNode RefillCurrency { get; set; }
+        public ToggleNode RefillCurrency { get; set; } = false;
         public StashTabNode CurrencyStashTab { get; set; } = new StashTabNode();
-        public ToggleNode AllowHaveMore { get; set; }
+        public ToggleNode AllowHaveMore { get; set; } = true;
     }
 }

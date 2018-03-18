@@ -417,7 +417,7 @@ namespace Stashie
 
             if (_customRefills.Count > 0)
             {
-                RefillMenuRootMenu = new BaseSettingsDrawer { SettingName = "Refill Currency" };
+                RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency" };
                 SettingsDrawers.Add(RefillMenuRootMenu);
 
                 RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab" });
