@@ -7,9 +7,8 @@ namespace Stashie.Settings
 {
     public class StashieSettings : SettingsBase
     {
-        public List<string> AllStashNames = new List<string>();
-        public Dictionary<string, ListIndexNode> CustomFilterOptions;
-        public Dictionary<string, RangeNode<int>> CustomRefillOptions;
+        public Dictionary<string, StashTabNode> FilterOptions;
+        public Dictionary<string, RangeNode<int>> RefillOptions;
 
         public StashieSettings()
         {
@@ -20,13 +19,11 @@ namespace Stashie.Settings
             BlockInput = new ToggleNode(false);
 
             RefillCurrency = false;
-            CurrencyStashTab = new ListIndexNode();
             AllowHaveMore = false;
-            CustomFilterOptions = new Dictionary<string, ListIndexNode>();
-            CustomRefillOptions = new Dictionary<string, RangeNode<int>>();
+            FilterOptions = new Dictionary<string, StashTabNode>();
+            RefillOptions = new Dictionary<string, RangeNode<int>>();
 
             VisitTabWhenDone = false;
-            TabToVisitWhenDone = new RangeNode<int>(0, 0, 40);
         }
 
         [Menu("Settings", 500)]
@@ -49,10 +46,10 @@ namespace Stashie.Settings
         public ToggleNode VisitTabWhenDone { get; set; }
 
         [Menu("tab (index)", 4001, 4000)]
-        public RangeNode<int> TabToVisitWhenDone { get; set; }
+        public StashTabNode TabToVisitWhenDone { get; set; } = new StashTabNode();
 
         public ToggleNode RefillCurrency { get; set; }
-        public ListIndexNode CurrencyStashTab { get; set; }
+        public StashTabNode CurrencyStashTab { get; set; } = new StashTabNode();
         public ToggleNode AllowHaveMore { get; set; }
     }
 }

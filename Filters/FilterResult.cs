@@ -1,16 +1,17 @@
 ﻿using SharpDX;
 using Stashie.Settings;
+using PoeHUD.Hud.Settings;
 
 namespace Stashie.Filters
 {
     public class FilterResult
     {
-        public int StashIndex;
+        public StashTabNode StashNode;
         public Vector2 ClickPos;
 
-        public FilterResult(ListIndexNode option, ItemData itemData)
+        public FilterResult(StashTabNode stashNode, ItemData itemData)
         {
-            StashIndex = option.Index;
+            StashNode = stashNode;
             ClickPos = itemData.GetClickPos();
         }
     }

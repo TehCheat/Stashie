@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using PoeHUD.Plugins;
+using PoeHUD.Hud.Settings;
 using Stashie.Settings;
 
 namespace Stashie.Filters
@@ -333,10 +334,10 @@ namespace Stashie.Filters
     public class CustomFilter : BaseFilter
     {
         public string Name;
-        public ListIndexNode StashIndexNode;
+        public StashTabNode StashIndexNode;
         public string SubmenuName;
 
-        public bool AllowProcess => StashIndexNode.Index != -1;
+        public bool AllowProcess => StashIndexNode.Exist;
     }
 
     public class BaseFilter : IIFilter

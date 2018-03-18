@@ -21,6 +21,7 @@ using Stashie.Filters;
 using Stashie.Settings;
 using Stashie.Utils;
 using PoeHUD.Hud.Menu.SettingsDrawers;
+using PoeHUD.Controllers;
 
 namespace Stashie
 {
@@ -41,8 +42,6 @@ namespace Stashie
 
         private IngameState _ingameState;
         private bool _playerHasDropdownMenu;
-        private List<ListIndexNode> _settingsListNodes;
-        private Thread _tabNamesUpdaterThread;
 
         public StashieCore()
         {
@@ -54,34 +53,12 @@ namespace Stashie
             _callPluginEventMethod = typeof(PluginExtensionPlugin).GetMethod("CallPluginEvent");
             _ingameState = GameController.Game.IngameState;
 
-            Settings.Enable.OnValueChanged += SetupOrClose;
-            SetupOrClose();
-
             SaveDefaultConfigsToDisk();
-
-            _settingsListNodes = new List<ListIndexNode>();
 
             _customRefills = RefillParser.Parse(PluginDirectory);
 
-            LogMessage("Refills loaded: " + (_customRefills != null), 5);
-
             var filtersLines = File.ReadAllLines(Path.Combine(PluginDirectory, FITERS_CONFIG_FILE));
             _customFilters = FilterParser.Parse(filtersLines);
-
-            LogMessage("_customFilters loaded: " + (_customFilters != null), 5);
-
-
-            Settings.TabToVisitWhenDone.Max =
-                (int)_ingameState.ServerData.StashPanel.TotalStashes - 1;
-
-            var names = _ingameState.ServerData.StashPanel.AllStashNames;
-            UpdateStashNames(names);
-
-            foreach (var lOption in _settingsListNodes)
-            {
-                var option = lOption; //Enumerator delegate fix
-                option.OnValueSelected += delegate (string newValue) { OnSettingsStashNameChanged(option, newValue); };
-            }
 
             LoadIgnoredCells();
 
@@ -299,7 +276,7 @@ namespace Stashie
             {
                 // Dictionary where key is the index (stashtab index) and Value is the items to drop.
                 var itemsToDrop = (from dropItem in _dropItems
-                                   group dropItem by dropItem.StashIndex
+                                   group dropItem by dropItem.StashNode.VisibleIndex
                     into itemsToDropByTab
                                    select itemsToDropByTab).ToDictionary(tab => tab.Key, tab => tab.ToList());
 
@@ -311,7 +288,7 @@ namespace Stashie
                     if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
                         return;
 
-                    if (!SwitchToTab(stashResults.Key))
+                    if (!SwitchToTab(stashResults.Value[0].StashNode))
                         continue;
                     try
                     {
@@ -344,7 +321,7 @@ namespace Stashie
 
             // TODO:Go back to a specific tab, if user has that setting enabled.
             if (Settings.VisitTabWhenDone.Value)
-                SwitchToTab(Settings.TabToVisitWhenDone.Value);
+                SwitchToTab(Settings.TabToVisitWhenDone);
 
             if (Settings.BlockInput.Value)
             {
@@ -391,11 +368,14 @@ namespace Stashie
 
         public override void InitializeSettingsMenu()
         {
+            base.InitializeSettingsMenu();
             GenerateStashieSettingsMenu();
         }
 
         private BaseSettingsDrawer FiltersMenuRootMenu;
         private BaseSettingsDrawer RefillMenuRootMenu;
+        private List<StashTabNode> StashTabNodes = new List<StashTabNode>();//This is for hot reload, we will unload it
+
         private void GenerateStashieSettingsMenu()//Separate func cuz we can call it in anu moment to reload all menu
         {
             if(FiltersMenuRootMenu != null)
@@ -404,66 +384,58 @@ namespace Stashie
                 SettingsDrawers.Remove(RefillMenuRootMenu);
 
 
-            FiltersMenuRootMenu = new BaseSettingsDrawer() { SettingName = "Filters" };
+            FiltersMenuRootMenu = new BaseSettingsDrawer { SettingName = "Filters" };
             SettingsDrawers.Add(FiltersMenuRootMenu);
 
             var submenu = new Dictionary<string, BaseSettingsDrawer>();
             foreach (var customFilter in _customFilters)
             {
-                if (!Settings.CustomFilterOptions.TryGetValue(customFilter.Name, out var indexNode))
+                if (!Settings.FilterOptions.TryGetValue(customFilter.Name, out var tabNode))
                 {
-                    indexNode = new ListIndexNode
-                    {
-                        Value = "Ignore",
-                        Index = -1
-                    };
-                    Settings.CustomFilterOptions.Add(customFilter.Name, indexNode);
+                    tabNode = new StashTabNode();
+                    Settings.FilterOptions.Add(customFilter.Name, tabNode);
                 }
+
+                StashTabNodes.Add(tabNode);
+                StashTabController.RegisterStashNode(tabNode);
 
                 var filterParent = FiltersMenuRootMenu;
                 if (!string.IsNullOrEmpty(customFilter.SubmenuName))
                 {
                     if (!submenu.TryGetValue(customFilter.SubmenuName, out filterParent))
                     {
-                        filterParent = new BaseSettingsDrawer() { SettingName = customFilter.SubmenuName };
+                        filterParent = new BaseSettingsDrawer { SettingName = customFilter.SubmenuName };
                         FiltersMenuRootMenu.Children.Add(filterParent);
                         submenu.Add(customFilter.SubmenuName, filterParent);
                     }
                 }
 
-                filterParent.Children.Add(new ComboBoxSettingDrawer(indexNode) { SettingName = customFilter.Name });
-                customFilter.StashIndexNode = indexNode;
-                _settingsListNodes.Add(indexNode);
+                filterParent.Children.Add(new StashTabNodeSettingDrawer(tabNode) { SettingName = customFilter.Name });
+                customFilter.StashIndexNode = tabNode;
             }
 
 
             if (_customRefills.Count > 0)
             {
-
-                RefillMenuRootMenu = new BaseSettingsDrawer() { SettingName = "Refill Currency" };
+                RefillMenuRootMenu = new BaseSettingsDrawer { SettingName = "Refill Currency" };
                 SettingsDrawers.Add(RefillMenuRootMenu);
 
-                RefillMenuRootMenu.Children.Add(new ComboBoxSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab" });
+                RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab" });
+                StashTabController.RegisterStashNode(Settings.CurrencyStashTab);
                 RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More" });
 
                 foreach (var refill in _customRefills)
                 {
-                    if (!Settings.CustomRefillOptions.TryGetValue(refill.MenuName, out var amountOption))
+                    if (!Settings.RefillOptions.TryGetValue(refill.MenuName, out var amountOption))
                     {
                         amountOption = new RangeNode<int>(0, 0, refill.StackSize);
-                        Settings.CustomRefillOptions.Add(refill.MenuName, amountOption);
+                        Settings.RefillOptions.Add(refill.MenuName, amountOption);
                     }
                     amountOption.Max = refill.StackSize;
                     refill.AmountOption = amountOption;
                     RefillMenuRootMenu.Children.Add(new IntegerSettingsDrawer(amountOption) { SettingName = refill.MenuName });
                 }
-
-                _settingsListNodes.Add(Settings.CurrencyStashTab);
             }
-
-
-            var names = _ingameState.ServerData.StashPanel.AllStashNames;
-            UpdateStashNames(names);
         }
 
         private void LoadIgnoredCells()
@@ -517,7 +489,7 @@ namespace Stashie
         {
             if (!Settings.RefillCurrency.Value || _customRefills.Count == 0)
                 return;
-            if (Settings.CurrencyStashTab.Index == -1)
+            if (!Settings.CurrencyStashTab.Exist)
             {
                 LogError("Can't process refill: CurrencyStashTab is not set.", 5);
                 return;
@@ -594,7 +566,7 @@ namespace Stashie
 
                     if (!currencyTabVisible)
                     {
-                        if (!SwitchToTab(Settings.CurrencyStashTab.Index))
+                        if (!SwitchToTab(Settings.CurrencyStashTab))
                             continue;
                         currencyTabVisible = true;
                         Thread.Sleep(delay);
@@ -658,7 +630,7 @@ namespace Stashie
 
                     if (!currencyTabVisible)
                     {
-                        if (!SwitchToTab(Settings.CurrencyStashTab.Index))
+                        if (!SwitchToTab(Settings.CurrencyStashTab))
                             continue;
                         currencyTabVisible = true;
                         Thread.Sleep(delay);
@@ -768,7 +740,7 @@ namespace Stashie
 
         #region Switching between StashTabs
 
-        public bool SwitchToTabViaDropdownMenu(int indexOfTabToVisit)
+        public bool SwitchToTabViaDropdownMenu(StashTabNode tabNode)
         {
             var latency = (int)_ingameState.CurLatency;
             var stashPanel = _ingameState.ServerData.StashPanel;
@@ -780,7 +752,7 @@ namespace Stashie
                 var viewAllTabsButton = _ingameState.ServerData.StashPanel.ViewAllStashButton;
 
                 if (stashPanel.IsVisible && !viewAllTabsButton.IsVisible)
-                    return SwitchToTabViaArrowKeys(indexOfTabToVisit);
+                    return SwitchToTabViaArrowKeys(tabNode);
 
                 var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
 
@@ -797,7 +769,7 @@ namespace Stashie
 
                         if (brCounter++ <= maxNumberOfTries)
                             continue;
-                        LogMessage($"Error in SwitchToTabViaDropdownMenu({indexOfTabToVisit}).", 5);
+                        LogMessage($"Error in SwitchToTabViaDropdownMenu({tabNode.Name}).", 5);
                         return false;
                     }
 
@@ -811,14 +783,14 @@ namespace Stashie
                     }
                 }
 
-                var tabPos = dropdownMenu.Children[indexOfTabToVisit].GetClientRect();
+                var tabPos = dropdownMenu.Children[tabNode.VisibleIndex].GetClientRect();
 
                 Mouse.SetCursorPosAndLeftClick(tabPos.Center, Settings.ExtraDelay, _windowOffset);
                 Thread.Sleep(latency);
             }
             catch (Exception e)
             {
-                LogError($"Error in GoToTab {indexOfTabToVisit}: {e.Message}", 5);
+                LogError($"Error in GoToTab {tabNode.Name}: {e.Message}", 5);
                 return false;
             }
 
@@ -834,44 +806,44 @@ namespace Stashie
                 if (counter++ <= maxNumberOfTries)
                     continue;
                 LogMessage(
-                    $"2. Error opening stash: {Settings.AllStashNames[indexOfTabToVisit + 1]}. Inventory type is: {stash.InvType.ToString()}",
+                    $"2. Error opening stash : {tabNode.Name}. Inventory type is: {stash.InvType.ToString()}",
                     5);
                 return false;
             } while (stash?.VisibleInventoryItems == null);
             return true;
         }
 
-        public bool SwitchToTab(int indexOfTabToVisit)
+        public bool SwitchToTab(StashTabNode tabNode)
         {
             var stashPanel = _ingameState.ServerData.StashPanel;
 
             // We don't want to Switch to a tab that we are already on
-            if (stashPanel.IndexVisibleStash == indexOfTabToVisit)
+            if (stashPanel.IndexVisibleStash == tabNode.VisibleIndex)
                 return true;
 
             if (!_playerHasDropdownMenu)
-                return SwitchToTabViaArrowKeys(indexOfTabToVisit);
+                return SwitchToTabViaArrowKeys(tabNode);
 
             var indexOfVisibleStash = stashPanel.IndexVisibleStash;
-            var travelDistance = Math.Abs(indexOfTabToVisit - indexOfVisibleStash);
+            var travelDistance = Math.Abs(tabNode.VisibleIndex - indexOfVisibleStash);
 
-            if (indexOfTabToVisit > 30 && indexOfVisibleStash < 30)
+            if (tabNode.VisibleIndex > 30 && indexOfVisibleStash < 30)
             {
-                SwitchToTab(30);
-                return SwitchToTabViaArrowKeys(indexOfTabToVisit);
+                SwitchToTab(new StashTabNode { VisibleIndex = 30 });
+                return SwitchToTabViaArrowKeys(tabNode);
             }
 
             if (travelDistance > 3)
-                return SwitchToTabViaDropdownMenu(indexOfTabToVisit);
+                return SwitchToTabViaDropdownMenu(tabNode);
 
-            return SwitchToTabViaArrowKeys(indexOfTabToVisit);
+            return SwitchToTabViaArrowKeys(tabNode);
         }
 
-        private bool SwitchToTabViaArrowKeys(int indexOfTabToVisit)
+        private bool SwitchToTabViaArrowKeys(StashTabNode tabNode)
         {
             var latency = (int)_ingameState.CurLatency;
             var indexOfCurrentVisibleTab = _ingameState.ServerData.StashPanel.IndexVisibleStash;
-            var difference = indexOfTabToVisit - indexOfCurrentVisibleTab;
+            var difference = tabNode.VisibleIndex - indexOfCurrentVisibleTab;
             var tabIsToTheLeft = difference < 0;
 
             for (var i = 0; i < Math.Abs(difference); i++)
@@ -885,156 +857,9 @@ namespace Stashie
 
         #endregion
 
-        #region Stashes update
-
-        private void OnSettingsStashNameChanged(ListIndexNode node, string newValue)
-        {
-            node.Index = GetInventIndexByStashName(newValue);
-        }
-
         public override void OnClose()
         {
-            CloseThreads();
+            StashTabNodes.ForEach(x => StashTabController.UnregisterStashNode(x));//This is for hot reload
         }
-
-        private void SetupOrClose()
-        {
-            if (!Settings.Enable.Value)
-            {
-                CloseThreads();
-                return;
-            }
-
-            _tabNamesUpdaterThread = new Thread(StashTabNamesUpdater_Thread);
-            _tabNamesUpdaterThread.Start();
-        }
-
-        private int GetInventIndexByStashName(string name)
-        {
-            var index = _renamedAllStashNames.IndexOf(name);
-            if (index != -1)
-                index--;
-            return index;
-        }
-
-        private List<string> _renamedAllStashNames;
-
-        private void UpdateStashNames(List<string> newNames)
-        {
-            Settings.AllStashNames = newNames;
-            _renamedAllStashNames = new List<string> { "Ignore" };
-
-            for (var i = 0; i < Settings.AllStashNames.Count; i++)
-            {
-                var realStashName = Settings.AllStashNames[i];
-
-                if (_renamedAllStashNames.Contains(realStashName))
-                {
-                    realStashName += " (" + i + ")";
-                    LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
-                }
-
-                _renamedAllStashNames.Add(realStashName);
-            }
-
-            Settings.AllStashNames.Insert(0, "Ignore");
-
-            foreach (var lOption in _settingsListNodes)
-            {
-                lOption.SetListValues(_renamedAllStashNames);
-
-                var inventoryIndex = GetInventIndexByStashName(lOption.Value);
-
-                if (inventoryIndex == -1) //If the value doesn't exist in list (renamed)
-                {
-                    if (lOption.Index != -1) //If the value doesn't exist in list and the value was not Ignore
-                    {
-                        LogMessage(
-                            "Tab renamed : " + lOption.Value + " to " + _renamedAllStashNames[lOption.Index + 1], 5);
-
-                        if (lOption.Index >= _renamedAllStashNames.Count)
-                        {
-                            lOption.Index = -1;
-                            lOption.Value = _renamedAllStashNames[0];
-                        }
-                        else
-                        {
-                            lOption.Value = _renamedAllStashNames[lOption.Index + 1]; //    Just update it's name
-                        }
-                    }
-                    else
-                    {
-                        lOption.Value =
-                            _renamedAllStashNames[0]; //Actually it was "Ignore", we just update it (can be removed)
-                    }
-                }
-                else //tab just change it's index
-                {
-                    if (lOption.Index != inventoryIndex)
-                        LogMessage("Tab moved: " + lOption.Index + " to " + inventoryIndex, 5);
-                    lOption.Index = inventoryIndex;
-                    lOption.Value = _renamedAllStashNames[inventoryIndex + 1];
-                }
-            }
-        }
-
-        private void CloseThreads()
-        {
-            if (_tabNamesUpdaterThread != null && _tabNamesUpdaterThread.IsAlive)
-            {
-                //_tabNamesUpdaterThread.Abort();
-                //_tabNamesUpdaterThread = null;
-                _tabNamesUpdaterThread.IsBackground = true;
-            }
-        }
-
-        public void StashTabNamesUpdater_Thread()
-        {
-            while (!_tabNamesUpdaterThread.IsBackground)
-            {
-                if (!_ingameState.InGame)
-                {
-                    Thread.Sleep(500);
-                    continue;
-                }
-
-                if (_ingameState.ServerData.StashPanel != null)
-                {
-                    var stashPanel = _ingameState.ServerData.StashPanel;
-                    if (!GameController.InGame || !stashPanel.IsVisible)
-                    {
-                        Thread.Sleep(500);
-                        continue;
-                    }
-
-                    var cachedNames = Settings.AllStashNames;
-                    var realNames = stashPanel.AllStashNames;
-
-                    if (realNames.Count + 1 != cachedNames.Count)
-                    {
-                        UpdateStashNames(realNames);
-                        continue;
-                    }
-
-                    for (var index = 0; index < realNames.Count; ++index)
-                    {
-                        var cachedName = cachedNames[index + 1];
-                        if (cachedName.Equals(realNames[index]))
-                            continue;
-
-                        UpdateStashNames(realNames);
-                        break;
-                    }
-                }
-
-                Thread.Sleep(300);
-            }
-
-
-            //MessageBox.Show("Quiting");
-            _tabNamesUpdaterThread.Abort();
-        }
-
-        #endregion
     }
 }
