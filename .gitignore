@@ -3,3 +3,8 @@ Properties/
 Stashie.csproj
 .vs/
 packages/
+
+/config.ini
+/FitersConfig.txt
+/IgnoredCells.json
+/RefillCurrency.txt

@@ -385,7 +385,7 @@ namespace Stashie
                 SettingsDrawers.Remove(RefillMenuRootMenu);
 
 
-            FiltersMenuRootMenu = new BaseSettingsDrawer { SettingName = "Filters" };
+            FiltersMenuRootMenu = new BaseSettingsDrawer { SettingName = "Filters", SettingId = GetUniqDrawerId() };
             SettingsDrawers.Add(FiltersMenuRootMenu);
 
             var submenu = new Dictionary<string, BaseSettingsDrawer>();
@@ -405,25 +405,25 @@ namespace Stashie
                 {
                     if (!submenu.TryGetValue(customFilter.SubmenuName, out filterParent))
                     {
-                        filterParent = new BaseSettingsDrawer { SettingName = customFilter.SubmenuName };
+                        filterParent = new BaseSettingsDrawer { SettingName = customFilter.SubmenuName, SettingId = GetUniqDrawerId() };
                         FiltersMenuRootMenu.Children.Add(filterParent);
                         submenu.Add(customFilter.SubmenuName, filterParent);
                     }
                 }
 
-                filterParent.Children.Add(new StashTabNodeSettingDrawer(tabNode) { SettingName = customFilter.Name });
+                filterParent.Children.Add(new StashTabNodeSettingDrawer(tabNode) { SettingName = customFilter.Name, SettingId = GetUniqDrawerId() });
                 customFilter.StashIndexNode = tabNode;
             }
 
 
             if (_customRefills.Count > 0)
             {
-                RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency" };
+                RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency", SettingId = GetUniqDrawerId() };
                 SettingsDrawers.Add(RefillMenuRootMenu);
 
-                RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab" });
+                RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab", SettingId = GetUniqDrawerId() });
                 StashTabController.RegisterStashNode(Settings.CurrencyStashTab);
-                RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More" });
+                RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More", SettingId = GetUniqDrawerId() });
 
                 foreach (var refill in _customRefills)
                 {
@@ -434,7 +434,7 @@ namespace Stashie
                     }
                     amountOption.Max = refill.StackSize;
                     refill.AmountOption = amountOption;
-                    RefillMenuRootMenu.Children.Add(new IntegerSettingsDrawer(amountOption) { SettingName = refill.MenuName });
+                    RefillMenuRootMenu.Children.Add(new IntegerSettingsDrawer(amountOption) { SettingName = refill.MenuName, SettingId = GetUniqDrawerId() });
                 }
             }
         }
