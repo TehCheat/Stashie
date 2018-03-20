@@ -222,6 +222,11 @@ namespace Stashie
                 if (invItem.Item == null)
                     continue;
 
+                if(string.IsNullOrEmpty(invItem.Item.Path))
+                {
+                    LogMessage($"Bugged item detected on X:{invItem.InventPosX}, Y:{invItem.InventPosY}, skipping.. Change location to fix this or restart the game (exit to character selection).", 5);
+                    continue;
+                }
                 if (CheckIgnoreCells(invItem))
                     continue;
 
