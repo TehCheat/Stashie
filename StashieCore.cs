@@ -39,7 +39,6 @@ namespace Stashie
         private List<string> RefillCurrencyNames = new List<string>();
         private List<CustomFilter> _customFilters;
         private List<FilterResult> _dropItems;
-        private int[,] _ignoredCells;
         private IngameState _ingameState;
         private bool _playerHasDropdownMenu;
 
@@ -281,7 +280,7 @@ namespace Stashie
             if (inventPosY < 0 || inventPosY >= 5)
                 return true;
 
-            return _ignoredCells[inventPosY, inventPosX] != 0; //No need to check all item size
+            return Settings.IgnoredCells[inventPosY, inventPosX] != 0; //No need to check all item size
         }
 
         private FilterResult CheckFilters(ItemData itemData)
