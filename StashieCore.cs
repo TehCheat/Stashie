@@ -59,7 +59,6 @@ namespace Stashie
             _customFilters = FilterParser.Parse(filtersLines);
 
             CheckRefillCurrencyTypes();
-            LoadIgnoredCells();
 
             _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
         }
@@ -478,6 +477,42 @@ namespace Stashie
                 }
             }
         }
+        public override void DrawSettingsMenu()
+        {
+            DrawIgnoredCells();
+            base.DrawSettingsMenu();
+        }
+
+        private void DrawIgnoredCells()
+        {
+
+            //Draw Inventory Config
+            ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
+            ImGui.BeginChild("##IgnoredCellsMain", new System.Numerics.Vector2(newcontentRegionArea.X, 165), true, WindowFlags.NoScrollWithMouse);
+            ImGui.Text("Ignored Inventory Slots");
+            ImGui.Text("    ");
+            ImGui.SameLine();
+            ImGuiNative.igGetContentRegionAvail(out newcontentRegionArea);
+            ImGui.BeginChild("##IgnoredCellsCels", new System.Numerics.Vector2(newcontentRegionArea.X, newcontentRegionArea.Y), true, WindowFlags.NoScrollWithMouse);
+            var _numb = 1;
+            for (var i = 0; i < 5; i++)
+            {
+                for (var j = 0; j < 12; j++)
+                {
+                    ImGui.PushID($"{_numb}##IgnoredCells");
+                    var toggled = Convert.ToBoolean(Settings.IgnoredCells[i, j]);
+                    if (ImGui.Selectable(_numb.ToString(), toggled, 0, new System.Numerics.Vector2(20, 20)))
+                        Settings.IgnoredCells[i, j] ^= 1;
+                    if ((_numb - 1) % 12 < 11)
+                        ImGui.SameLine();
+                    _numb += 1;
+                    ImGui.PopID();
+                }
+            }
+
+            ImGui.EndChild();
+            ImGui.EndChild();
+        }
 
         private void AddRefill(RefillProcessor refill)
         {
@@ -502,49 +537,6 @@ namespace Stashie
                 Settings.Refills.Remove(refill);
             };
 
-        }
-
-        private void LoadIgnoredCells()
-        {
-            const string fileName = @"/IgnoredCells.json";
-            var filePath = PluginDirectory + fileName;
-
-            if (File.Exists(filePath))
-            {
-                var json = File.ReadAllText(filePath);
-                try
-                {
-                    _ignoredCells = JsonConvert.DeserializeObject<int[,]>(json);
-
-                    var ignoredHeight = _ignoredCells.GetLength(0);
-                    var ignoredWidth = _ignoredCells.GetLength(1);
-
-                    if (ignoredHeight != 5 || ignoredWidth != 12)
-                        LogError("Stashie: Wrong IgnoredCells size! Should be 12x5. Reseting to default..", 5);
-                    else
-                        return;
-                }
-                catch (Exception ex)
-                {
-                    LogError(
-                        "Stashie: Can't decode IgnoredCells settings in " + fileName +
-                        ". Reseting to default. Error: " + ex.Message, 5);
-                }
-            }
-
-            _ignoredCells = new[,] {
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-            };
-
-            var defaultSettings = JsonConvert.SerializeObject(_ignoredCells);
-            defaultSettings = defaultSettings.Replace("[[", "[\n[");
-            defaultSettings = defaultSettings.Replace("],[", "],\n[");
-            defaultSettings = defaultSettings.Replace("]]", "]\n]");
-            File.WriteAllText(filePath, defaultSettings);
         }
 
         #endregion

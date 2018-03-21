@@ -35,6 +35,14 @@ namespace Stashie.Settings
         public StashTabNode CurrencyStashTab { get; set; } = new StashTabNode();
         public ToggleNode AllowHaveMore { get; set; } = true;
 
+        public int[,] IgnoredCells { get; set; } = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+        };
+
         public List<RefillProcessor> Refills = new List<RefillProcessor>();
     }
 }
