@@ -22,6 +22,7 @@ using Stashie.Settings;
 using Stashie.Utils;
 using PoeHUD.Hud.Menu.SettingsDrawers;
 using PoeHUD.Controllers;
+using ImGuiNET;
 
 namespace Stashie
 {
@@ -29,17 +30,16 @@ namespace Stashie
     {
         private const string FITERS_CONFIG_FILE = "FitersConfig.txt";
 
+        private string RefillCurrencyTypesCfg => Path.Combine(PluginDirectory, "RefillCurrencyTypes.txt");
+
         private const int WHILE_DELAY = 5;
         private const int INPUT_DELAY = 15;
         private MethodInfo _callPluginEventMethod;
-
         private Vector2 _windowOffset;
-
+        private List<string> RefillCurrencyNames = new List<string>();
         private List<CustomFilter> _customFilters;
-        private List<RefillProcessor> _customRefills;
         private List<FilterResult> _dropItems;
         private int[,] _ignoredCells;
-
         private IngameState _ingameState;
         private bool _playerHasDropdownMenu;
 
@@ -55,14 +55,52 @@ namespace Stashie
 
             SaveDefaultConfigsToDisk();
 
-            _customRefills = RefillParser.Parse(PluginDirectory);
-
             var filtersLines = File.ReadAllLines(Path.Combine(PluginDirectory, FITERS_CONFIG_FILE));
             _customFilters = FilterParser.Parse(filtersLines);
 
+            CheckRefillCurrencyTypes();
             LoadIgnoredCells();
 
             _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
+        }
+
+        private void CheckRefillCurrencyTypes()
+        {
+            RefillCurrencyNames.Clear();
+
+            if (File.Exists(RefillCurrencyTypesCfg))
+            {
+                var lines = File.ReadAllLines(RefillCurrencyTypesCfg);
+                RefillCurrencyNames.AddRange(lines);
+            }
+            else
+            {
+                var bit = GameController.Files.BaseItemTypes.contents.Values.Where(x =>
+                x.ClassName == "StackableCurrency" &&
+                !x.BaseName.Contains("Essence") &&
+                !x.BaseName.Contains("Splinter") &&
+                !x.BaseName.Contains("Blessing") &&
+                !x.BaseName.Contains("Enchant") &&
+                !x.BaseName.Contains("Unshaping Orb") &&
+                !x.BaseName.Contains("Harbinger") &&
+                !x.BaseName.Contains("Engineer") &&
+                !x.BaseName.Contains("Ancient") &&
+                !x.BaseName.Contains("Imprint") &&
+                !x.BaseName.Contains("Fragment") &&
+                !x.BaseName.Contains("Perandus Coin") &&
+                !x.BaseName.Contains("Seal") &&
+                !x.BaseName.Contains("Event Coin") &&
+                !x.BaseName.Contains("Stacked Deck") &&
+                !x.BaseName.Contains("Mirror of Kalandra") &&
+                !x.BaseName.Contains("Shard")
+                ).Select(y => y.BaseName).ToArray();
+
+                RefillCurrencyNames.AddRange(bit);
+                File.WriteAllLines(RefillCurrencyTypesCfg, bit);
+            }
+
+            RefillCurrencyNames = RefillCurrencyNames.Where(x => !string.IsNullOrEmpty(x.Trim())).ToList();//remove empty lines
+            RefillCurrencyNames.Sort();
         }
 
         private static void CreateFileAndAppendTextIfItDoesNotExitst(string path, string content)
@@ -84,16 +122,6 @@ namespace Stashie
                                            "Name:Stashie\r\n" +
                                            "Release\r\n";
             CreateFileAndAppendTextIfItDoesNotExitst(path, gitUpdateConfig);
-
-            path = $"{PluginDirectory}\\RefillCurrency.txt";
-
-            const string refillCurrency =
-                "//MenuName:\t\t\tClassName,\t\t\tStackSize,\tInventoryX,\tInventoryY\r\n" +
-                "Portal Scrolls:\t\tPortal Scroll,\t\t40,\t\t\t12,\t\t\t1\r\n" +
-                "Scrolls of Wisdom:\tScroll of Wisdom,\t40,\t\t\t12,\t\t\t2\r\n" +
-                "//Chances:\t\t\tOrb of Chance,\t\t20,\t\t\t12,\t\t\t3";
-
-            CreateFileAndAppendTextIfItDoesNotExitst(path, refillCurrency);
 
             path = $"{PluginDirectory}\\FitersConfig.txt";
 
@@ -246,7 +274,7 @@ namespace Stashie
             var inventPosY = inventItem.InventPosY;
 
             if (Settings.RefillCurrency.Value &&
-                _customRefills.Any(x => x.InventPos.X == inventPosX && x.InventPos.Y == inventPosY))
+                Settings.Refills.Any(x => (int)x.InventPosX.Value == inventPosX && (int)x.InventPosY.Value == inventPosY))
                 return true;
 
             if (inventPosX < 0 || inventPosX >= 12)
@@ -421,7 +449,7 @@ namespace Stashie
             }
 
 
-            if (_customRefills.Count > 0)
+            //if (Settings.Refills.Count > 0)
             {
                 RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency", SettingId = GetUniqDrawerId() };
                 SettingsDrawers.Add(RefillMenuRootMenu);
@@ -430,18 +458,50 @@ namespace Stashie
                 StashTabController.RegisterStashNode(Settings.CurrencyStashTab);
                 RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More", SettingId = GetUniqDrawerId() });
 
-                foreach (var refill in _customRefills)
+                var refillRoot = new BaseSettingsDrawer { SettingName = "Refills:" , SettingId = GetUniqDrawerId() };
+                RefillMenuRootMenu.Children.Add(refillRoot);
+
+                var addTabButton = new ButtonNode();
+                var addTabButtonDrawer = new ButtonSettingDrawer(addTabButton) { SettingName = "Add Refill", SettingId = GetUniqDrawerId() };
+                RefillMenuRootMenu.Children.Add(addTabButtonDrawer);
+
+                addTabButton.OnPressed += delegate
                 {
-                    if (!Settings.RefillOptions.TryGetValue(refill.MenuName, out var amountOption))
-                    {
-                        amountOption = new RangeNode<int>(0, 0, refill.StackSize);
-                        Settings.RefillOptions.Add(refill.MenuName, amountOption);
-                    }
-                    amountOption.Max = refill.StackSize;
-                    refill.AmountOption = amountOption;
-                    RefillMenuRootMenu.Children.Add(new IntegerSettingsDrawer(amountOption) { SettingName = refill.MenuName, SettingId = GetUniqDrawerId() });
+                    var newRefill = new RefillProcessor();
+                    AddRefill(newRefill);
+                    Settings.Refills.Add(newRefill);
+                };
+
+                foreach (var refill in Settings.Refills)
+                {
+                    AddRefill(refill);
                 }
             }
+        }
+
+        private void AddRefill(RefillProcessor refill)
+        {
+            refill.CurrencyClass.Values = RefillCurrencyNames;
+
+            var refillRoot = new BaseSettingsDrawer { SettingName = "", SettingId = GetUniqDrawerId() };
+            RefillMenuRootMenu.Children.Insert(RefillMenuRootMenu.Children.Count - 1, refillRoot);
+
+            refillRoot.Children.Add(new ComboBoxSettingDrawer(refill.CurrencyClass) { SettingName = "Currency", SettingId = GetUniqDrawerId() });
+            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.Amount) { SettingName = "Amount", SettingId = GetUniqDrawerId() });
+
+            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosX) { SettingName = "Inventory Pos X", SettingId = GetUniqDrawerId() });
+            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosY) { SettingName = "Inventory Pos Y", SettingId = GetUniqDrawerId() });
+
+            var removeButton = new ButtonNode();
+            var removeButtonDrawer = new ButtonSettingDrawer(removeButton) { SettingName = "Delete Refill", SettingId = GetUniqDrawerId() };
+            refillRoot.Children.Add(removeButtonDrawer);
+
+            removeButton.OnPressed += delegate
+            {
+                RefillMenuRootMenu.Children.Remove(refillRoot);
+                Settings.Refills.Remove(refill);
+            };
+
         }
 
         private void LoadIgnoredCells()
@@ -493,7 +553,7 @@ namespace Stashie
 
         private void ProcessRefills()
         {
-            if (!Settings.RefillCurrency.Value || _customRefills.Count == 0)
+            if (!Settings.RefillCurrency.Value || Settings.Refills.Count == 0)
                 return;
             if (!Settings.CurrencyStashTab.Exist)
             {
@@ -512,7 +572,7 @@ namespace Stashie
                 LogError("Can't process refill: VisibleInventoryItems is null!", 5);
                 return;
             }
-            _customRefills.ForEach(x => x.Clear());
+            Settings.Refills.ForEach(x => x.Clear());
 
             var filledCells = new int[5, 12];
 
@@ -528,7 +588,7 @@ namespace Stashie
                 if (!item.HasComponent<Stack>())
                     continue;
 
-                foreach (var refill in _customRefills)
+                foreach (var refill in Settings.Refills)
                 {
                     var bit = GameController.Files.BaseItemTypes.Translate(item.Path);
                     if (bit.BaseName != refill.CurrencyClass)
@@ -538,12 +598,15 @@ namespace Stashie
                     refill.OwnedCount = stack.Size;
                     refill.ClickPos = inventItem.GetClientRect().Center;
 
-                    if (refill.OwnedCount < 0 || refill.OwnedCount > 40)
+                    var maxSt = stack.Info.MaxStackSize;
+
+                    if (maxSt > 99)
+                        maxSt = 99;
+
+                    if (refill.Amount.Max != maxSt)
                     {
-                        LogError(
-                            $"Ignoring refill: {refill.CurrencyClass}: Stacksize {refill.OwnedCount} not in range 0-40 ",
-                            5);
-                        refill.OwnedCount = -1;
+                        LogMessage($"Fixed refill: {refill.CurrencyClass.Value} stacksize from {refill.Amount.Max} to {maxSt}.", 5);
+                        refill.Amount.Max = maxSt; 
                     }
                     break;
                 }
@@ -558,15 +621,15 @@ namespace Stashie
             if (!Settings.AllowHaveMore.Value)
                 FreeCellFound(filledCells, ref freeCellFound, ref freeCellPos);
 
-            foreach (var refill in _customRefills)
+            foreach (var refill in Settings.Refills)
             {
                 if (refill.OwnedCount == -1)
                     continue;
 
-                if (refill.OwnedCount == refill.AmountOption.Value)
+                if (refill.OwnedCount == refill.Amount.Value)
                     continue;
 
-                if (refill.OwnedCount < refill.AmountOption.Value)
+                if (refill.OwnedCount < refill.Amount.Value)
                 {
                     #region Refill
 
@@ -578,7 +641,7 @@ namespace Stashie
                         Thread.Sleep(delay);
                     }
 
-                    var moveCount = refill.AmountOption.Value - refill.OwnedCount;
+                    var moveCount = refill.Amount.Value - refill.OwnedCount;
 
                     var currStashItems = _ingameState.ServerData.StashPanel.VisibleStash
                         .VisibleInventoryItems;
@@ -588,23 +651,38 @@ namespace Stashie
 
                     foreach (var sourceOfRefill in foundSourceOfRefill)
                     {
-                        var stackSize = sourceOfRefill.Item.GetComponent<Stack>().Size;
-                        var getCurCount = moveCount > stackSize ? stackSize : moveCount;
+                        var stack = sourceOfRefill.Item.GetComponent<Stack>();
+
+                        if (refill.Amount.Max != stack.Info.MaxStackSize)
+                        {
+                            var maxSt = stack.Info.MaxStackSize;
+
+                            if (maxSt > 99)
+                                maxSt = 99;
+
+                            if (refill.Amount.Max != maxSt)
+                            {
+                                LogMessage($"Fixed refill: {refill.CurrencyClass.Value} stacksize from {refill.Amount.Max} to {maxSt}.", 5);
+                                refill.Amount.Max = maxSt;
+                            }
+                        }
+
+                        var getCurCount = moveCount > stack.Size ? stack.Size : moveCount;
 
                         var destination = refill.ClickPos;
 
                         if (refill.OwnedCount == 0)
                         {
-                            destination = GetInventoryClickPosByCellIndex(inventory, refill.InventPos.X,
-                                refill.InventPos.Y, cellSize);
+                            destination = GetInventoryClickPosByCellIndex(inventory, (int)refill.InventPosX.Value,
+                                (int)refill.InventPosY.Value, cellSize);
 
                             // If cells is not free then continue.
                             if (_ingameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory]
-                                    [refill.InventPos.X, refill.InventPos.Y, 12] != null)
+                                    [(int)refill.InventPosX.Value, (int)refill.InventPosY.Value, 12] != null)
                             {
                                 moveCount--;
                                 LogMessage(
-                                    $"Inventoy ({refill.InventPos.X}, {refill.InventPos.Y}) is occupied by the wrong item!",
+                                    $"Inventoy ({refill.InventPosX.Value}, {refill.InventPosY.Value}) is occupied by the wrong item!",
                                     5);
                                 continue;
                             }
@@ -619,12 +697,12 @@ namespace Stashie
 
                     if (moveCount > 0)
                         LogMessage(
-                            $"Not enough currency (need {moveCount} more) to fill {refill.CurrencyClass} stack", 5);
+                            $"Not enough currency (need {moveCount} more) to fill {refill.CurrencyClass.Value} stack", 5);
 
                     #endregion
                 }
 
-                else if (!Settings.AllowHaveMore.Value && refill.OwnedCount > refill.AmountOption.Value)
+                else if (!Settings.AllowHaveMore.Value && refill.OwnedCount > refill.Amount.Value)
                 {
                     #region Remove excess items
 
@@ -644,7 +722,7 @@ namespace Stashie
 
                     var destination =
                         GetInventoryClickPosByCellIndex(inventory, freeCellPos.X, freeCellPos.Y, cellSize);
-                    var moveCount = refill.OwnedCount - refill.AmountOption.Value;
+                    var moveCount = refill.OwnedCount - refill.Amount.Value;
 
                     Thread.Sleep(delay);
                     SplitStack(moveCount, refill.ClickPos, destination);
@@ -715,10 +793,10 @@ namespace Stashie
             Thread.Sleep(INPUT_DELAY);
             Keyboard.KeyUp(Keys.ShiftKey);
             Thread.Sleep(delay + 50);
-            if (amount > 40)
+            if (amount > 99)
             {
-                LogMessage("Can't select amount more than 40, current value: " + amount, 5);
-                amount = 40;
+                LogMessage("Can't select amount more than 99, current value: " + amount, 5);
+                amount = 99;
             }
 
             if (amount < 10)
@@ -863,9 +941,9 @@ namespace Stashie
 
         #endregion
 
-        public override void OnClose()
+        public override void OnPluginDestroyForHotReload()
         {
-            StashTabNodes.ForEach(x => StashTabController.UnregisterStashNode(x));//This is for hot reload
+            StashTabNodes.ForEach(x => StashTabController.UnregisterStashNode(x));
         }
     }
 }

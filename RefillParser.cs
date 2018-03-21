@@ -4,9 +4,11 @@ using System.IO;
 using PoeHUD.Hud.Settings;
 using PoeHUD.Plugins;
 using SharpDX;
+using Newtonsoft.Json;
 
 namespace Stashie
 {
+    /*
     public class RefillParser
     {
         private const string REFILL_CONFIG = "RefillCurrency.txt";
@@ -70,7 +72,7 @@ namespace Stashie
                 newRefill.CurrencyClass = configLineParams[0];
                 TrimName(ref newRefill.CurrencyClass);
 
-                if (!int.TryParse(configLineParams[1], out newRefill.StackSize))
+                if (!int.TryParse(configLineParams[1], out newRefill.RefillAmount))
                 {
                     BasePlugin.LogMessage(
                         $"Refill parser: Can't parse StackSize from 2nd parameter in line: {configLine} (line num: {i + 1}), Ignoring refill..",
@@ -123,20 +125,21 @@ namespace Stashie
             name = name.TrimStart(' ');
         }
     }
-
+    */
     public class RefillProcessor
     {
-        public RangeNode<int> AmountOption;
-
-        public Vector2 ClickPos;
-        public string CurrencyClass;
-        public Point InventPos;
-        public string MenuName;
+        public ListNode CurrencyClass = new ListNode { Value = "Scroll of Wisdom" };
+        public RangeNode<int> InventPosX { get; set; } = new RangeNode<int>(0, 0, 11);
+        public RangeNode<int> InventPosY { get; set; } = new RangeNode<int>(0, 0, 4);
+        public RangeNode<int> Amount { get; set; } = new RangeNode<int>(0, 0, 40);
 
         //Temp values:
+        [JsonIgnore]
+        public Vector2 ClickPos;
+        [JsonIgnore]
         public int OwnedCount;
 
-        public int StackSize;
+    
 
         public void Clear()
         {

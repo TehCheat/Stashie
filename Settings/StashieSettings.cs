@@ -7,18 +7,7 @@ namespace Stashie.Settings
 {
     public class StashieSettings : SettingsBase
     {
-        public Dictionary<string, StashTabNode> FilterOptions;
-        public Dictionary<string, RangeNode<int>> RefillOptions;
-
-        public StashieSettings()
-        {
-            Enable = false;
-            
-            FilterOptions = new Dictionary<string, StashTabNode>();
-            RefillOptions = new Dictionary<string, RangeNode<int>>();
-
-            VisitTabWhenDone = false;
-        }
+        public Dictionary<string, StashTabNode> FilterOptions = new Dictionary<string, StashTabNode>();
 
         [Menu("Settings", 500)]
         public EmptyNode Settings { get; set; }
@@ -45,5 +34,7 @@ namespace Stashie.Settings
         public ToggleNode RefillCurrency { get; set; } = false;
         public StashTabNode CurrencyStashTab { get; set; } = new StashTabNode();
         public ToggleNode AllowHaveMore { get; set; } = true;
+
+        public List<RefillProcessor> Refills = new List<RefillProcessor>();
     }
 }
