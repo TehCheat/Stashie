@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
@@ -23,6 +24,7 @@ using Stashie.Utils;
 using PoeHUD.Hud.Menu.SettingsDrawers;
 using PoeHUD.Controllers;
 using ImGuiNET;
+using PoeHUD.Hud.UI;
 
 namespace Stashie
 {
@@ -39,7 +41,6 @@ namespace Stashie
         private List<string> RefillCurrencyNames = new List<string>();
         private List<CustomFilter> _customFilters;
         private List<FilterResult> _dropItems;
-        private int[,] _ignoredCells;
         private IngameState _ingameState;
         private bool _playerHasDropdownMenu;
 
@@ -59,7 +60,6 @@ namespace Stashie
             _customFilters = FilterParser.Parse(filtersLines);
 
             CheckRefillCurrencyTypes();
-            LoadIgnoredCells();
 
             _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
         }
@@ -282,7 +282,7 @@ namespace Stashie
             if (inventPosY < 0 || inventPosY >= 5)
                 return true;
 
-            return _ignoredCells[inventPosY, inventPosX] != 0; //No need to check all item size
+            return Settings.IgnoredCells[inventPosY, inventPosX] != 0; //No need to check all item size
         }
 
         private FilterResult CheckFilters(ItemData itemData)
@@ -478,6 +478,93 @@ namespace Stashie
                 }
             }
         }
+        public override void DrawSettingsMenu()
+        {
+            DrawIgnoredCellsSettings();
+            base.DrawSettingsMenu();
+        }
+
+        public void SaveIgnoredSLotsFromInventoryTemplate()
+        {
+            Settings.IgnoredCells = new[,] {
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            };
+            try
+            {
+                foreach (var inventories in GameController.Game.IngameState.ServerData.PlayerInventories)
+                {
+                    if (inventories.Inventory.InventType != InventoryTypeE.Main)
+                        return;
+                    var inventory = inventories.Inventory.InventorySlotItems;
+                    foreach (var item in inventory)
+                    {
+                        var baseC = item.Item.GetComponent<Base>();
+                        var itemSizeX = baseC.ItemCellsSizeX;
+                        var itemSizeY = baseC.ItemCellsSizeY;
+                        var inventPosX = item.WeirdPosX;
+                        var inventPosY = item.WeirdPosY1;
+                        for (var y = 0; y < itemSizeY; y++)
+                        {
+                            for (var x = 0; x < itemSizeX; x++)
+                                Settings.IgnoredCells[y + inventPosY, x + inventPosX] = 1;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogError($"{e}", 5);
+            }
+        }
+
+        private void DrawIgnoredCellsSettings()
+        {
+            ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
+            ImGui.BeginChild("##IgnoredCellsMain", new System.Numerics.Vector2(newcontentRegionArea.X, 183), true, WindowFlags.NoScrollWithMouse);
+            ImGui.Text("Ignored Inventory Slots");
+            ImGuiExtension.ToolTip($"Checked = Item will be ignored{Environment.NewLine}UnChecked = Item will be processed");
+            ImGui.Text("    ");
+            ImGui.SameLine();
+            ImGuiNative.igGetContentRegionAvail(out newcontentRegionArea);
+            ImGui.BeginChild("##IgnoredCellsCels", new System.Numerics.Vector2(newcontentRegionArea.X, newcontentRegionArea.Y), true, 
+                    WindowFlags.NoScrollWithMouse);
+            try
+            {
+                if (ImGui.Button("Copy Inventory"))
+                {
+                    SaveIgnoredSLotsFromInventoryTemplate();
+                }
+            }
+            catch (Exception e)
+            {
+                LogError(e, 10);
+            }
+            var _numb = 1;
+            for (var i = 0; i < 5; i++)
+            {
+                for (var j = 0; j < 12; j++)
+                {
+                    var toggled = Convert.ToBoolean(Settings.IgnoredCells[i, j]);
+                    if (ImGui.Checkbox($"##{_numb}IgnoredCells", ref toggled))
+                    {
+                        Settings.IgnoredCells[i, j] ^= 1;
+                    }
+
+                    if ((_numb - 1) % 12 < 11)
+                    {
+                        ImGui.SameLine();
+                    }
+                    _numb += 1;
+                }
+            }
+
+            ImGui.EndChild();
+            ImGui.EndChild();
+        }
 
         private void AddRefill(RefillProcessor refill)
         {
@@ -502,49 +589,6 @@ namespace Stashie
                 Settings.Refills.Remove(refill);
             };
 
-        }
-
-        private void LoadIgnoredCells()
-        {
-            const string fileName = @"/IgnoredCells.json";
-            var filePath = PluginDirectory + fileName;
-
-            if (File.Exists(filePath))
-            {
-                var json = File.ReadAllText(filePath);
-                try
-                {
-                    _ignoredCells = JsonConvert.DeserializeObject<int[,]>(json);
-
-                    var ignoredHeight = _ignoredCells.GetLength(0);
-                    var ignoredWidth = _ignoredCells.GetLength(1);
-
-                    if (ignoredHeight != 5 || ignoredWidth != 12)
-                        LogError("Stashie: Wrong IgnoredCells size! Should be 12x5. Reseting to default..", 5);
-                    else
-                        return;
-                }
-                catch (Exception ex)
-                {
-                    LogError(
-                        "Stashie: Can't decode IgnoredCells settings in " + fileName +
-                        ". Reseting to default. Error: " + ex.Message, 5);
-                }
-            }
-
-            _ignoredCells = new[,] {
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-            };
-
-            var defaultSettings = JsonConvert.SerializeObject(_ignoredCells);
-            defaultSettings = defaultSettings.Replace("[[", "[\n[");
-            defaultSettings = defaultSettings.Replace("],[", "],\n[");
-            defaultSettings = defaultSettings.Replace("]]", "]\n]");
-            File.WriteAllText(filePath, defaultSettings);
         }
 
         #endregion
