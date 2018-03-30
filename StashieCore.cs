@@ -15,7 +15,6 @@ using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
-using PoeHUD.Poe.EntityComponents;
 using PoeHUD.Poe.RemoteMemoryObjects;
 using SharpDX;
 using Stashie.Filters;
@@ -412,7 +411,7 @@ namespace Stashie
 
         private void GenerateStashieSettingsMenu()//Separate func cuz we can call it in anu moment to reload all menu
         {
-            if(FiltersMenuRootMenu != null)
+            if (FiltersMenuRootMenu != null)
                 SettingsDrawers.Remove(FiltersMenuRootMenu);
             if (RefillMenuRootMenu != null)
                 SettingsDrawers.Remove(RefillMenuRootMenu);
@@ -448,36 +447,33 @@ namespace Stashie
                 customFilter.StashIndexNode = tabNode;
             }
 
+            RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency", SettingId = GetUniqDrawerId() };
+            SettingsDrawers.Add(RefillMenuRootMenu);
 
-            //if (Settings.Refills.Count > 0)
+            RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab", SettingId = GetUniqDrawerId() });
+            StashTabController.RegisterStashNode(Settings.CurrencyStashTab);
+            RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More", SettingId = GetUniqDrawerId() });
+
+            var refillRoot = new BaseSettingsDrawer { SettingName = "Refills:", SettingId = GetUniqDrawerId() };
+            RefillMenuRootMenu.Children.Add(refillRoot);
+
+            var addTabButton = new ButtonNode();
+            var addTabButtonDrawer = new ButtonSettingDrawer(addTabButton) { SettingName = "Add Refill", SettingId = GetUniqDrawerId() };
+            RefillMenuRootMenu.Children.Add(addTabButtonDrawer);
+
+            addTabButton.OnPressed += delegate
             {
-                RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency", SettingId = GetUniqDrawerId() };
-                SettingsDrawers.Add(RefillMenuRootMenu);
+                var newRefill = new RefillProcessor();
+                AddRefill(newRefill);
+                Settings.Refills.Add(newRefill);
+            };
 
-                RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab", SettingId = GetUniqDrawerId() });
-                StashTabController.RegisterStashNode(Settings.CurrencyStashTab);
-                RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More", SettingId = GetUniqDrawerId() });
-
-                var refillRoot = new BaseSettingsDrawer { SettingName = "Refills:" , SettingId = GetUniqDrawerId() };
-                RefillMenuRootMenu.Children.Add(refillRoot);
-
-                var addTabButton = new ButtonNode();
-                var addTabButtonDrawer = new ButtonSettingDrawer(addTabButton) { SettingName = "Add Refill", SettingId = GetUniqDrawerId() };
-                RefillMenuRootMenu.Children.Add(addTabButtonDrawer);
-
-                addTabButton.OnPressed += delegate
-                {
-                    var newRefill = new RefillProcessor();
-                    AddRefill(newRefill);
-                    Settings.Refills.Add(newRefill);
-                };
-
-                foreach (var refill in Settings.Refills)
-                {
-                    AddRefill(refill);
-                }
+            foreach (var refill in Settings.Refills)
+            {
+                AddRefill(refill);
             }
         }
+
         public override void DrawSettingsMenu()
         {
             DrawIgnoredCellsSettings();
@@ -505,8 +501,8 @@ namespace Stashie
                         var baseC = item.Item.GetComponent<Base>();
                         var itemSizeX = baseC.ItemCellsSizeX;
                         var itemSizeY = baseC.ItemCellsSizeY;
-                        var inventPosX = item.WeirdPosX;
-                        var inventPosY = item.WeirdPosY1;
+                        var inventPosX = item.PosX;
+                        var inventPosY = item.PosY;
                         for (var y = 0; y < itemSizeY; y++)
                         {
                             for (var x = 0; x < itemSizeX; x++)
@@ -574,6 +570,8 @@ namespace Stashie
             RefillMenuRootMenu.Children.Insert(RefillMenuRootMenu.Children.Count - 1, refillRoot);
 
             refillRoot.Children.Add(new ComboBoxSettingDrawer(refill.CurrencyClass) { SettingName = "Currency", SettingId = GetUniqDrawerId() });
+
+            refill.Amount.Max = refill.MaxStackAmount;
             refillRoot.Children.Add(new IntegerSettingsDrawer(refill.Amount) { SettingName = "Amount", SettingId = GetUniqDrawerId() });
 
             refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosX) { SettingName = "Inventory Pos X", SettingId = GetUniqDrawerId() });
@@ -647,10 +645,11 @@ namespace Stashie
                     if (maxSt > 99)
                         maxSt = 99;
 
-                    if (refill.Amount.Max != maxSt)
+
+                    if (refill.MaxStackAmount != maxSt)
                     {
                         LogMessage($"Fixed refill: {refill.CurrencyClass.Value} stacksize from {refill.Amount.Max} to {maxSt}.", 5);
-                        refill.Amount.Max = maxSt; 
+                        refill.MaxStackAmount = refill.Amount.Max = maxSt; 
                     }
                     break;
                 }
@@ -696,8 +695,9 @@ namespace Stashie
                     foreach (var sourceOfRefill in foundSourceOfRefill)
                     {
                         var stack = sourceOfRefill.Item.GetComponent<Stack>();
+                        var stackSize = stack.Size;
 
-                        if (refill.Amount.Max != stack.Info.MaxStackSize)
+                        if (refill.MaxStackAmount != stack.Info.MaxStackSize)
                         {
                             var maxSt = stack.Info.MaxStackSize;
 
@@ -707,7 +707,7 @@ namespace Stashie
                             if (refill.Amount.Max != maxSt)
                             {
                                 LogMessage($"Fixed refill: {refill.CurrencyClass.Value} stacksize from {refill.Amount.Max} to {maxSt}.", 5);
-                                refill.Amount.Max = maxSt;
+                                refill.MaxStackAmount = refill.Amount.Max = maxSt;
                             }
                         }
 
@@ -732,7 +732,7 @@ namespace Stashie
                             }
                         }
 
-                        SplitStack(moveCount, sourceOfRefill.GetClientRect().Center, destination);
+                        SplitStack(moveCount, sourceOfRefill.GetClientRect().Center, destination, stackSize);
                         moveCount -= getCurCount;
 
                         if (moveCount == 0)
@@ -769,7 +769,7 @@ namespace Stashie
                     var moveCount = refill.OwnedCount - refill.Amount.Value;
 
                     Thread.Sleep(delay);
-                    SplitStack(moveCount, refill.ClickPos, destination);
+                    SplitStack(moveCount, refill.ClickPos, destination, 0);
                     Thread.Sleep(delay);
 
                     Keyboard.KeyDown(Keys.LControlKey);
@@ -824,44 +824,55 @@ namespace Stashie
                    new Vector2(cellSize * (indexX + 0.5f), cellSize * (indexY + 0.5f));
         }
 
-        private void SplitStack(int amount, Vector2 from, Vector2 to)
+        private void SplitStack(int amount, Vector2 from, Vector2 to, int staskSize)
         {
             var delay = (int)_ingameState.CurLatency * 2 + Settings.ExtraDelay;
 
-            Keyboard.KeyDown(Keys.ShiftKey);
-
-            while (!Keyboard.IsKeyDown((int)Keys.ShiftKey))
-                Thread.Sleep(WHILE_DELAY);
-
-            Mouse.SetCursorPosAndLeftClick(from, Settings.ExtraDelay.Value, _windowOffset);
-            Thread.Sleep(INPUT_DELAY);
-            Keyboard.KeyUp(Keys.ShiftKey);
-            Thread.Sleep(delay + 50);
-            if (amount > 99)
+            if (staskSize == 1)
             {
-                LogMessage("Can't select amount more than 99, current value: " + amount, 5);
-                amount = 99;
-            }
-
-            if (amount < 10)
-            {
-                var keyToPress = (int)Keys.D0 + amount;
-                Keyboard.KeyPress((Keys)keyToPress);
+                Mouse.SetCursorPosAndLeftClick(from, Settings.ExtraDelay.Value, _windowOffset);
+                Thread.Sleep(INPUT_DELAY);
+                Thread.Sleep(delay + 50);
+                Mouse.SetCursorPosAndLeftClick(to, Settings.ExtraDelay.Value, _windowOffset);
+                Thread.Sleep(delay + 50);
             }
             else
             {
-                var keyToPress = (int)Keys.D0 + amount / 10;
-                Keyboard.KeyPress((Keys)keyToPress);
-                Thread.Sleep(delay);
-                keyToPress = (int)Keys.D0 + amount % 10;
-                Keyboard.KeyPress((Keys)keyToPress);
-            }
-            Thread.Sleep(delay);
-            Keyboard.KeyPress(Keys.Enter);
-            Thread.Sleep(delay + 50);
+                Keyboard.KeyDown(Keys.ShiftKey);
 
-            Mouse.SetCursorPosAndLeftClick(to, Settings.ExtraDelay.Value, _windowOffset);
-            Thread.Sleep(delay + 50);
+                while (!Keyboard.IsKeyDown((int)Keys.ShiftKey))
+                    Thread.Sleep(WHILE_DELAY);
+
+                Mouse.SetCursorPosAndLeftClick(from, Settings.ExtraDelay.Value, _windowOffset);
+                Thread.Sleep(INPUT_DELAY);
+                Keyboard.KeyUp(Keys.ShiftKey);
+                Thread.Sleep(delay + 50);
+                if (amount > 99)
+                {
+                    LogMessage("Can't select amount more than 99, current value: " + amount, 5);
+                    amount = 99;
+                }
+
+                if (amount < 10)
+                {
+                    var keyToPress = (int)Keys.D0 + amount;
+                    Keyboard.KeyPress((Keys)keyToPress);
+                }
+                else
+                {
+                    var keyToPress = (int)Keys.D0 + amount / 10;
+                    Keyboard.KeyPress((Keys)keyToPress);
+                    Thread.Sleep(delay);
+                    keyToPress = (int)Keys.D0 + amount % 10;
+                    Keyboard.KeyPress((Keys)keyToPress);
+                }
+                Thread.Sleep(delay);
+                Keyboard.KeyPress(Keys.Enter);
+                Thread.Sleep(delay + 50);
+
+                Mouse.SetCursorPosAndLeftClick(to, Settings.ExtraDelay.Value, _windowOffset);
+                Thread.Sleep(delay + 50);
+            }
         }
 
         #endregion

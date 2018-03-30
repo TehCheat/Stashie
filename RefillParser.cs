@@ -132,6 +132,7 @@ namespace Stashie
         public RangeNode<int> InventPosX { get; set; } = new RangeNode<int>(0, 0, 11);
         public RangeNode<int> InventPosY { get; set; } = new RangeNode<int>(0, 0, 4);
         public RangeNode<int> Amount { get; set; } = new RangeNode<int>(0, 0, 40);
+        public int MaxStackAmount { get; set; } = 40;
 
         //Temp values:
         [JsonIgnore]

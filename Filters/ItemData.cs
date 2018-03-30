@@ -2,7 +2,6 @@
 using PoeHUD.Models.Enums;
 using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
-using PoeHUD.Poe.EntityComponents;
 using SharpDX;
 using Map = PoeHUD.Poe.Components.Map;
 
