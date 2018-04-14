@@ -417,7 +417,7 @@ namespace Stashie
                 SettingsDrawers.Remove(RefillMenuRootMenu);
 
 
-            FiltersMenuRootMenu = new BaseSettingsDrawer { SettingName = "Filters", SettingId = GetUniqDrawerId() };
+            FiltersMenuRootMenu = new BaseSettingsDrawer("Filters", GetUniqDrawerId());
             SettingsDrawers.Add(FiltersMenuRootMenu);
 
             var submenu = new Dictionary<string, BaseSettingsDrawer>();
@@ -437,28 +437,28 @@ namespace Stashie
                 {
                     if (!submenu.TryGetValue(customFilter.SubmenuName, out filterParent))
                     {
-                        filterParent = new BaseSettingsDrawer { SettingName = customFilter.SubmenuName, SettingId = GetUniqDrawerId() };
+                        filterParent = new BaseSettingsDrawer(customFilter.SubmenuName, GetUniqDrawerId());
                         FiltersMenuRootMenu.Children.Add(filterParent);
                         submenu.Add(customFilter.SubmenuName, filterParent);
                     }
                 }
 
-                filterParent.Children.Add(new StashTabNodeSettingDrawer(tabNode) { SettingName = customFilter.Name, SettingId = GetUniqDrawerId() });
+                filterParent.Children.Add(new StashTabNodeSettingDrawer(tabNode, customFilter.Name, GetUniqDrawerId()));
                 customFilter.StashIndexNode = tabNode;
             }
 
-            RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency) { SettingName = "Refill Currency", SettingId = GetUniqDrawerId() };
+            RefillMenuRootMenu = new CheckboxSettingDrawer(Settings.RefillCurrency, "Refill Currency", GetUniqDrawerId());
             SettingsDrawers.Add(RefillMenuRootMenu);
 
-            RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab) { SettingName = "Currency Tab", SettingId = GetUniqDrawerId() });
+            RefillMenuRootMenu.Children.Add(new StashTabNodeSettingDrawer(Settings.CurrencyStashTab, "Currency Tab", GetUniqDrawerId()));
             StashTabController.RegisterStashNode(Settings.CurrencyStashTab);
-            RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore) { SettingName = "Allow Have More", SettingId = GetUniqDrawerId() });
+            RefillMenuRootMenu.Children.Add(new CheckboxSettingDrawer(Settings.AllowHaveMore, "Allow Have More", GetUniqDrawerId()));
 
-            var refillRoot = new BaseSettingsDrawer { SettingName = "Refills:", SettingId = GetUniqDrawerId() };
+            var refillRoot = new BaseSettingsDrawer("Refills:", GetUniqDrawerId());
             RefillMenuRootMenu.Children.Add(refillRoot);
 
             var addTabButton = new ButtonNode();
-            var addTabButtonDrawer = new ButtonSettingDrawer(addTabButton) { SettingName = "Add Refill", SettingId = GetUniqDrawerId() };
+            var addTabButtonDrawer = new ButtonSettingDrawer(addTabButton, "Add Refill", GetUniqDrawerId());
             RefillMenuRootMenu.Children.Add(addTabButtonDrawer);
 
             addTabButton.OnPressed += delegate
@@ -566,19 +566,19 @@ namespace Stashie
         {
             refill.CurrencyClass.Values = RefillCurrencyNames;
 
-            var refillRoot = new BaseSettingsDrawer { SettingName = "", SettingId = GetUniqDrawerId() };
+            var refillRoot = new BaseSettingsDrawer("", GetUniqDrawerId());
             RefillMenuRootMenu.Children.Insert(RefillMenuRootMenu.Children.Count - 1, refillRoot);
 
-            refillRoot.Children.Add(new ComboBoxSettingDrawer(refill.CurrencyClass) { SettingName = "Currency", SettingId = GetUniqDrawerId() });
+            refillRoot.Children.Add(new ComboBoxSettingDrawer(refill.CurrencyClass, "Currency", GetUniqDrawerId()));
 
             refill.Amount.Max = refill.MaxStackAmount;
-            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.Amount) { SettingName = "Amount", SettingId = GetUniqDrawerId() });
+            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.Amount, "Amount", GetUniqDrawerId()));
 
-            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosX) { SettingName = "Inventory Pos X", SettingId = GetUniqDrawerId() });
-            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosY) { SettingName = "Inventory Pos Y", SettingId = GetUniqDrawerId() });
+            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosX, "Inventory Pos X", GetUniqDrawerId()));
+            refillRoot.Children.Add(new IntegerSettingsDrawer(refill.InventPosY, "Inventory Pos Y", GetUniqDrawerId()));
 
             var removeButton = new ButtonNode();
-            var removeButtonDrawer = new ButtonSettingDrawer(removeButton) { SettingName = "Delete Refill", SettingId = GetUniqDrawerId() };
+            var removeButtonDrawer = new ButtonSettingDrawer(removeButton, "Delete Refill", GetUniqDrawerId());
             refillRoot.Children.Add(removeButtonDrawer);
 
             removeButton.OnPressed += delegate
