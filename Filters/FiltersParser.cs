@@ -20,6 +20,7 @@ namespace Stashie.Filters
         //String compare
         private const string PARAMETER_CLASSNAME = "classname";
 
+        private const string PARAMETER_NAME = "name";
         private const string PARAMETER_BASENAME = "basename";
         private const string PARAMETER_PATH = "path";
 
@@ -59,68 +60,68 @@ namespace Stashie.Filters
             OPERATION_CONTAINS
         };
 
-        public static List<CustomFilter> Parse(string[] filtersLines)
+        public static List<CustomFilter> Parse( string[ ] filtersLines )
         {
             var allFilters = new List<CustomFilter>();
 
-            for (var i = 0; i < filtersLines.Length; ++i)
+            for ( var i = 0; i < filtersLines.Length; ++i )
             {
                 var filterLine = filtersLines[i];
 
-                filterLine = filterLine.Replace("\t", "");
+                filterLine = filterLine.Replace( "\t", "" );
 
-                if (filterLine.StartsWith(COMMENTSYMBOL))
+                if ( filterLine.StartsWith( COMMENTSYMBOL ) )
                 {
                     continue;
                 }
-                if (filterLine.StartsWith(COMMENTSYMBOLALT))
+                if ( filterLine.StartsWith( COMMENTSYMBOLALT ) )
                 {
                     continue;
                 }
 
-                if (filterLine.Replace(" ", "").Length == 0)
+                if ( filterLine.Replace( " ", "" ).Length == 0 )
                 {
                     continue;
                 }
 
                 var nameIndex = filterLine.IndexOf(SYMBOL_NAMEDIVIDE);
-                if (nameIndex == -1)
+                if ( nameIndex == -1 )
                 {
-                    BasePlugin.LogMessage("Filter parser: Can't find filter name in line: " + (i + 1), 5);
+                    BasePlugin.LogMessage( "Filter parser: Can't find filter name in line: " + ( i + 1 ), 5 );
                     continue;
                 }
                 var newFilter = new CustomFilter {Name = filterLine.Substring(0, nameIndex)};
-                TrimName(ref newFilter.Name);
+                TrimName( ref newFilter.Name );
 
                 var filterCommandsLine = filterLine.Substring(nameIndex + 1);
 
                 var submenuIndex = filterCommandsLine.IndexOf(SYMBOL_SUBMENUNAME);
-                if (submenuIndex != -1)
+                if ( submenuIndex != -1 )
                 {
-                    newFilter.SubmenuName = filterCommandsLine.Substring(submenuIndex + 1);
-                    filterCommandsLine = filterCommandsLine.Substring(0, submenuIndex);
+                    newFilter.SubmenuName = filterCommandsLine.Substring( submenuIndex + 1 );
+                    filterCommandsLine = filterCommandsLine.Substring( 0, submenuIndex );
                 }
 
                 var filterCommands = filterCommandsLine.Split(SYMBOL_COMMANDSDIVIDE);
 
                 var filterErrorParse = false;
 
-                foreach (var command in filterCommands)
+                foreach ( var command in filterCommands )
                 {
-                    if (string.IsNullOrEmpty(command.Replace(" ", "")))
+                    if ( string.IsNullOrEmpty( command.Replace( " ", "" ) ) )
                     {
                         continue;
                     }
 
-                    if (command.Contains(SYMBOL_COMMAND_FILTER_OR))
+                    if ( command.Contains( SYMBOL_COMMAND_FILTER_OR ) )
                     {
                         var orFilterCommands = command.Split(SYMBOL_COMMAND_FILTER_OR);
                         var newOrFilter = new BaseFilter {BAny = true};
-                        newFilter.Filters.Add(newOrFilter);
+                        newFilter.Filters.Add( newOrFilter );
 
-                        foreach (var t in orFilterCommands)
+                        foreach ( var t in orFilterCommands )
                         {
-                            if (ProcessCommand(newOrFilter, t))
+                            if ( ProcessCommand( newOrFilter, t ) )
                             {
                                 continue;
                             }
@@ -128,14 +129,14 @@ namespace Stashie.Filters
                             break;
                         }
 
-                        if (filterErrorParse)
+                        if ( filterErrorParse )
                         {
                             break;
                         }
                     }
                     else
                     {
-                        if (ProcessCommand(newFilter, command))
+                        if ( ProcessCommand( newFilter, command ) )
                         {
                             continue;
                         }
@@ -145,164 +146,183 @@ namespace Stashie.Filters
                     }
                 }
 
-                if (!filterErrorParse)
+                if ( !filterErrorParse )
                 {
-                    allFilters.Add(newFilter);
+                    allFilters.Add( newFilter );
                 }
             }
             return allFilters;
         }
 
-        private static bool ProcessCommand(BaseFilter newFilter, string command)
+        private static bool ProcessCommand( BaseFilter newFilter, string command )
         {
-            TrimName(ref command);
+            TrimName( ref command );
 
-            if (command.Contains(PARAMETER_IDENTIFIED))
+            if ( command.Contains( PARAMETER_IDENTIFIED ) )
             {
                 var identCommand = new IdentifiedItemFilter {BIdentified = command[0] != SYMBOL_NOT};
-                newFilter.Filters.Add(identCommand);
+                newFilter.Filters.Add( identCommand );
                 return true;
             }
 
-            if (command.Contains(PARAMETER_ISELDER))
+            if ( command.Contains( PARAMETER_ISELDER ) )
             {
                 var elderCommand = new ElderItemFiler {IsElder = command[0] != SYMBOL_NOT};
-                newFilter.Filters.Add(elderCommand);
+                newFilter.Filters.Add( elderCommand );
                 return true;
             }
 
-            if (command.Contains(PARAMETER_ISSHAPER))
+            if ( command.Contains( PARAMETER_ISSHAPER ) )
             {
                 var shaperCommand = new ShaperItemFiler {IsShaper = command[0] != SYMBOL_NOT};
-                newFilter.Filters.Add(shaperCommand);
+                newFilter.Filters.Add( shaperCommand );
                 return true;
             }
 
-            if (!ParseCommand(command, out var parameter, out var operation, out var value))
+            if ( !ParseCommand( command, out var parameter, out var operation, out var value ) )
             {
-                BasePlugin.LogMessage("Filter parser: Can't parse filter part: " + command, 5);
+                BasePlugin.LogMessage( "Filter parser: Can't parse filter part: " + command, 5 );
                 return false;
             }
 
             var stringComp = new FilterParameterCompare {CompareString = value};
             var isNumeric = int.TryParse(value, out var n);
-            if (isNumeric)
+            if ( isNumeric )
             {
                 stringComp.CompareInt = n;
             }
 
-            switch (parameter.ToLower())
+            switch ( parameter.ToLower( ) )
             {
                 case PARAMETER_CLASSNAME:
                     stringComp.StringParameter = data => data.ClassName;
                     break;
+
+                case PARAMETER_NAME:
+                    stringComp.StringParameter = data => data.Name;
+                    break;
+
+                case PARAMETER_PROPHECYNAME:
+                    stringComp.StringParameter = data => data.Name;
+                    break;
+
                 case PARAMETER_BASENAME:
                     stringComp.StringParameter = data => data.BaseName;
                     break;
+
                 case PARAMETER_PATH:
                     stringComp.StringParameter = data => data.Path;
                     break;
+
                 case PARAMETER_RARITY:
-                    stringComp.StringParameter = data => data.Rarity.ToString();
+                    stringComp.StringParameter = data => data.Rarity.ToString( );
                     break;
+
                 case PARAMETER_QUALITY:
                     stringComp.IntParameter = data => data.ItemQuality;
-                    stringComp.StringParameter = data => data.ItemQuality.ToString();
+                    stringComp.StringParameter = data => data.ItemQuality.ToString( );
                     break;
+
                 case PARAMETER_MAP_TIER:
                     stringComp.IntParameter = data => data.MapTier;
-                    stringComp.StringParameter = data => data.MapTier.ToString();
+                    stringComp.StringParameter = data => data.MapTier.ToString( );
                     break;
+
                 case PARAMETER_ILVL:
                     stringComp.IntParameter = data => data.ItemLevel;
-                    stringComp.StringParameter = data => data.ItemLevel.ToString();
+                    stringComp.StringParameter = data => data.ItemLevel.ToString( );
                     break;
+
                 default:
                     BasePlugin.LogMessage(
-                        $"Filter parser: Parameter is not defined in code: {parameter}", 10);
+                        $"Filter parser: Parameter is not defined in code: {parameter}", 10 );
                     return false;
             }
 
-            switch (operation.ToLower())
+            switch ( operation.ToLower( ) )
             {
                 case OPERATION_EQUALITY:
-                    stringComp.CompDeleg = data => stringComp.StringParameter(data).Equals(stringComp.CompareString);
-                    break;
-                case OPERATION_NONEQUALITY:
-                    stringComp.CompDeleg = data => !stringComp.StringParameter(data).Equals(stringComp.CompareString);
-                    break;
-                case OPERATION_CONTAINS:
-                    stringComp.CompDeleg = data => stringComp.StringParameter(data).Contains(stringComp.CompareString);
-                    break;
-                case OPERATION_NOTCONTAINS:
-                    stringComp.CompDeleg = data => !stringComp.StringParameter(data).Contains(stringComp.CompareString);
+                    stringComp.CompDeleg = data => stringComp.StringParameter( data ).Equals( stringComp.CompareString );
                     break;
 
+                case OPERATION_NONEQUALITY:
+                    stringComp.CompDeleg = data => !stringComp.StringParameter( data ).Equals( stringComp.CompareString );
+                    break;
+
+                case OPERATION_CONTAINS:
+                    stringComp.CompDeleg = data => stringComp.StringParameter( data ).Contains( stringComp.CompareString );
+                    break;
+
+                case OPERATION_NOTCONTAINS:
+                    stringComp.CompDeleg = data => !stringComp.StringParameter( data ).Contains( stringComp.CompareString );
+                    break;
 
                 case OPERATION_BIGGER:
-                    if (stringComp.IntParameter == null)
+                    if ( stringComp.IntParameter == null )
                     {
                         BasePlugin.LogMessage(
                             $"Filter parser error: Can't compare string parameter with {OPERATION_BIGGER} (numerical) operation. Statement: {command}",
-                            10);
+                            10 );
                         return false;
                     }
-                    stringComp.CompDeleg = data => stringComp.IntParameter(data) > stringComp.CompareInt;
+                    stringComp.CompDeleg = data => stringComp.IntParameter( data ) > stringComp.CompareInt;
                     break;
+
                 case OPERATION_LESS:
-                    if (stringComp.IntParameter == null)
+                    if ( stringComp.IntParameter == null )
                     {
                         BasePlugin.LogMessage(
                             $"Filter parser error: Can't compare string parameter with {OPERATION_LESS} (numerical) operation. Statement: {command}",
-                            10);
+                            10 );
                         return false;
                     }
-                    stringComp.CompDeleg = data => stringComp.IntParameter(data) < stringComp.CompareInt;
+                    stringComp.CompDeleg = data => stringComp.IntParameter( data ) < stringComp.CompareInt;
                     break;
+
                 case OPERATION_LESSEQUAL:
-                    if (stringComp.IntParameter == null)
+                    if ( stringComp.IntParameter == null )
                     {
                         BasePlugin.LogMessage(
                             $"Filter parser error: Can't compare string parameter with {OPERATION_LESSEQUAL} (numerical) operation. Statement: {command}",
-                            10);
+                            10 );
                         return false;
                     }
-                    stringComp.CompDeleg = data => stringComp.IntParameter(data) <= stringComp.CompareInt;
+                    stringComp.CompDeleg = data => stringComp.IntParameter( data ) <= stringComp.CompareInt;
                     break;
 
                 case OPERATION_BIGGERQUAL:
-                    if (stringComp.IntParameter == null)
+                    if ( stringComp.IntParameter == null )
                     {
                         BasePlugin.LogMessage(
                             $"Filter parser error: Can't compare string parameter with {OPERATION_BIGGERQUAL} (numerical) operation. Statement: {command}",
-                            10);
+                            10 );
                         return false;
                     }
-                    stringComp.CompDeleg = data => stringComp.IntParameter(data) >= stringComp.CompareInt;
+                    stringComp.CompDeleg = data => stringComp.IntParameter( data ) >= stringComp.CompareInt;
                     break;
 
                 default:
                     BasePlugin.LogMessage(
-                        $"Filter parser: Operation is not defined in code: {operation}", 10);
+                        $"Filter parser: Operation is not defined in code: {operation}", 10 );
                     return false;
             }
 
-            newFilter.Filters.Add(stringComp);
+            newFilter.Filters.Add( stringComp );
             return true;
         }
 
-        private static bool ParseCommand(string command, out string parameter, out string operation, out string value)
+        private static bool ParseCommand( string command, out string parameter, out string operation, out string value )
         {
             parameter = "";
             operation = "";
             value = "";
 
             var operationIndex = -1;
-            foreach (var t in Operations)
+            foreach ( var t in Operations )
             {
-                operationIndex = command.IndexOf(t, StringComparison.Ordinal);
+                operationIndex = command.IndexOf( t, StringComparison.Ordinal );
 
-                if (operationIndex == -1)
+                if ( operationIndex == -1 )
                 {
                     continue;
                 }
@@ -311,23 +331,23 @@ namespace Stashie.Filters
                 break;
             }
 
-            if (operationIndex == -1)
+            if ( operationIndex == -1 )
             {
                 return false;
             }
 
-            parameter = command.Substring(0, operationIndex);
-            TrimName(ref parameter);
+            parameter = command.Substring( 0, operationIndex );
+            TrimName( ref parameter );
 
-            value = command.Substring(operationIndex + operation.Length);
-            TrimName(ref value); //Should I do this?
+            value = command.Substring( operationIndex + operation.Length );
+            TrimName( ref value ); //Should I do this?
             return true;
         }
 
-        private static void TrimName(ref string name)
+        private static void TrimName( ref string name )
         {
-            name = name.TrimEnd(' ');
-            name = name.TrimStart(' ');
+            name = name.TrimEnd( ' ' );
+            name = name.TrimStart( ' ' );
         }
     }
 
@@ -345,9 +365,9 @@ namespace Stashie.Filters
         public bool BAny;
         public List<IIFilter> Filters = new List<IIFilter>();
 
-        public bool CompareItem(ItemData itemData)
+        public bool CompareItem( ItemData itemData )
         {
-            return BAny ? Filters.Any(x => x.CompareItem(itemData)) : Filters.All(x => x.CompareItem(itemData));
+            return BAny ? Filters.Any( x => x.CompareItem( itemData ) ) : Filters.All( x => x.CompareItem( itemData ) );
         }
     }
 
@@ -355,7 +375,7 @@ namespace Stashie.Filters
     {
         public bool BIdentified;
 
-        public bool CompareItem(ItemData itemData)
+        public bool CompareItem( ItemData itemData )
         {
             return itemData.BIdentified == BIdentified;
         }
@@ -365,7 +385,7 @@ namespace Stashie.Filters
     {
         public bool IsElder;
 
-        public bool CompareItem(ItemData itemData)
+        public bool CompareItem( ItemData itemData )
         {
             return itemData.IsElder == IsElder;
         }
@@ -375,7 +395,7 @@ namespace Stashie.Filters
     {
         public bool IsShaper;
 
-        public bool CompareItem(ItemData itemData)
+        public bool CompareItem( ItemData itemData )
         {
             return itemData.IsShaper == IsShaper;
         }
@@ -389,14 +409,14 @@ namespace Stashie.Filters
         public Func<ItemData, int> IntParameter;
         public Func<ItemData, string> StringParameter;
 
-        public bool CompareItem(ItemData itemData)
+        public bool CompareItem( ItemData itemData )
         {
-            return CompDeleg(itemData);
+            return CompDeleg( itemData );
         }
     }
 
     public interface IIFilter
     {
-        bool CompareItem(ItemData itemData);
+        bool CompareItem( ItemData itemData );
     }
 }
