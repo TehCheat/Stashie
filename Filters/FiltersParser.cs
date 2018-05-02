@@ -202,10 +202,6 @@ namespace Stashie.Filters
                     stringComp.StringParameter = data => data.Name;
                     break;
 
-                case PARAMETER_PROPHECYNAME:
-                    stringComp.StringParameter = data => data.Name;
-                    break;
-
                 case PARAMETER_BASENAME:
                     stringComp.StringParameter = data => data.BaseName;
                     break;
