@@ -46,7 +46,10 @@ namespace Stashie.Filters
             if ( @base.Name == "Prophecy" )
             {
                 var @prophParse = item.GetComponent<Prophecy>();
-                ProphecyName = @prophParse.DatProphecy.Name;
+                ProphecyName = @prophParse.DatProphecy.Name.ToLower( );
+                ProphecyName = ProphecyName.Replace( " ", "" );
+                ProphecyName = ProphecyName.Replace( ",", "" );
+                ProphecyName = ProphecyName.Replace( "'", "" );
                 Name = ProphecyName;
                 BaseName = "Prophecy";
             }
