@@ -3,6 +3,7 @@ using PoeHUD.Models.Enums;
 using PoeHUD.Poe.Components;
 using PoeHUD.Poe.Elements;
 using SharpDX;
+using System.IO;
 using Map = PoeHUD.Poe.Components.Map;
 
 namespace Stashie.Filters
@@ -11,6 +12,8 @@ namespace Stashie.Filters
     {
         private readonly NormalInventoryItem _inventoryItem;
         public string BaseName;
+        public string Name;
+        public string ProphecyName;
         public bool BIdentified;
         public string ClassName;
         public bool IsElder;
@@ -22,7 +25,7 @@ namespace Stashie.Filters
         public string Path;
         public ItemRarity Rarity;
 
-        public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
+        public ItemData( NormalInventoryItem inventoryItem, BaseItemType baseItemType )
         {
             _inventoryItem = inventoryItem;
             var item = inventoryItem.Item;
@@ -40,12 +43,23 @@ namespace Stashie.Filters
             ClassName = baseItemType.ClassName;
             BaseName = baseItemType.BaseName;
 
-            MapTier = item.HasComponent<Map>() ? item.GetComponent<Map>().Tier : 0;
+            if ( @base.Name == "Prophecy" )
+            {
+                var @prophParse = item.GetComponent<Prophecy>();
+                ProphecyName = @prophParse.DatProphecy.Name.ToLower( );
+                ProphecyName = ProphecyName.Replace( " ", "" );
+                ProphecyName = ProphecyName.Replace( ",", "" );
+                ProphecyName = ProphecyName.Replace( "'", "" );
+                Name = ProphecyName;
+                BaseName = "Prophecy";
+            }
+
+            MapTier = item.HasComponent<Map>( ) ? item.GetComponent<Map>( ).Tier : 0;
         }
 
-        public Vector2 GetClickPos()
+        public Vector2 GetClickPos( )
         {
-            return _inventoryItem.GetClientRect().Center;
+            return _inventoryItem.GetClientRect( ).Center;
         }
     }
 }
