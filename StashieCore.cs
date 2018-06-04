@@ -142,6 +142,7 @@ namespace Stashie
                 "//identified\r\n" +
                 "//Shaped\r\n" +
                 "//Elder\r\n" +
+                "//corrupted\r\n" +
                 "/////////////////////////////////////////////////////////////\r\n" +
                 "////////////\tAvailable operations:\t/////////////////////\r\n" +
                 "/////////\tString (name) operations:\r\n" +
@@ -158,6 +159,7 @@ namespace Stashie
                 "\r\n" +
                 "//Default Tabs\r\n" +
                 "Divination Cards:\tClassName=DivinationCard\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Vaal Gems:\t\t\tClassName^Skill Gem,corrupted\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "Gems:\t\t\t\tClassName^Skill Gem,ItemQuality=0\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "Splinters:\t\t\tBaseName^Splinter of,ClassName=StackableCurrency\t\t\t\t:Default Tabs\r\n" +
                 "Currency:\t\t\tClassName=StackableCurrency,path!^Essence\t\t\t\t\t\t:Default Tabs\r\n" +

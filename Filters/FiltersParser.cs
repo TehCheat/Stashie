@@ -37,6 +37,9 @@ namespace Stashie.Filters
         private const string PARAMETER_ISELDER = "Elder";
         private const string PARAMETER_ISSHAPER = "Shaper";
 
+        private const string PARAMETER_ISCORRUPTED = "corrupted";
+
+
         //Operations
         private const string OPERATION_NONEQUALITY = "!=";
 
@@ -162,6 +165,13 @@ namespace Stashie.Filters
             {
                 var identCommand = new IdentifiedItemFilter {BIdentified = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add( identCommand );
+                return true;
+            }
+
+            if (command.Contains(PARAMETER_ISCORRUPTED ) )
+            {
+                var corruptedCommand = new CorruptedItemFilter { BCorrupted = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(corruptedCommand);
                 return true;
             }
 
@@ -374,6 +384,16 @@ namespace Stashie.Filters
         public bool CompareItem( ItemData itemData )
         {
             return itemData.BIdentified == BIdentified;
+        }
+    }
+
+    public class CorruptedItemFilter : IIFilter
+    {
+        public bool BCorrupted;
+
+        public bool CompareItem(ItemData itemData)
+        {
+            return itemData.IsCorrupted == BCorrupted;
         }
     }
 

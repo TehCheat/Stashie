@@ -18,6 +18,7 @@ namespace Stashie.Filters
         public string ClassName;
         public bool IsElder;
         public bool IsShaper;
+        public bool IsCorrupted;
         public int ItemLevel;
         public int ItemQuality;
         public int MapTier;
@@ -33,6 +34,7 @@ namespace Stashie.Filters
             var @base = item.GetComponent<Base>();
             IsElder = @base.isElder;
             IsShaper = @base.isShaper;
+            IsCorrupted = @base.isCorrupted;
             var mods = item.GetComponent<Mods>();
             Rarity = mods.ItemRarity;
             BIdentified = mods.Identified;
