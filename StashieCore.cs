@@ -924,7 +924,7 @@ namespace Stashie
                     }
                 }
 
-                var tabPos = dropdownMenu.Children[tabNode.VisibleIndex].GetClientRect();
+                var tabPos = dropdownMenu.Children[tabNode.VisibleIndex].GetChildAtIndex(1).GetClientRect();
 
                 Mouse.SetCursorPosAndLeftClick( tabPos.Center, Settings.ExtraDelay, _windowOffset );
                 Thread.Sleep( latency );
