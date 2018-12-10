@@ -128,19 +128,16 @@ namespace Stashie
     */
     public class RefillProcessor
     {
-        public ListNode CurrencyClass = new ListNode { Value = "Scroll of Wisdom" };
+        public ListNode CurrencyClass = new ListNode {Value = "Scroll of Wisdom"};
         public RangeNode<int> InventPosX { get; set; } = new RangeNode<int>(0, 0, 11);
         public RangeNode<int> InventPosY { get; set; } = new RangeNode<int>(0, 0, 4);
         public RangeNode<int> Amount { get; set; } = new RangeNode<int>(0, 0, 40);
         public int MaxStackAmount { get; set; } = 40;
 
         //Temp values:
-        [JsonIgnore]
-        public Vector2 ClickPos;
-        [JsonIgnore]
-        public int OwnedCount;
+        [JsonIgnore] public Vector2 ClickPos;
+        [JsonIgnore] public int OwnedCount;
 
-    
 
         public void Clear()
         {

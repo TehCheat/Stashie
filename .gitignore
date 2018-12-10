@@ -8,3 +8,4 @@ packages/
 /FitersConfig.txt
 /IgnoredCells.json
 /RefillCurrency.txt
+bin/
