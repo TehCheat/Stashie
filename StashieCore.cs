@@ -386,13 +386,17 @@ namespace Stashie
             if (!uiTabsOpened)
             {
                 if (Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+                {
                     Keyboard.KeyPress(Settings.DropHotkey.Value);
+                }
 
                 return;
             }
 
-            if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
+            if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value) && Settings.RequireHotkey == true)
+            {
                 return;
+            }
 
             ProcessInventoryItems();
 

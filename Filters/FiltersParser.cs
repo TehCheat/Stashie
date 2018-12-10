@@ -246,12 +246,12 @@ namespace Stashie.Filters
 
                 case PARAMETER_NUMBER_OF_SOCKETS:
                     stringComp.IntParameter = data => data.NumberOfSockets;
-                    stringComp.StringParameter = data => data.NumberOfSockets.ToString( );
+                    stringComp.StringParameter = data => data.NumberOfSockets.ToString();
                     break;
 
                 case PARAMETER_LARGEST_LINK_SIZE:
                     stringComp.IntParameter = data => data.LargestLinkSize;
-                    stringComp.StringParameter = data => data.LargestLinkSize.ToString( );
+                    stringComp.StringParameter = data => data.LargestLinkSize.ToString();
                     break;
 
                 default:

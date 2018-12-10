@@ -20,7 +20,7 @@ namespace Stashie.Filters
         public bool IsCorrupted;
         public int ItemLevel;
         public int NumberOfSockets;
-        public int LargetsLinkSize;
+        public int LargestLinkSize;
         public int ItemQuality;
         public int MapTier;
 
