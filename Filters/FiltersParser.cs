@@ -29,6 +29,8 @@ namespace Stashie.Filters
         private const string PARAMETER_RARITY = "rarity";
         private const string PARAMETER_ILVL = "ilvl";
         private const string PARAMETER_MAP_TIER = "tier";
+        private const string PARAMETER_NUMBER_OF_SOCKETS = "numberofsockets";
+        private const string PARAMETER_LARGEST_LINK_SIZE = "numberoflinks";
 
         //Boolean
         private const string PARAMETER_IDENTIFIED = "identified";
@@ -240,6 +242,16 @@ namespace Stashie.Filters
                 case PARAMETER_ILVL:
                     stringComp.IntParameter = data => data.ItemLevel;
                     stringComp.StringParameter = data => data.ItemLevel.ToString();
+                    break;
+
+                case PARAMETER_NUMBER_OF_SOCKETS:
+                    stringComp.IntParameter = data => data.NumberOfSockets;
+                    stringComp.StringParameter = data => data.NumberOfSockets.ToString( );
+                    break;
+
+                case PARAMETER_LARGEST_LINK_SIZE:
+                    stringComp.IntParameter = data => data.LargestLinkSize;
+                    stringComp.StringParameter = data => data.LargestLinkSize.ToString( );
                     break;
 
                 default:
