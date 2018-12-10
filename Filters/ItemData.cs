@@ -19,6 +19,8 @@ namespace Stashie.Filters
         public bool IsShaper;
         public bool IsCorrupted;
         public int ItemLevel;
+        public int NumberOfSockets;
+        public int LargetsLinkSize;
         public int ItemQuality;
         public int MapTier;
 
@@ -38,6 +40,10 @@ namespace Stashie.Filters
             Rarity = mods.ItemRarity;
             BIdentified = mods.Identified;
             ItemLevel = mods.ItemLevel;
+            
+            var sockets = item.GetComponent<Sockets>();
+            NumberOfSockets = sockets.NumberOfSockets;
+            LargestLinkSize = sockets.LargestLinkSize;
 
             var quality = item.GetComponent<Quality>();
             ItemQuality = quality.ItemQuality;
