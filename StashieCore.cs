@@ -952,14 +952,16 @@ namespace Stashie
                     }
                 }
 
-                // Tabs have the following children: 0, 1, 2.
+                // Dropdown menu have the following children: 0, 1, 2.
                 // Where:
                 // 0 is the icon (fx. chaos orb).
                 // 1 is the name of the tab.
                 // 2 is the slider.
-                var tabs = dropdownMenu.GetChildAtIndex(1);
-
-                var tabPos = tabs.GetChildAtIndex(tabNode.VisibleIndex).GetClientRect();
+                // it's inverse on non-steam version.
+                var steam = dropdownMenu.ChildCount > 3;
+                var tabPos = steam
+                    ? dropdownMenu.GetChildAtIndex(1).GetChildAtIndex(tabNode.VisibleIndex).GetClientRect()
+                    : dropdownMenu.GetChildAtIndex(tabNode.VisibleIndex).GetChildAtIndex(1).GetClientRect();
 
                 Mouse.SetCursorPosAndLeftClick(tabPos.Center, Settings.ExtraDelay, _windowOffset);
                 Thread.Sleep(latency);
