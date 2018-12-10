@@ -24,6 +24,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
+using SharpDX.Direct3D9;
 
 namespace Stashie
 {
@@ -392,6 +393,22 @@ namespace Stashie
 
                 return;
             }
+//            Debug
+//            var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
+//            if (dropdownMenu.IsVisible)
+//            {
+//                for (var index = 0; index < dropdownMenu.Children.Count; index++)
+//                {
+//                    var dropdown = dropdownMenu.Children[index];
+//                    for (var i = 0; i < dropdown.Children.Count; i++)
+//                    {
+//                        var child = dropdown.Children[i];
+//                        Graphics.DrawBox(child.GetClientRect(), Color.DarkRed);
+//                        var pos2 = new Vector2(child.GetClientRect().Center.X, child.GetClientRect().Top); 
+//                        Graphics.DrawText($"[{index}][{i}]", 20, pos2 , Color.White, FontDrawFlags.Center);
+//                    }
+//                }
+//            }
 
             if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value) && Settings.RequireHotkey == true)
             {
@@ -957,11 +974,24 @@ namespace Stashie
                 // 0 is the icon (fx. chaos orb).
                 // 1 is the name of the tab.
                 // 2 is the slider.
-                // it's inverse on non-steam version.
-                var steam = dropdownMenu.ChildCount > 3;
-                var tabPos = steam
-                    ? dropdownMenu.GetChildAtIndex(1).GetChildAtIndex(tabNode.VisibleIndex).GetClientRect()
-                    : dropdownMenu.GetChildAtIndex(tabNode.VisibleIndex).GetChildAtIndex(1).GetClientRect();
+                var slider = dropdownMenu.Children[1].ChildCount == _ingameState.ServerData.StashPanel.TotalStashes;
+
+                var noSlider = dropdownMenu.Children[2].ChildCount == _ingameState.ServerData.StashPanel.TotalStashes;
+                RectangleF tabPos;
+                if (slider)
+                {
+                    tabPos = dropdownMenu.GetChildAtIndex(1).GetChildAtIndex(tabNode.VisibleIndex).GetClientRect();
+                }
+                else if (noSlider)
+                {
+                    tabPos = dropdownMenu.GetChildAtIndex(2).GetChildAtIndex(tabNode.VisibleIndex).GetClientRect();
+                }
+                else
+                {
+                    LogMessage("Couldn't detect steam/non-steam, contact administrator", 3);
+                    return false;
+                    //tabPos = dropdownMenu.GetChildAtIndex(tabNode.VisibleIndex).GetChildAtIndex(1).GetClientRect();
+                }
 
                 Mouse.SetCursorPosAndLeftClick(tabPos.Center, Settings.ExtraDelay, _windowOffset);
                 Thread.Sleep(latency);

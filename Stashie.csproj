@@ -46,8 +46,16 @@
       <HintPath>..\ll\Release\PoeHUD.exe</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="SharpDX">
+      <HintPath>..\ll\Release\SharpDX.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="SharpDX.Desktop">
       <HintPath>..\ll\Release\SharpDX.Desktop.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SharpDX.Direct3D9">
+      <HintPath>..\ll\Release\SharpDX.Direct3D9.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX.Mathematics">
