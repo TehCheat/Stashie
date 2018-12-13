@@ -165,13 +165,13 @@ namespace Stashie
                 "Essences:\t\t\tBaseName^Essence,ClassName=StackableCurrency\t\t\t\t\t:Default Tabs\r\n" +
                 "Splinters:\t\t\tBaseName^Splinter of,ClassName=StackableCurrency\t\t\t\t:Default Tabs\r\n" +
                 "Gems:\t\t\t\tClassName^Skill Gem,ItemQuality=0,!corrupted\t\t\t\t\t\t\t:Default Tabs\r\n" +
-                "Vaal Gems:\t\t\tClassName^Skill Gem,corrupted\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Vaal Gems:\t\t\tClassName^Skill Gem,corrupted\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "Abyss Jewels:\t\tClassName=AbyssJewel\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "Jewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "Flasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "\r\n" +
                 "//Delve Items\r\n" +
-                "Fossils:\t\t\tClassName=StackableCurrency,BaseName^Fossil\t\t\t\t\t\t:Delve Items\r\n" +
+                "Fossils:\t\tClassName=StackableCurrency,BaseName^Fossil\t\t\t\t\t\t:Delve Items\r\n" +
                 "Resonators:\t\tClassName=DelveSocketableCurrency\t\t\t\t\t\t\t\t:Delve Items\r\n" +
                 "\r\n" +
                 "//Chance Items\r\n" +
