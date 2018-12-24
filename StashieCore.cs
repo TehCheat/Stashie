@@ -179,9 +179,10 @@ namespace Stashie
                 "Leather Belt:\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n" +
                 "\r\n" +
                 "//Vendor Recipes\r\n" +
-                "Chisel Recipe:\t\tBaseName=Stone Hammer|BaseName=Rock Breaker,ItemQuality=20\t:Vendor Recipes\r\n" +
-                "Quality Gems:\t\tClassName^Skill Gem,ItemQuality>0\t\t\t\t\t\t\t:Vendor Recipes\r\n" +
-                "Quality Flasks:\t\tClassName^Flask,ItemQuality>0\t\t\t\t\t\t\t\t:Vendor Recipes\r\n" +
+                "Chisel Recipe 20Q:\tBaseName=Stone Hammer|BaseName=Rock Breaker|BaseName=Gavel,ItemQuality=20\t:Vendor Recipes\r\n" +
+                "Chisel Recipe 0Q:\tBaseName=Stone Hammer|BaseName=Rock Breaker|BaseName=Gavel,Rarity=Normal\t:Vendor Recipes\r\n" +
+                "Quality Gems:\t\tClassName^Skill Gem,ItemQuality>0\t\t\t\t\t\t\t\t\t\t\t:Vendor Recipes\r\n" +
+                "Quality Flasks:\t\tClassName^Flask,ItemQuality>0\t\t\t\t\t\t\t\t\t\t\t\t:Vendor Recipes\r\n" +
                 "\r\n" +
                 "//Chaos Recipe LVL 2 (unindentified and ilvl 60 or above)\r\n" +
                 "CR-Weapons:\t\t\t!identified,Rarity=Rare,ilvl>=60,ClassName^Two Hand|ClassName^One Hand|ClassName=Bow|ClassName=Staff|ClassName=Sceptre|ClassName=Wand|ClassName=Dagger|ClassName=Claw|ClassName=Shield|ClassName=Quiver :Chaos Recipe\r\n" +
