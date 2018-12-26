@@ -142,7 +142,7 @@ namespace Stashie
                 "//ilvl\r\n" +
                 "/////////\tBoolean properties:\r\n" +
                 "//identified\r\n" +
-                "//Shaped\r\n" +
+                "//Shaper\r\n" +
                 "//Elder\r\n" +
                 "//corrupted\r\n" +
                 "/////////////////////////////////////////////////////////////\r\n" +
