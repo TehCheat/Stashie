@@ -160,9 +160,9 @@ namespace Stashie
                 "/////////////////////////////////////////////////////////////\r\n" +
                 "\r\n" +
                 "//Default Tabs\r\n" +
-                "Currency:\t\t\tClassName=StackableCurrency,BaseName!^Essence,BaseName!^Fossil,BaseName!^Splinter of\t\t\t\t:Default Tabs\r\n" +
+                "Currency:\t\t\tClassName=StackableCurrency,BaseName!^Remnant of Corruption,BaseName!^Essence,BaseName!^Fossil,BaseName!^Splinter of\t\t\t\t:Default Tabs\r\n" +
                 "Divination Cards:\tClassName=DivinationCard\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
-                "Essences:\t\t\tBaseName^Essence,ClassName=StackableCurrency\t\t\t\t\t:Default Tabs\r\n" +
+                "Essences:\t\t\tBaseName^Essence|BaseName^Remnant of Corruption,ClassName=StackableCurrency\t\t\t\t\t:Default Tabs\r\n" +
                 "Splinters:\t\t\tBaseName^Splinter of,ClassName=StackableCurrency\t\t\t\t:Default Tabs\r\n" +
                 "Gems:\t\t\t\tClassName^Skill Gem,ItemQuality=0,!corrupted\t\t\t\t\t:Default Tabs\r\n" +
                 "Vaal Gems:\t\t\tClassName^Skill Gem,corrupted\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
