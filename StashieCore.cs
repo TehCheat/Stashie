@@ -160,23 +160,23 @@ namespace Stashie
                 "/////////////////////////////////////////////////////////////\r\n" +
                 "\r\n" +
                 "//Default Tabs\r\n" +
-                "Currency:\t\t\tClassName=StackableCurrency,BaseName!^Remnant of Corruption,BaseName!^Essence,BaseName!^Fossil,BaseName!^Splinter of\t\t\t\t:Default Tabs\r\n" +
-                "Divination Cards:\tClassName=DivinationCard\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
-                "Essences:\t\t\tBaseName^Essence|BaseName^Remnant of Corruption,ClassName=StackableCurrency\t\t\t\t\t:Default Tabs\r\n" +
-                "Splinters:\t\t\tBaseName^Splinter of,ClassName=StackableCurrency\t\t\t\t:Default Tabs\r\n" +
-                "Gems:\t\t\t\tClassName^Skill Gem,ItemQuality=0,!corrupted\t\t\t\t\t:Default Tabs\r\n" +
-                "Vaal Gems:\t\t\tClassName^Skill Gem,corrupted\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
-                "Abyss Jewels:\t\tClassName=AbyssJewel\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
-                "Jewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
-                "Flasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Currency:\t\t\tClassName=StackableCurrency,BaseName!^Remnant of Corruption,BaseName!^Essence,BaseName!^Fossil,BaseName!^Splinter of\t:Default Tabs\r\n" +
+                "Divination Cards:\tClassName=DivinationCard\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Essences:\t\t\tBaseName^Essence|BaseName^Remnant of Corruption,ClassName=StackableCurrency\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Splinters:\t\t\tBaseName^Splinter of,ClassName=StackableCurrency\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Gems:\t\t\t\tClassName^Skill Gem,ItemQuality=0,!corrupted\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Vaal Gems:\t\t\tClassName^Skill Gem,corrupted\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Abyss Jewels:\t\tClassName=AbyssJewel\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Jewels:\t\t\t\tClassName=Jewel\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
+                "Flasks:\t\t\t\tClassName^Flask,ItemQuality=0\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t:Default Tabs\r\n" +
                 "\r\n" +
                 "//Delve Items\r\n" +
-                "Fossils:\t\tClassName=StackableCurrency,BaseName^Fossil\t\t\t\t\t\t:Delve Items\r\n" +
-                "Resonators:\t\tClassName=DelveSocketableCurrency\t\t\t\t\t\t\t\t:Delve Items\r\n" +
+                "Fossils:\t\t\tClassName=StackableCurrency,BaseName^Fossil\t\t\t\t\t\t:Delve Items\r\n" +
+                "Resonators:\t\t\tClassName=DelveSocketableCurrency\t\t\t\t\t\t\t\t:Delve Items\r\n" +
                 "\r\n" +
                 "//Chance Items\r\n" +
-                "Sorcerer Boots:\tBaseName=Sorcerer Boots,Rarity=Normal\t:Chance Items\r\n" +
-                "Leather Belt:\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n" +
+                "Sorcerer Boots:\t\tBaseName=Sorcerer Boots,Rarity=Normal\t:Chance Items\r\n" +
+                "Leather Belt:\t\tBaseName=Leather Belt,Rarity=Normal\t\t:Chance Items\r\n" +
                 "\r\n" +
                 "//Vendor Recipes\r\n" +
                 "Chisel Recipe 20Q:\tBaseName=Stone Hammer|BaseName=Rock Breaker|BaseName=Gavel,ItemQuality=20\t:Vendor Recipes\r\n" +
