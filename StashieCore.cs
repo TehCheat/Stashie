@@ -1,7 +1,5 @@
 ﻿using ImGuiNET;
-using Newtonsoft.Json;
 using PoeHUD.Controllers;
-using PoeHUD.Hud.Menu;
 using PoeHUD.Hud.Menu.SettingsDrawers;
 using PoeHUD.Hud.PluginExtension;
 using PoeHUD.Hud.Settings;
@@ -20,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
@@ -60,7 +57,6 @@ namespace Stashie
             _customFilters = FilterParser.Parse(filtersLines);
 
             CheckRefillCurrencyTypes();
-
             _playerHasDropdownMenu = _ingameState.ServerData.StashPanel.TotalStashes > 10;
         }
 
@@ -112,7 +108,6 @@ namespace Stashie
             using (var streamWriter = new StreamWriter(path, true))
             {
                 streamWriter.Write(content);
-                streamWriter.Close();
             }
         }
 
@@ -394,22 +389,23 @@ namespace Stashie
 
                 return;
             }
-//            Debug
-//            var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
-//            if (dropdownMenu.IsVisible)
-//            {
-//                for (var index = 0; index < dropdownMenu.Children.Count; index++)
-//                {
-//                    var dropdown = dropdownMenu.Children[index];
-//                    for (var i = 0; i < dropdown.Children.Count; i++)
-//                    {
-//                        var child = dropdown.Children[i];
-//                        Graphics.DrawBox(child.GetClientRect(), Color.DarkRed);
-//                        var pos2 = new Vector2(child.GetClientRect().Center.X, child.GetClientRect().Top); 
-//                        Graphics.DrawText($"[{index}][{i}]", 20, pos2 , Color.White, FontDrawFlags.Center);
-//                    }
-//                }
-//            }
+
+            //Debug
+            var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
+            if (dropdownMenu.IsVisible)
+            {
+                for (var index = 0; index < dropdownMenu.Children.Count; index++)
+                {
+                    var dropdown = dropdownMenu.Children[index];
+                    for (var i = 0; i < dropdown.Children.Count; i++)
+                    {
+                        var child = dropdown.Children[i];
+                        Graphics.DrawBox(child.GetClientRect(), Color.DarkRed);
+                        var pos2 = new Vector2(child.GetClientRect().Center.X, child.GetClientRect().Top);
+                        Graphics.DrawText($"[{index}][{i}]", 20, pos2, Color.White, FontDrawFlags.Center);
+                    }
+                }
+            }
 
             if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value) && Settings.RequireHotkey == true)
             {
@@ -947,19 +943,6 @@ namespace Stashie
                     var pos = viewAllTabsButton.GetClientRect();
                     Mouse.SetCursorPosAndLeftClick(pos.Center, Settings.ExtraDelay, _windowOffset);
 
-                    var brCounter = 0;
-
-                    // wait for the dropdown menu to become visible.
-                    while (!dropdownMenu.IsVisible)
-                    {
-                        Thread.Sleep(WHILE_DELAY);
-
-                        if (brCounter++ <= maxNumberOfTries)
-                            continue;
-                        LogMessage($"Error in SwitchToTabViaDropdownMenu({tabNode.Name}).", 5);
-                        return false;
-                    }
-
                     // Make sure that we are scrolled to the top in the menu.
                     if (_ingameState.ServerData.StashPanel.TotalStashes > 30)
                     {
@@ -1069,7 +1052,7 @@ namespace Stashie
 
         public override void OnPluginDestroyForHotReload()
         {
-            StashTabNodes.ForEach(x => StashTabController.UnregisterStashNode(x));
+            StashTabNodes.ForEach(StashTabController.UnregisterStashNode);
         }
     }
 }
