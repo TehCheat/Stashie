@@ -525,7 +525,7 @@ namespace Stashie
             {
                 foreach (var inventories in GameController.Game.IngameState.ServerData.PlayerInventories)
                 {
-                    if (inventories.Inventory.InventType != InventoryTypeE.Main)
+                    if (inventories.Inventory.InventSlot != InventorySlotE.MainInventory1)
                         return;
                     var inventory = inventories.Inventory.InventorySlotItems;
                     foreach (var item in inventory)
@@ -762,8 +762,8 @@ namespace Stashie
                                 (int) refill.InventPosY.Value, cellSize);
 
                             // If cells is not free then continue.
-                            if (_ingameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory]
-                                    [(int) refill.InventPosX.Value, (int) refill.InventPosY.Value, 12] != null)
+                            if (_ingameState.ServerData.GetPlayerInventoryBySlot(InventorySlotE.MainInventory1)
+                                    [(int) refill.InventPosX.Value, (int) refill.InventPosY.Value] != null)
                             {
                                 moveCount--;
                                 LogMessage(
