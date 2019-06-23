@@ -323,6 +323,8 @@ namespace Stashie
 
                 var latency = (int) _ingameState.CurLatency;
 
+                var stashPanel = IngameState.IngameUi.StashElement;
+
                 foreach (var stashResults in itemsToDrop)
                 {
                     // If we are more than 2 tabs away from our target, then use dropdown approach if
@@ -341,11 +343,21 @@ namespace Stashie
                         {
                             Mouse.SetCursorPosAndLeftClick(stashResult.ClickPos, Settings.ExtraDelay, _windowOffset);
                             Thread.Sleep(latency + Settings.ExtraDelay.Value);
+
+                            if (!stashPanel.IsVisible)
+                            {
+                                break;
+                            }
                         }
                     }
                     catch
                     {
                         Keyboard.KeyUp(Keys.LControlKey);
+                    }
+
+                    if (!stashPanel.IsVisible)
+                    {
+                        break;
                     }
 
                     // QVIN's version of Hud doesn't support Subscription events, so we use reflection.

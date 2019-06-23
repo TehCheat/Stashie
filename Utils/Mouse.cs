@@ -92,6 +92,7 @@ namespace Stashie.Utils
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
             Thread.Sleep(CLICK_DELAY);
             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(CLICK_DELAY + extraDelay);
         }
 
         public static void VerticalScroll(bool forward, int clicks)
