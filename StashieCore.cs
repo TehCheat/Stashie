@@ -391,7 +391,7 @@ namespace Stashie
             }
 
             //Debug
-            var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
+            /*var dropdownMenu = _ingameState.ServerData.StashPanel.ViewAllStashPanel;
             if (dropdownMenu.IsVisible)
             {
                 for (var index = 0; index < dropdownMenu.Children.Count; index++)
@@ -405,7 +405,7 @@ namespace Stashie
                         Graphics.DrawText($"[{index}][{i}]", 20, pos2, Color.White, FontDrawFlags.Center);
                     }
                 }
-            }
+            }*/
 
             if (!Keyboard.IsKeyToggled(Settings.DropHotkey.Value) && Settings.RequireHotkey == true)
             {
