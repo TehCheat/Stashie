@@ -396,6 +396,7 @@ namespace Stashie
             {
                 if (Keyboard.IsKeyToggled(Settings.DropHotkey.Value))
                 {
+                    LogWarning($"{Settings.DropHotkey.Value} key is toggled, disabling it.", 5);
                     Keyboard.KeyPress(Settings.DropHotkey.Value);
                 }
 
