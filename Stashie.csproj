@@ -51,6 +51,7 @@
   <ItemGroup>
     <Reference Include="ExileCore">
       <HintPath>..\..\PoeHelper\ExileCore.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ImGui.NET, Version=1.71.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\..\ExileApi\deps\ImGui.NET.dll</HintPath>
@@ -97,7 +98,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Filter\AnyInfluenceItemFilter.cs" />
     <Compile Include="Filter\BaseFilter.cs" />
+    <Compile Include="Filter\BlightedMapFilter.cs" />
+    <Compile Include="Filter\HunterItemFilter.cs" />
+    <Compile Include="Filter\RedeemerItemFilter.cs" />
+    <Compile Include="Filter\WarlordItemFilter.cs" />
+    <Compile Include="Filter\CrusaderItemFilter.cs" />
     <Compile Include="Filter\CorruptedItemFilter.cs" />
     <Compile Include="FilterParser.cs" />
     <Compile Include="Filter\CustomFilter.cs" />

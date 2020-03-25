@@ -35,9 +35,15 @@ namespace Stashie
         //Boolean
         private const string PARAMETER_IDENTIFIED = "identified";
         private const string PARAMETER_ISCORRUPTED = "corrupted";
+        private const string PARAMETER_ISINFLUENCED = "influenced";
         private const string PARAMETER_ISELDER = "Elder";
         private const string PARAMETER_ISSHAPER = "Shaper";
+        private const string PARAMETER_ISCRUSADER = "Crusader";
+        private const string PARAMETER_ISHUNTER = "Hunter";
+        private const string PARAMETER_ISREDEEMER = "Redeemer";
+        private const string PARAMETER_ISWARLORD = "Warlord";
         private const string PARAMETER_ISSYNTHESISED = "Synthesised";
+        private const string PARAMETER_ISBLIGHTEDMAP = "blightedMap";
 
         //Operations
         private const string OPERATION_NONEQUALITY = "!=";
@@ -166,6 +172,48 @@ namespace Stashie
                 newFilter.Filters.Add(shaperCommand);
                 return true;
             }
+
+            if (command.Contains(PARAMETER_ISCRUSADER))
+            {
+                var crusaderCommand = new CrusaderItemFilter { isCrusader = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(crusaderCommand);
+                return true;
+            }
+
+            if (command.Contains(PARAMETER_ISHUNTER))
+            {
+                var hunterCommand = new HunterItemFilter { isHunter = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(hunterCommand);
+                return true;
+            }
+
+            if (command.Contains(PARAMETER_ISREDEEMER))
+            {
+                var redeemerCommand = new RedeemerItemFilter { isRedeemer = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(redeemerCommand);
+                return true;
+            }
+
+            if (command.Contains(PARAMETER_ISWARLORD))
+            {
+                var warordCommand = new WarlordItemFilter { isWarlord = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(warordCommand);
+                return true;
+            }
+
+            if (command.Contains(PARAMETER_ISINFLUENCED))
+            {
+                var influencedCommand = new AnyInfluenceItemFilter { isInfluenced = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(influencedCommand);
+                return true;
+            }
+
+            if (command.Contains(PARAMETER_ISBLIGHTEDMAP))
+            {
+                var blightedMapCommand = new BlightedMapFilter { isBlightMap = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(blightedMapCommand);
+                return true;
+            }
             /*
             if (command.Contains(PARAMETER_ISSYNTHESISED))
             {
@@ -231,18 +279,17 @@ namespace Stashie
                     stringComp.CompareInt = int.Parse(value);
                     stringComp.StringParameter = data => data.LargestLinkSize.ToString();
                     break;
-                /*
-            case PARAMETER_VEILED:
-                stringComp.IntParameter = data => data.Veiled;
-                stringComp.CompareInt = int.Parse(value);
-                stringComp.StringParameter = data => data.Veiled.ToString();
-                break;
-            case PARAMETER_FRACTUREDMODS:
-                stringComp.IntParameter = data => data.Fractured;
-                stringComp.CompareInt = int.Parse(value);
-                stringComp.StringParameter = data => data.Fractured.ToString();
-                break;
-                */
+                case PARAMETER_VEILED:
+                    stringComp.IntParameter = data => data.Veiled;
+                    stringComp.CompareInt = int.Parse(value);
+                    stringComp.StringParameter = data => data.Veiled.ToString();
+                    break;
+                case PARAMETER_FRACTUREDMODS:
+                    stringComp.IntParameter = data => data.Fractured;
+                    stringComp.CompareInt = int.Parse(value);
+                    stringComp.StringParameter = data => data.Fractured.ToString();
+                    break;
+                
 
                 default:
                     DebugWindow.LogMsg($"Filter parser: Parameter is not defined in code: {parameter}", 10);

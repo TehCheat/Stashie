@@ -31,6 +31,7 @@ namespace Stashie
         private readonly Stopwatch StackItemTimer = new Stopwatch();
         private readonly WaitTime wait10ms = new WaitTime(10);
         private readonly WaitTime wait3ms = new WaitTime(3);
+        private readonly WaitTime wait1ms = new WaitTime(1);
         private Vector2 _clickWindowOffset;
         private List<CustomFilter> _customFilters;
         private List<RefillProcessor> _customRefills;
@@ -45,7 +46,7 @@ namespace Stashie
         private int visibleStashIndex = -1;
         private bool playerHasDropdownMenu;
         private const int MAXSHOWN_SIDEBARSTASHTABS = 32;
-        private int stashcount;
+        private int stashcount = 0;
 
         public StashieCore()
         {
@@ -74,8 +75,8 @@ namespace Stashie
             Input.RegisterKey(Keys.ShiftKey);
 
             Settings.DropHotkey.OnValueChanged += () => { Input.RegisterKey(Settings.DropHotkey); };
-            playerHasDropdownMenu = GameController.Game.IngameState.ServerData.PlayerStashTabs.Count() > 10;
-            stashcount = GameController.Game.IngameState.ServerData.PlayerStashTabs.Count;
+            playerHasDropdownMenu = (int)GameController.Game.IngameState.IngameUi.StashElement.TotalStashes > 10;
+            stashcount = (int)GameController.Game.IngameState.IngameUi.StashElement.TotalStashes;
 
             return true;
         }
@@ -1012,6 +1013,7 @@ namespace Stashie
 
         public IEnumerator SwitchToTab(int tabIndex)
         {
+            
             var latency = (int) GameController.Game.IngameState.CurLatency;
 
             // We don't want to Switch to a tab that we are already on
@@ -1063,7 +1065,7 @@ namespace Stashie
         }
         private IEnumerator SwitchToTabViaDropdownMenu(int tabIndex)
         {
-            
+            var latency = (int)GameController.Game.IngameState.CurLatency;
             var viewAllTabsButton = GameController.Game.IngameState.IngameUi.StashElement.ViewAllStashButton;
             var waitTime = new WaitTime(Settings.ExtraDelay);
 
@@ -1073,13 +1075,26 @@ namespace Stashie
             if (!dropdownMenu.IsVisible)
             {
                 Input.SetCursorPos(allTabsButton.Center);
-                Input.Click(MouseButtons.Left);
+                yield return wait3ms;
+                Input.MouseMove();
+                Input.LeftDown();
+                yield return wait1ms;
+                Input.LeftUp();
+                yield return wait10ms;
                 //wait for the dropdown menu to become visible
-                for(var tries = 0; tries < 20 && !dropdownMenu.IsVisible; ++tries)
+                /*
+                for (var tries = 0; !dropdownMenu.IsVisible && tries < 20 ; ++tries)
                 {
-                    yield return waitTime;
+                    yield return new WaitTime(latency);
+                }
+                */
+                if (!dropdownMenu.IsVisible)
+                {
+                    LogError($"Error in opening DropdownMenu.", 5);
+                    yield break;
                 }
             }
+            
             RectangleF tabPos;
             // Make sure that we are scrolled to the top in the menu.
             if (slider)
@@ -1087,48 +1102,66 @@ namespace Stashie
                 for (int i = 0; i < stashcount - MAXSHOWN_SIDEBARSTASHTABS + 1; ++i)
                 {
                     Input.KeyDown(Keys.Up);
+                    yield return wait1ms;
                     Input.KeyUp(Keys.Up);
-                    //Input.KeyPress(Keys.Up); maybe buggy function?
+                    yield return wait1ms;
                 }
             }
             //get clickposition of tab label
-            if (tabIndex > MAXSHOWN_SIDEBARSTASHTABS - 1)
+            for (int i = 0; i < tabIndex; ++i)
             {
-                for (int i = 0; i < tabIndex; ++i)
-                {
-                    Input.KeyDown(Keys.Down);
-                    Input.KeyUp(Keys.Down);
-                }
-                tabPos = dropdownMenu.GetChildAtIndex(1).GetChildAtIndex(MAXSHOWN_SIDEBARSTASHTABS - 1).GetClientRect();
+                Input.KeyDown(Keys.Down);
+                yield return wait1ms;
+                Input.KeyUp(Keys.Down);
+                yield return wait1ms;
             }
-            else
-            {
-                tabPos = dropdownMenu.GetChildAtIndex(1).GetChildAtIndex(tabIndex).GetClientRect();
-            }
+            //tabPos = dropdownMenu.GetChildAtIndex(1).GetChildAtIndex(MAXSHOWN_SIDEBARSTASHTABS - 1).GetClientRect();
+
+            //enter-key Method
+            Input.KeyDown(Keys.Enter);
+            yield return wait1ms;
+            Input.KeyUp(Keys.Enter);
+            yield return wait1ms;
+            /*
             Input.SetCursorPos(tabPos.Center);
-            Input.Click(MouseButtons.Left);
+            yield return wait10ms;
+            Input.MouseMove();
+            Input.LeftDown();
+            yield return new WaitTime(1);
+            Input.LeftUp();
+            yield return new WaitTime(1);
+            */
             //reset Sliderposition
             if (slider)
             {
                 if (!dropdownMenu.IsVisible)
                 {
+                    //opening DropdownMenu
                     Input.SetCursorPos(allTabsButton.Center);
-                    Input.Click(MouseButtons.Left);
+                    yield return wait10ms;
+                    Input.MouseMove();
+                    Input.LeftDown();
+                    yield return wait1ms;
+                    Input.LeftUp();
+                    yield return wait10ms;
                     // wait for the dropdown menu to become visible.
-                    for(int count = 0; count <= 20 && !dropdownMenu.IsVisible; ++count)
+                    for (int count = 0; !dropdownMenu.IsVisible && count <= 20; ++count)
                     {
-                        yield return waitTime;
+                        yield return new WaitTime(latency);
                     }
                     if (!dropdownMenu.IsVisible)
                     {
-                        LogMessage($"Error in Scrolling back to the top.", 5);
+                        LogError($"Error in Scrolling back to the top.", 5);
                         yield break;
                     }
                 }
-                for (int i = 0; i < stashcount - MAXSHOWN_SIDEBARSTASHTABS + 1; ++i)
+                //"scrolling" back up
+                for(int i = 0; i < stashcount - MAXSHOWN_SIDEBARSTASHTABS + 1; ++i)
                 {
-                    Input.VerticalScroll(true, 1);
-                    yield return new WaitTime(3);
+                    Input.KeyDown(Keys.Up);
+                    yield return new WaitTime(1);
+                    Input.KeyUp(Keys.Up);
+                    yield return new WaitTime(1);
                 }
             }
         }

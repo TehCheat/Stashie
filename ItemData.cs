@@ -30,7 +30,13 @@ namespace Stashie
         public bool isCorrupted { get; }
         public bool isElder { get; }
         public bool isShaper { get; }
+        public bool isCrusader { get; }
+        public bool isRedeemer { get; }
+        public bool isHunter { get; }
+        public bool isWarlord { get; }
+        public bool isInfluenced { get; }
         public bool Synthesised { get; }
+        public bool isBlightMap { get; }
         public Vector2 clientRect { get; }
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
@@ -42,13 +48,23 @@ namespace Stashie
             isElder = baseComponent.isElder;
             isShaper = baseComponent.isShaper;
             isCorrupted = baseComponent.isCorrupted;
+            isCrusader = baseComponent.isCrusader;
+            isRedeemer = baseComponent.isRedeemer;
+            isWarlord = baseComponent.isWarlord;
+            isHunter = baseComponent.isHunter;
+            isInfluenced = isCrusader || isRedeemer || isWarlord || isHunter || isShaper || isElder;
             var mods = item.GetComponent<Mods>();
             Rarity = mods?.ItemRarity ?? ItemRarity.Normal;
             BIdentified = mods?.Identified ?? true;
             ItemLevel = mods?.ItemLevel ?? 0;
-            //Veiled = mods.ItemMods.Where(m => m.DisplayName.Contains("Veil")).Count();
-            //Fractured = mods.CountFractured;
-            //Synthesised = mods.Synthesised;
+            Veiled = mods?.ItemMods.Where(m => m.DisplayName.Contains("Veil")).Count() ?? 0;
+            Fractured = mods?.CountFractured ?? 0;
+            Synthesised = mods?.Synthesised ?? false;
+            isBlightMap = mods?.ItemMods.Where(m => m.Name.Contains("InfectedMap")).Count() > 0;
+
+            var sockets = item.GetComponent<Sockets>();
+            NumberOfSockets = sockets?.NumberOfSockets ?? 0;
+            LargestLinkSize = sockets?.LargestLinkSize ?? 0;
 
             var quality = item.GetComponent<Quality>();
             ItemQuality = quality?.ItemQuality ?? 0;
@@ -58,14 +74,7 @@ namespace Stashie
             Description = "";
             MapTier = item.HasComponent<Map>() ? item.GetComponent<Map>().Tier : 0;
             clientRect = InventoryItem.GetClientRect().Center;
-
-            var sockets = item.GetComponent<Sockets>();
-
-            if (sockets != null)
-            {
-                NumberOfSockets = sockets.NumberOfSockets;
-                LargestLinkSize = sockets.LargestLinkSize;
-            }
+            
             if (@baseComponent.Name == "Prophecy")
             {
                 var @prophParse = item.GetComponent<Prophecy>();
