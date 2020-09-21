@@ -71,7 +71,6 @@
     <Compile Include="Filter\AnyInfluenceItemFilter.cs" />
     <Compile Include="Filter\BaseFilter.cs" />
     <Compile Include="Filter\BlightedMapFilter.cs" />
-    <Compile Include="Filter\ElderGuardianMapFilter.cs" />
     <Compile Include="Filter\HunterItemFilter.cs" />
     <Compile Include="Filter\RedeemerItemFilter.cs" />
     <Compile Include="Filter\WarlordItemFilter.cs" />
