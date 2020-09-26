@@ -91,9 +91,6 @@
     <Compile Include="StashieCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\StashieSettings.cs" />
-    <Compile Include="Utils\Mouse.cs" />
-    <Compile Include="Utils\Keyboard.cs" />
-    <Compile Include="Utils\WinApi.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -1,6 +1,6 @@
-﻿using PoeHUD.Hud.Settings;
+﻿using ExileCore.Shared.Nodes;
 
-namespace Stashie.Settings
+namespace Stashie
 {
     public class ListIndexNode : ListNode
     {
