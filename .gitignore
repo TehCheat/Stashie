@@ -9,3 +9,5 @@ packages/
 /IgnoredCells.json
 /RefillCurrency.txt
 bin/
+Stashie.sln.DotSettings.user
+Stashie.csproj.user
