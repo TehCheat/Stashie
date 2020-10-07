@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ExileCore;
+using SharpDX;
 
 namespace Stashie
 {
@@ -60,13 +61,13 @@ namespace Stashie
 
         private static readonly string[] Operations =
         {
-            OPERATION_NONEQUALITY, 
-            OPERATION_LESSEQUAL, 
-            OPERATION_BIGGERQUAL, 
-            OPERATION_NOTCONTAINS, 
+            OPERATION_NONEQUALITY,
+            OPERATION_LESSEQUAL,
+            OPERATION_BIGGERQUAL,
+            OPERATION_NOTCONTAINS,
             OPERATION_EQUALITY,
-            OPERATION_BIGGER, 
-            OPERATION_LESS, 
+            OPERATION_BIGGER,
+            OPERATION_LESS,
             OPERATION_CONTAINS
         };
 
@@ -138,7 +139,14 @@ namespace Stashie
                     }
                 }
 
-                if (!filterErrorParse) allFilters.Add(newFilter);
+                if (!filterErrorParse)
+                {
+                    allFilters.Add(newFilter);
+                }
+                else
+                {
+                    DebugWindow.LogMsg($"Line: {i + 1}", 5, Color.Red);
+                }
             }
 
             return allFilters;
@@ -157,7 +165,7 @@ namespace Stashie
 
             if (command.Contains(PARAMETER_ISCORRUPTED))
             {
-                var corruptedCommand = new CorruptedItemFilter { BCorrupted = command[0] != SYMBOL_NOT };
+                var corruptedCommand = new CorruptedItemFilter {BCorrupted = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(corruptedCommand);
                 return true;
             }
@@ -178,58 +186,53 @@ namespace Stashie
 
             if (command.Contains(PARAMETER_ISCRUSADER))
             {
-                var crusaderCommand = new CrusaderItemFilter { isCrusader = command[0] != SYMBOL_NOT };
+                var crusaderCommand = new CrusaderItemFilter {isCrusader = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(crusaderCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISHUNTER))
             {
-                var hunterCommand = new HunterItemFilter { isHunter = command[0] != SYMBOL_NOT };
+                var hunterCommand = new HunterItemFilter {isHunter = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(hunterCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISREDEEMER))
             {
-                var redeemerCommand = new RedeemerItemFilter { isRedeemer = command[0] != SYMBOL_NOT };
+                var redeemerCommand = new RedeemerItemFilter {isRedeemer = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(redeemerCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISWARLORD))
             {
-                var warordCommand = new WarlordItemFilter { isWarlord = command[0] != SYMBOL_NOT };
+                var warordCommand = new WarlordItemFilter {isWarlord = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(warordCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISINFLUENCED))
             {
-                var influencedCommand = new AnyInfluenceItemFilter { isInfluenced = command[0] != SYMBOL_NOT };
+                var influencedCommand = new AnyInfluenceItemFilter {isInfluenced = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(influencedCommand);
                 return true;
             }
 
             if (command.Contains(PARAMETER_ISBLIGHTEDMAP))
             {
-                var blightedMapCommand = new BlightedMapFilter { isBlightMap = command[0] != SYMBOL_NOT };
+                var blightedMapCommand = new BlightedMapFilter {isBlightMap = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(blightedMapCommand);
                 return true;
             }
+
             if (command.Contains(PARAMETER_ISELDERGUARDIANMAP))
             {
-                var elderGuardianMapCommand = new ElderGuardianMapFilter { isElderGuardianMap = command[0] != SYMBOL_NOT };
+                var elderGuardianMapCommand = new ElderGuardianMapFilter
+                    {isElderGuardianMap = command[0] != SYMBOL_NOT};
                 newFilter.Filters.Add(elderGuardianMapCommand);
                 return true;
             }
-            /*
-            if (command.Contains(PARAMETER_ISSYNTHESISED))
-            {
-                var synthesisedCommand = new SynthesisedItemFilter { IsSynthesised = command[0] != SYMBOL_NOT };
-                newFilter.Filters.Add(synthesisedCommand);
-                return true;
-            }*/
 
             string parameter;
             string operation;
@@ -237,7 +240,7 @@ namespace Stashie
 
             if (!ParseCommand(command, out parameter, out operation, out value))
             {
-                DebugWindow.LogMsg("Filter parser: Can't parse filter part: " + command, 5);
+                DebugWindow.LogMsg($"Unknown operation: {command}", 5, Color.Red);
                 return false;
             }
 
@@ -260,10 +263,6 @@ namespace Stashie
                 case PARAMETER_DESCRIPTION:
                     stringComp.StringParameter = data => data.Description;
                     break;
-                    /*
-                case PARAMETER_CLUSTERJEWELBASE:
-                    stringComp.StringParameter = data => data.ClusterJewelBase;
-                    break;*/
                 case PARAMETER_RARITY:
                     stringComp.StringParameter = data => data.Rarity.ToString();
                     break;
@@ -286,7 +285,7 @@ namespace Stashie
                     stringComp.IntParameter = data => data.NumberOfSockets;
                     stringComp.CompareInt = int.Parse(value);
                     stringComp.StringParameter = data => data.NumberOfSockets.ToString();
-                    break;   
+                    break;
                 case PARAMETER_LARGEST_LINK_SIZE:
                     stringComp.IntParameter = data => data.LargestLinkSize;
                     stringComp.CompareInt = int.Parse(value);
@@ -302,12 +301,6 @@ namespace Stashie
                     stringComp.CompareInt = int.Parse(value);
                     stringComp.StringParameter = data => data.Fractured.ToString();
                     break;
-                    /*
-                case PARAMTER_CLUSTERJEWELPASSIVES:
-                    stringComp.IntParameter = data => data.ClusterJewelpassives;
-                    stringComp.CompareInt = int.Parse(value);
-                    stringComp.StringParameter = data => data.ClusterJewelpassives.ToString();
-                    break;*/
 
 
                 default:

@@ -85,8 +85,6 @@
   <ItemGroup>
     <Content Include=".gitignore" />
     <Content Include="GitUpdateConfig.txt" />
-    <Content Include="Stashie.dll" />
-    <Content Include="Stashie.pdb" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FilterParameterCompare.cs" />
