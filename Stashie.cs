@@ -297,6 +297,7 @@ namespace Stashie
             if (ImGui.Button("Reload config"))
             {
                 LoadCustomFilters();
+                GenerateMenu();
                 DebugWindow.LogMsg("Reloaded Stashie config", 2, Color.LimeGreen);
             }
         }
@@ -428,42 +429,6 @@ namespace Stashie
             _settingsListNodes.Add(Settings.CurrencyStashTab);
         }
 
-        private void LoadIgnoredCells()
-        {
-            const string fileName = @"/IgnoredCells.json";
-            var filePath = DirectoryFullName + fileName;
-
-            if (File.Exists(filePath))
-            {
-                var json = File.ReadAllText(filePath);
-
-                try
-                {
-                    Settings.IgnoredCells = JsonConvert.DeserializeObject<int[,]>(json);
-                    var ignoredHeight = Settings.IgnoredCells.GetLength(0);
-                    var ignoredWidth = Settings.IgnoredCells.GetLength(1);
-
-                    if (ignoredHeight != 5 || ignoredWidth != 12)
-                        LogError("Stashie: Wrong IgnoredCells size! Should be 12x5. Resetting to default..", 5);
-                    else
-                        return;
-                }
-                catch (Exception ex)
-                {
-                    LogError(
-                        "Stashie: Can't decode IgnoredCells settings in " + fileName +
-                        ". Resetting to default. Error: " + ex.Message,
-                        5);
-                }
-            }
-
-            var defaultSettings = JsonConvert.SerializeObject(Settings.IgnoredCells);
-            defaultSettings = defaultSettings.Replace("[[", "[\n[");
-            defaultSettings = defaultSettings.Replace("],[", "],\n[");
-            defaultSettings = defaultSettings.Replace("]]", "]\n]");
-            File.WriteAllText(filePath, defaultSettings);
-        }
-
         public override void Render()
         {
             if (_coroutineWorker != null && _coroutineWorker.IsDone)
@@ -549,20 +514,6 @@ namespace Stashie
                         _dropItems.Add(result);
                 }
             }
-        }
-
-        private void WriteInventoryNames()
-        {
-            var path = $"{DirectoryFullName}\\InventoryDebugList.txt";
-            var sb = new StringBuilder();
-            foreach (var inventoryItem in _dropItems)
-            {
-                sb.AppendLine(inventoryItem.ItemData.BaseName);
-                sb.AppendLine(inventoryItem.ItemData.ClassName);
-                sb.AppendLine(inventoryItem.ItemData.Path.ToString());
-            }
-
-            File.WriteAllText(path, sb.ToString());
         }
 
         private bool CheckIgnoreCells(NormalInventoryItem inventItem)
