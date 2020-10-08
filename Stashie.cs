@@ -174,7 +174,7 @@ namespace Stashie
 
                 #region default config String
 
-                "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionaly, will be created automatially for grouping)\r\n" +
+                "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionally, will be created automatically for grouping)\r\n" +
                 "//Filter parts should divided by coma or | (for OR operation(any filter part can pass))\r\n" +
                 "\r\n" +
                 "////////////\tAvailable properties:\t/////////////////////\r\n" +
@@ -216,8 +216,8 @@ namespace Stashie
                 "//=\t\t(equal)\r\n" +
                 "//>\t\t(bigger)\r\n" +
                 "//<\t\t(less)\r\n" +
-                "//<=\t(less or qual)\r\n" +
-                "//>=\t(bigger or qual)\r\n" +
+                "//<=\t(less or equal)\r\n" +
+                "//>=\t(greater or equal)\r\n" +
                 "/////////\tBoolean operations:\r\n" +
                 "//!\t\t(not/invert)\r\n" +
                 "/////////////////////////////////////////////////////////////\r\n" +
@@ -1015,7 +1015,7 @@ namespace Stashie
             var travelDistance = Math.Abs(tabIndex - _visibleStashIndex);
             if (travelDistance == 0) yield break;
 
-            if (Settings.UseArrow.Value || travelDistance < 2 || !SliderPresent())
+            if (Settings.AlwaysUseArrow.Value || travelDistance < 2 || !SliderPresent())
                 yield return SwitchToTabViaArrowKeys(tabIndex);
             else
                 yield return SwitchToTabViaDropdownMenu(tabIndex);
