@@ -1052,6 +1052,7 @@ namespace Stashie
 
             if (GetIndexOfCurrentVisibleTab() != tabIndex)
             {
+                yield return Delay(20);
                 yield return SwitchToTabViaArrowKeys(tabIndex, numberOfTries + 1);
             }
         }
