@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using ExileCore;
-using ExileCore.PoEMemory;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements.InventoryElements;
 using ExileCore.PoEMemory.MemoryObjects;
@@ -30,7 +29,6 @@ namespace Stashie
         private readonly Stopwatch _stackItemTimer = new Stopwatch();
         private readonly WaitTime _wait10Ms = new WaitTime(10);
         private readonly WaitTime _wait3Ms = new WaitTime(3);
-        private readonly WaitTime _wait1Ms = new WaitTime(1);
         private Vector2 _clickWindowOffset;
         private List<CustomFilter> _customFilters;
         private List<RefillProcessor> _customRefills;
@@ -93,7 +91,6 @@ namespace Stashie
                     break;
             }
 
-            DebugWindow.LogMsg("Running event coroutine");
             Core.ParallelRunner.Run(_coroutineWorker);
         }
 
@@ -642,9 +639,6 @@ namespace Stashie
 
                     if (stashResults.StashIndex != _visibleStashIndex)
                     {
-                        DebugWindow.LogMsg(
-                            $"Stashie: Wanted tab '{stashResults.StashIndex}', got '{_visibleStashIndex}'.", 5,
-                            Color.LightGray);
                         _stackItemTimer.Restart();
                         var waited = waitedItems.Count > 0;
 
@@ -1111,8 +1105,7 @@ namespace Stashie
             {
                 var clicks = _stashCount - MaxShownSidebarStashTabs;
                 yield return Delay(3);
-                DebugWindow.LogMsg($"{Name}: scrolling '{clicks}'.");
-                VerticalScroll(ScrollUp: clickable, clicks: clicks);
+                VerticalScroll(scrollUp: clickable, clicks: clicks);
                 yield return Delay(3);
             }
 
@@ -1140,23 +1133,6 @@ namespace Stashie
         private IEnumerator Delay(int ms = 0)
         {
             yield return new WaitTime(Settings.ExtraDelay.Value + ms);
-        }
-
-        private IEnumerator ScrollToStashIndex(int index)
-        {
-            var clicks = Math.Abs(index + 1 - MaxShownSidebarStashTabs);
-            if (StashLabelIsClickable(index))
-            {
-                VerticalScroll(true, _stashCount - MaxShownSidebarStashTabs);
-                DebugWindow.LogMsg($"Stashie: Scrolled to top ({clicks} clicks).", 5, Color.LightGray);
-            }
-            else
-            {
-                VerticalScroll(false, clicks);
-                DebugWindow.LogMsg($"Stashie: Scrolled down {clicks} clicks.", 5, Color.LightGray);
-            }
-
-            yield return Delay();
         }
 
         private IEnumerator SwitchToTabViaDropdownMenu(int tabIndex)
@@ -1341,18 +1317,10 @@ namespace Stashie
             }
         }
 
-        private IEnumerator WhileElementNotVisible(Element element)
-        {
-            while (!element.IsVisible)
-            {
-                yield return Delay(1);
-            }
-        }
-
-        private static void VerticalScroll(bool ScrollUp, int clicks)
+        private static void VerticalScroll(bool scrollUp, int clicks)
         {
             const int wheelDelta = 120;
-            if (ScrollUp)
+            if (scrollUp)
                 WinApi.mouse_event(Input.MOUSE_EVENT_WHEEL, 0, 0, clicks * wheelDelta, 0);
             else
                 WinApi.mouse_event(Input.MOUSE_EVENT_WHEEL, 0, 0, -(clicks * wheelDelta), 0);
