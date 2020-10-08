@@ -1029,8 +1029,13 @@ namespace Stashie
             yield return Delay();
         }
 
-        private IEnumerator SwitchToTabViaArrowKeys(int tabIndex)
+        private IEnumerator SwitchToTabViaArrowKeys(int tabIndex, int numberOfTries = 1)
         {
+            if (numberOfTries >= 3)
+            {
+                yield break;
+            }
+
             var indexOfCurrentVisibleTab = GetIndexOfCurrentVisibleTab();
             var travelDistance = tabIndex - indexOfCurrentVisibleTab;
             var tabIsToTheLeft = travelDistance < 0;
@@ -1043,6 +1048,11 @@ namespace Stashie
             else
             {
                 yield return PressKey(Keys.Right, travelDistance);
+            }
+
+            if (GetIndexOfCurrentVisibleTab() != tabIndex)
+            {
+                yield return SwitchToTabViaArrowKeys(tabIndex, numberOfTries + 1);
             }
         }
 
