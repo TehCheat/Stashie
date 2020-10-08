@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using ExileCore;
 using ExileCore.PoEMemory.Components;
@@ -14,7 +13,6 @@ using ExileCore.Shared;
 using ExileCore.Shared.Enums;
 using ExileCore.Shared.Nodes;
 using ImGuiNET;
-using Newtonsoft.Json;
 using SharpDX;
 using Vector4 = System.Numerics.Vector4;
 
@@ -31,7 +29,6 @@ namespace Stashie
         private readonly Stopwatch _stackItemTimer = new Stopwatch();
         private readonly WaitTime _wait10Ms = new WaitTime(10);
         private readonly WaitTime _wait3Ms = new WaitTime(3);
-        private readonly WaitTime _wait1Ms = new WaitTime(1);
         private Vector2 _clickWindowOffset;
         private List<CustomFilter> _customFilters;
         private List<RefillProcessor> _customRefills;
@@ -43,12 +40,58 @@ namespace Stashie
         private string[] _stashTabNamesByIndex;
         private Coroutine _stashTabNamesCoroutine;
         private int _visibleStashIndex = -1;
-        private const int MaxShownSidebarStashTabs = 32;
+        private const int MaxShownSidebarStashTabs = 31;
         private int _stashCount;
 
         public StashieCore()
         {
             Name = "Stashie";
+        }
+
+        public override void ReceiveEvent(string eventId, object args)
+        {
+            if (!Settings.Enable.Value)
+            {
+                return;
+            }
+
+            DebugWindow.LogMsg($"{Name}: Called receive event '{eventId}'.");
+            switch (eventId)
+            {
+                case "switch_to_tab":
+                    HandleSwitchToTabEvent(args);
+                    break;
+                default:
+                    DebugWindow.LogMsg($"{Name}: ReceiveEvent with id '{eventId}' not supported.");
+                    break;
+            }
+        }
+
+        private void HandleSwitchToTabEvent(object tab)
+        {
+            switch (tab)
+            {
+                case int index:
+                    _coroutineWorker = new Coroutine(ProcessSwitchToTab(index), this, CoroutineName);
+                    DebugWindow.LogMsg($"{Name}: Switching to tab with index: {index}");
+                    break;
+                case string name:
+                    if (!_renamedAllStashNames.Contains(name))
+                    {
+                        DebugWindow.LogMsg($"{Name}: can't find tab with name '{name}'.");
+                        break;
+                    }
+
+                    var tempIndex = _renamedAllStashNames.IndexOf(name);
+                    _coroutineWorker = new Coroutine(ProcessSwitchToTab(tempIndex), this, CoroutineName);
+                    DebugWindow.LogMsg($"{Name}: Switching to tab with index: {tempIndex} ('{name}').");
+                    break;
+                default:
+                    DebugWindow.LogMsg("The received argument is not a string or an integer.");
+                    break;
+            }
+
+            Core.ParallelRunner.Run(_coroutineWorker);
         }
 
         public override bool Initialise()
@@ -114,7 +157,6 @@ namespace Stashie
 
         private void SaveDefaultConfigsToDisk()
         {
-            // WriteInventoryNames();
             var path = $"{DirectoryFullName}\\GitUpdateConfig.txt";
             const string gitUpdateConfig = "Owner:nymann\r\n" + "Name:Stashie\r\n" + "Release\r\n";
             WriteToNonExistentFile(path, gitUpdateConfig);
@@ -132,7 +174,7 @@ namespace Stashie
 
                 #region default config String
 
-                "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionaly, will be created automatially for grouping)\r\n" +
+                "//FilterName(menu name):\tfilters\t\t:ParentMenu(optionally, will be created automatically for grouping)\r\n" +
                 "//Filter parts should divided by coma or | (for OR operation(any filter part can pass))\r\n" +
                 "\r\n" +
                 "////////////\tAvailable properties:\t/////////////////////\r\n" +
@@ -174,8 +216,8 @@ namespace Stashie
                 "//=\t\t(equal)\r\n" +
                 "//>\t\t(bigger)\r\n" +
                 "//<\t\t(less)\r\n" +
-                "//<=\t(less or qual)\r\n" +
-                "//>=\t(bigger or qual)\r\n" +
+                "//<=\t(less or equal)\r\n" +
+                "//>=\t(greater or equal)\r\n" +
                 "/////////\tBoolean operations:\r\n" +
                 "//!\t\t(not/invert)\r\n" +
                 "/////////////////////////////////////////////////////////////\r\n" +
@@ -332,7 +374,6 @@ namespace Stashie
             }
         }
 
-
         private void GenerateMenu()
         {
             _stashTabNamesByIndex = _renamedAllStashNames.ToArray();
@@ -445,7 +486,9 @@ namespace Stashie
                 Input.KeyUp(Keys.LControlKey);
                 _coroutineWorker = Core.ParallelRunner.FindByName(CoroutineName);
                 _coroutineWorker?.Done();
-                LogError($"When stashie working, stash UI was  closed, error happens in tab #{_visibleStashIndex}", 5);
+                LogError(
+                    $"Stashie: While depositing items the stash UI was closed, error happens in tab #{_visibleStashIndex}",
+                    10);
             }
 
             if (_coroutineWorker != null && _coroutineWorker.Running && _debugTimer.ElapsedMilliseconds > 15000)
@@ -472,12 +515,23 @@ namespace Stashie
             yield return ParseItems();
 
             var cursorPosPreMoving = Input.ForceMousePosition;
-            if (_dropItems.Count > 0) yield return DropToStash();
+            if (_dropItems.Count > 0) yield return StashItemsIncrementer();
 
             yield return ProcessRefills();
             yield return Input.SetCursorPositionSmooth(new Vector2(cursorPosPreMoving.X, cursorPosPreMoving.Y));
             Input.MouseMove();
 
+            _coroutineWorker = Core.ParallelRunner.FindByName(CoroutineName);
+            _coroutineWorker?.Done();
+
+            _debugTimer.Restart();
+            _debugTimer.Stop();
+        }
+
+        private IEnumerator ProcessSwitchToTab(int index)
+        {
+            _debugTimer.Restart();
+            yield return SwitchToTab(index);
             _coroutineWorker = Core.ParallelRunner.FindByName(CoroutineName);
             _coroutineWorker?.Done();
 
@@ -549,14 +603,14 @@ namespace Stashie
             return null;
         }
 
-        private IEnumerator DropToStash()
+        private IEnumerator StashItemsIncrementer()
         {
             _coroutineIteration++;
 
-            yield return DropItemsToStash();
+            yield return StashItems();
         }
 
-        private IEnumerator DropItemsToStash()
+        private IEnumerator StashItems()
         {
             var tries = 0;
             NormalInventoryItem lastHoverItem = null;
@@ -573,8 +627,8 @@ namespace Stashie
                 var latency = (int) ingameStateCurLatency + Settings.ExtraDelay;
                 Input.KeyDown(Keys.LControlKey);
                 var waitedItems = new List<FilterResult>(8);
-                var dropItemsToStashWaitTime = new WaitTime(latency);
-                yield return new WaitTime((int) ingameStateCurLatency);
+                var dropItemsToStashWaitTime = new WaitTime(Settings.ExtraDelay);
+                yield return Delay();
                 LogMessage($"Want drop {sortedByStash.Count} items.");
 
                 foreach (var stashResults in sortedByStash)
@@ -601,12 +655,7 @@ namespace Stashie
                                 var contains = visibleInventoryItems.Contains(waitedItem.ItemData.InventoryItem);
 
                                 if (!contains) continue;
-                                Input.SetCursorPos(waitedItem.ClickPos + _clickWindowOffset);
-                                yield return _wait3Ms;
-
-                                Input.Click(MouseButtons.Left);
-                                yield return _wait10Ms;
-                                Input.MouseMove();
+                                yield return ClickElement(waitedItem.ClickPos);
                                 waited = true;
                             }
 
@@ -959,8 +1008,6 @@ namespace Stashie
 
         public IEnumerator SwitchToTab(int tabIndex)
         {
-            var latency = (int) GameController.Game.IngameState.CurLatency;
-
             // We don't want to Switch to a tab that we are already on
             //var stashPanel = GameController.Game.IngameState.IngameUi.StashElement;
 
@@ -968,130 +1015,134 @@ namespace Stashie
             var travelDistance = Math.Abs(tabIndex - _visibleStashIndex);
             if (travelDistance == 0) yield break;
 
-            // We want to maximum wait 20 times the Current Latency before giving up in our while loops.
-            //var maxNumberOfTries = latency * 20 > 2000 ? latency * 20 / WHILE_DELAY : 2000 / WHILE_DELAY;
-            if (travelDistance > 3 && !Settings.UseArrow)
-            {
+            if (Settings.AlwaysUseArrow.Value || travelDistance < 2 || !SliderPresent())
+                yield return SwitchToTabViaArrowKeys(tabIndex);
+            else
                 yield return SwitchToTabViaDropdownMenu(tabIndex);
-                yield return new WaitTime(latency + Settings.ExtraDelay);
+
+            yield return Delay();
+        }
+
+        private IEnumerator SwitchToTabViaArrowKeys(int tabIndex, int numberOfTries = 1)
+        {
+            if (numberOfTries >= 3)
+            {
+                yield break;
+            }
+
+            var indexOfCurrentVisibleTab = GetIndexOfCurrentVisibleTab();
+            var travelDistance = tabIndex - indexOfCurrentVisibleTab;
+            var tabIsToTheLeft = travelDistance < 0;
+            travelDistance = Math.Abs(travelDistance);
+
+            if (tabIsToTheLeft)
+            {
+                yield return PressKey(Keys.Left, travelDistance);
             }
             else
             {
-                yield return SwitchToTabViaArrowKeys(tabIndex);
-                yield return new WaitTime(latency + Settings.ExtraDelay);
+                yield return PressKey(Keys.Right, travelDistance);
             }
 
-            _visibleStashIndex = GetIndexOfCurrentVisibleTab();
+            if (GetIndexOfCurrentVisibleTab() != tabIndex)
+            {
+                yield return Delay(20);
+                yield return SwitchToTabViaArrowKeys(tabIndex, numberOfTries + 1);
+            }
         }
 
-        private IEnumerator SwitchToTabViaArrowKeys(int tabIndex)
+        private IEnumerator PressKey(Keys key, int repetitions = 1)
         {
-            var indexOfCurrentVisibleTab = GetIndexOfCurrentVisibleTab();
-            var difference = tabIndex - indexOfCurrentVisibleTab;
-            var tabIsToTheLeft = difference < 0;
-            var retry = 0;
-            var waitTime = new WaitTime(Settings.ExtraDelay);
-
-            while (GetIndexOfCurrentVisibleTab() != tabIndex && retry < 3)
+            for (var i = 0; i < repetitions; i++)
             {
-                for (var i = 0; i < Math.Abs(difference); i++)
-                {
-                    Input.KeyDown(tabIsToTheLeft ? Keys.Left : Keys.Right);
-                    Input.KeyUp(tabIsToTheLeft ? Keys.Left : Keys.Right);
-                    yield return waitTime;
-
-                    // yield return Input.KeyPress(tabIsToTheLeft ? Keys.Left : Keys.Right);
-                }
-
-                yield return new WaitTime(20);
-                retry++;
+                yield return Input.KeyPress(key);
             }
+        }
+
+        private bool DropDownMenuIsVisible()
+        {
+            return GameController.Game.IngameState.IngameUi.StashElement.ViewAllStashPanel.IsVisible;
+        }
+
+        private IEnumerator OpenDropDownMenu()
+        {
+            var button = GameController.Game.IngameState.IngameUi.StashElement.ViewAllStashButton.GetClientRect();
+            yield return ClickElement(button.Center);
+            while (!DropDownMenuIsVisible())
+            {
+                yield return Delay(1);
+            }
+        }
+
+        private static bool StashLabelIsClickable(int index)
+        {
+            return index + 1 < MaxShownSidebarStashTabs;
+        }
+
+        private bool SliderPresent()
+        {
+            return _stashCount > MaxShownSidebarStashTabs;
+        }
+
+        private IEnumerator ClickDropDownMenuStashTabLabel(int tabIndex)
+        {
+            var dropdownMenu = GameController.Game.IngameState.IngameUi.StashElement.ViewAllStashPanel;
+            var stashTabLabels = dropdownMenu.GetChildAtIndex(1);
+
+            //if the stash tab index we want to visit is less or equal to 30, then we scroll all the way to the top.
+            //scroll amount (clicks) should always be (stash_tab_count - 31);
+            //TODO(if the guy has more than 31*2 tabs and wants to visit stash tab 32 fx, then we need to scroll all the way up (or down) and then scroll 13 clicks after.)
+
+            var clickable = StashLabelIsClickable(tabIndex);
+            // we want to go to stash 32 (index 31).
+            // 44 - 31 = 13
+            // 31 + 45 - 44 = 30
+            // MaxShownSideBarStashTabs + _stashCount - tabIndex = index
+            var index = clickable ? tabIndex : tabIndex - (_stashCount - 1 - (MaxShownSidebarStashTabs - 1));
+            var pos = stashTabLabels.GetChildAtIndex(index).GetClientRect().Center;
+            MoveMouseToElement(pos);
+            if (SliderPresent())
+            {
+                var clicks = _stashCount - MaxShownSidebarStashTabs;
+                yield return Delay(3);
+                VerticalScroll(scrollUp: clickable, clicks: clicks);
+                yield return Delay(3);
+            }
+
+            DebugWindow.LogMsg($"Stashie: Moving to tab '{tabIndex}'.", 3, Color.LightGray);
+            yield return Click();
+        }
+
+        private IEnumerator ClickElement(Vector2 pos, MouseButtons mouseButton = MouseButtons.Left)
+        {
+            MoveMouseToElement(pos);
+            yield return Click(mouseButton);
+        }
+
+        private IEnumerator Click(MouseButtons mouseButton = MouseButtons.Left)
+        {
+            Input.Click(mouseButton);
+            yield return Delay();
+        }
+
+        private void MoveMouseToElement(Vector2 pos)
+        {
+            Input.SetCursorPos(pos + GameController.Window.GetWindowRectangle().TopLeft);
+        }
+
+        private IEnumerator Delay(int ms = 0)
+        {
+            yield return new WaitTime(Settings.ExtraDelay.Value + ms);
         }
 
         private IEnumerator SwitchToTabViaDropdownMenu(int tabIndex)
         {
-            var latency = (int) GameController.Game.IngameState.CurLatency;
-            var viewAllTabsButton = GameController.Game.IngameState.IngameUi.StashElement.ViewAllStashButton;
-            var waitTime = new WaitTime(Settings.ExtraDelay);
-
-            var dropdownMenu = GameController.Game.IngameState.IngameUi.StashElement.ViewAllStashPanel;
-            var allTabsButton = viewAllTabsButton.GetClientRect();
-            var slider = _stashCount > MaxShownSidebarStashTabs;
-            if (!dropdownMenu.IsVisible)
+            if (!DropDownMenuIsVisible())
             {
-                Input.SetCursorPos(allTabsButton.Center);
-                yield return _wait3Ms;
-                Input.MouseMove();
-                Input.LeftDown();
-                yield return _wait1Ms;
-                Input.LeftUp();
-                yield return _wait10Ms;
-                //wait for the dropdown menu to become visible
-                if (!dropdownMenu.IsVisible)
-                {
-                    LogError($"Error in opening DropdownMenu.", 5);
-                    yield break;
-                }
+                yield return OpenDropDownMenu();
             }
 
-            // Make sure that we are scrolled to the top in the menu.
-            if (slider)
-                for (var i = 0; i < _stashCount - MaxShownSidebarStashTabs + 1; ++i)
-                {
-                    Input.KeyDown(Keys.Up);
-                    yield return _wait1Ms;
-                    Input.KeyUp(Keys.Up);
-                    yield return _wait1Ms;
-                }
-
-            //get click position of tab label
-            for (var i = 0; i < tabIndex; ++i)
-            {
-                Input.KeyDown(Keys.Down);
-                yield return _wait1Ms;
-                Input.KeyUp(Keys.Down);
-                yield return _wait1Ms;
-            }
-
-            //enter-key Method
-            Input.KeyDown(Keys.Enter);
-            yield return _wait1Ms;
-            Input.KeyUp(Keys.Enter);
-            yield return _wait1Ms;
-
-            //reset Slider position
-            if (!slider) yield break;
-            {
-                if (!dropdownMenu.IsVisible)
-                {
-                    //opening DropdownMenu
-                    Input.SetCursorPos(allTabsButton.Center);
-                    yield return _wait10Ms;
-                    Input.MouseMove();
-                    Input.LeftDown();
-                    yield return _wait1Ms;
-                    Input.LeftUp();
-                    yield return _wait10Ms;
-                    // wait for the dropdown menu to become visible.
-                    for (var count = 0; !dropdownMenu.IsVisible && count <= 20; ++count)
-                        yield return new WaitTime(latency);
-
-                    if (!dropdownMenu.IsVisible)
-                    {
-                        LogError($"Error in Scrolling back to the top.", 5);
-                        yield break;
-                    }
-                }
-
-                //"scrolling" back up
-                for (var i = 0; i < _stashCount - MaxShownSidebarStashTabs + 1; ++i)
-                {
-                    Input.KeyDown(Keys.Up);
-                    yield return new WaitTime(1);
-                    Input.KeyUp(Keys.Up);
-                    yield return new WaitTime(1);
-                }
-            }
+            yield return ClickDropDownMenuStashTabLabel(tabIndex);
         }
 
         private int GetIndexOfCurrentVisibleTab()
@@ -1264,6 +1315,15 @@ namespace Stashie
 
                 yield return Wait1Sec;
             }
+        }
+
+        private static void VerticalScroll(bool scrollUp, int clicks)
+        {
+            const int wheelDelta = 120;
+            if (scrollUp)
+                WinApi.mouse_event(Input.MOUSE_EVENT_WHEEL, 0, 0, clicks * wheelDelta, 0);
+            else
+                WinApi.mouse_event(Input.MOUSE_EVENT_WHEEL, 0, 0, -(clicks * wheelDelta), 0);
         }
 
         #endregion
