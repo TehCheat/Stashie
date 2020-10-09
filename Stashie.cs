@@ -55,14 +55,12 @@ namespace Stashie
                 return;
             }
 
-            DebugWindow.LogMsg($"{Name}: Called receive event '{eventId}'.");
             switch (eventId)
             {
                 case "switch_to_tab":
                     HandleSwitchToTabEvent(args);
                     break;
                 default:
-                    DebugWindow.LogMsg($"{Name}: ReceiveEvent with id '{eventId}' not supported.");
                     break;
             }
         }
@@ -73,7 +71,6 @@ namespace Stashie
             {
                 case int index:
                     _coroutineWorker = new Coroutine(ProcessSwitchToTab(index), this, CoroutineName);
-                    DebugWindow.LogMsg($"{Name}: Switching to tab with index: {index}");
                     break;
                 case string name:
                     if (!_renamedAllStashNames.Contains(name))
