@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B8C6B3D1-8D81-4350-AECE-682C96ABA88A}</ProjectGuid>
+    <ProjectGuid>{EED0427D-D8EB-4EBC-9F6F-4AE49A83963E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <NoStandardLibraries>false</NoStandardLibraries>
     <AssemblyName>Stashie</AssemblyName>
@@ -14,7 +14,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\Compiled\Stashie\</OutputPath>
+    <OutputPath>..\..\..\..\PoeHelper\Plugins\Compiled\Stashie\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -24,7 +24,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\Compiled\Stashie\</OutputPath>
+    <OutputPath>..\..\..\..\PoeHelper\Plugins\Compiled\Stashie\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -35,56 +35,17 @@
     <RootNamespace>Stashie</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ExileCore">
-      <HintPath>..\..\..\ExileCore.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="ImGui.NET">
-      <HintPath>..\..\..\ImGui.NET.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="JM.LinqFaster">
-      <HintPath>..\..\..\JM.LinqFaster.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\deps\ImGui.NET.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="SharpDX">
-      <HintPath>..\..\..\SharpDX.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="SharpDX.Mathematics">
-      <HintPath>..\..\..\SharpDX.Mathematics.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Buffers">
-      <HintPath>..\..\..\System.Buffers.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe">
-      <HintPath>..\..\..\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include=".gitignore" />
-    <Content Include="GitUpdateConfig.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FilterParameterCompare.cs" />
@@ -112,44 +73,32 @@
     <Compile Include="Stashie.cs" />
     <Compile Include="StashieSettings.cs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <None Include=".git\config" />
-    <None Include=".git\description" />
-    <None Include=".git\HEAD" />
-    <None Include=".git\hooks\applypatch-msg.sample" />
-    <None Include=".git\hooks\commit-msg.sample" />
-    <None Include=".git\hooks\fsmonitor-watchman.sample" />
-    <None Include=".git\hooks\post-update.sample" />
-    <None Include=".git\hooks\pre-applypatch.sample" />
-    <None Include=".git\hooks\pre-commit.sample" />
-    <None Include=".git\hooks\pre-merge-commit.sample" />
-    <None Include=".git\hooks\pre-push.sample" />
-    <None Include=".git\hooks\pre-rebase.sample" />
-    <None Include=".git\hooks\pre-receive.sample" />
-    <None Include=".git\hooks\prepare-commit-msg.sample" />
-    <None Include=".git\hooks\update.sample" />
-    <None Include=".git\index" />
-    <None Include=".git\info\exclude" />
-    <None Include=".git\logs\HEAD" />
-    <None Include=".git\logs\refs\heads\master" />
-    <None Include=".git\logs\refs\remotes\origin\HEAD" />
-    <None Include=".git\objects\pack\pack-50e4881b7dba9eb80774fa09d3fddd222b00a9cc.idx" />
-    <None Include=".git\objects\pack\pack-50e4881b7dba9eb80774fa09d3fddd222b00a9cc.pack" />
-    <None Include=".git\packed-refs" />
-    <None Include=".git\refs\heads\master" />
-    <None Include=".git\refs\remotes\origin\HEAD" />
-    <None Include=".vs\ProjectSettings.json" />
-    <None Include=".vs\slnx.sqlite" />
-    <None Include=".vs\Stashie\v16\.suo" />
-    <None Include=".vs\VSWorkspaceState.json" />
-    <None Include="packages.config" />
-    <None Include="README.md" />
-    <None Include="Stashie.csproj.DotSettings" />
-    <None Include="_config.yml" />
+    <PackageReference Include="InputSimulator">
+      <Version>1.0.4</Version>
+    </PackageReference>
+    <PackageReference Include="LinqFaster">
+      <Version>1.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>12.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="SharpDX">
+      <Version>4.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="SharpDX.Mathematics">
+      <Version>4.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="Trinet.Core.IO.Ntfs">
+      <Version>4.0.0</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include=".git\objects\info\" />
-    <Folder Include=".git\refs\tags\" />
+    <ProjectReference Include="..\..\..\Core\Core.csproj">
+      <Project>{5539d732-34a7-44ab-9e28-116c3429b12a}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
