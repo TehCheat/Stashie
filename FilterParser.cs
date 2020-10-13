@@ -33,6 +33,7 @@ namespace Stashie
         private const string PARAMETER_LARGEST_LINK_SIZE = "numberoflinks";
         private const string PARAMETER_VEILED = "veiled";
         private const string PARAMETER_FRACTUREDMODS = "fractured";
+        private const string PARAMETER_SKILLGEMLEVEL = "skillgemlevel";
         private const string PARAMTER_CLUSTERJEWELPASSIVES = "clusterjewelpassives";
 
         //Boolean
@@ -301,7 +302,11 @@ namespace Stashie
                     stringComp.CompareInt = int.Parse(value);
                     stringComp.StringParameter = data => data.Fractured.ToString();
                     break;
-
+                case PARAMETER_SKILLGEMLEVEL:
+                    stringComp.IntParameter = data => data.SkillGemLevel;
+                    stringComp.CompareInt = int.Parse(value);
+                    stringComp.StringParameter = data => data.SkillGemLevel.ToString();
+                    break;
 
                 default:
                     DebugWindow.LogMsg($"Filter parser: Parameter is not defined in code: {parameter}", 10);
