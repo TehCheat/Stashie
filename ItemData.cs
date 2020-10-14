@@ -40,6 +40,7 @@ namespace Stashie
         public bool Synthesised { get; }
         public bool isBlightMap { get; }
         public bool isElderGuardianMap { get; }
+        public int SkillGemLevel { get; }
         public Vector2 clientRect { get; }
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
@@ -62,6 +63,7 @@ namespace Stashie
             ItemLevel = mods?.ItemLevel ?? 0;
             Veiled = mods?.ItemMods.Where(m => m.DisplayName.Contains("Veil")).Count() ?? 0;
             Fractured = mods?.CountFractured ?? 0;
+            SkillGemLevel = item.GetComponent<SkillGem>()?.Level ?? 0;
             Synthesised = mods?.Synthesised ?? false;
             isBlightMap = mods?.ItemMods.Where(m => m.Name.Contains("InfectedMap")).Count() > 0;
             isElderGuardianMap = mods?.ItemMods.Where(m => m.Name.Contains("MapElderContainsBoss")).Count() > 0;
@@ -106,6 +108,7 @@ namespace Stashie
                 Name = ProphecyName;
                 BaseName = "Prophecy";
             }
+            
         }
         
         public Vector2 GetClickPosCache()
