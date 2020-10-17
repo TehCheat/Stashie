@@ -29,7 +29,7 @@ namespace Stashie
         }
 
 
-        [Menu("Stash Hotkey", 1001, 1000)] public HotkeyNode DropHotkey { get; set; }
+        [Menu("Stash Hotkey")] public HotkeyNode DropHotkey { get; set; }
 
         [Menu("Extra Delay", "Is it going too fast? Then add a delay (in ms).")]
         public RangeNode<int> ExtraDelay { get; set; }
@@ -41,7 +41,7 @@ namespace Stashie
             "After Stashie has dropped all items to their respective tabs, then go to the following tab.")]
         public ToggleNode VisitTabWhenDone { get; set; }
 
-        [Menu("tab (index)", 4001, 4000)] public RangeNode<int> TabToVisitWhenDone { get; set; }
+        [Menu("tab (index)")] public RangeNode<int> TabToVisitWhenDone { get; set; }
         public ToggleNode RefillCurrency { get; set; }
         public ListIndexNode CurrencyStashTab { get; set; }
         public ToggleNode AllowHaveMore { get; set; }
