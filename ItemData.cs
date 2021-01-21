@@ -40,7 +40,9 @@ namespace Stashie
         public bool Synthesised { get; }
         public bool isBlightMap { get; }
         public bool isElderGuardianMap { get; }
+        public bool Enchanted { get; }
         public int SkillGemLevel { get; }
+        
         public Vector2 clientRect { get; }
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
@@ -57,6 +59,7 @@ namespace Stashie
             isWarlord = baseComponent.isWarlord;
             isHunter = baseComponent.isHunter;
             isInfluenced = isCrusader || isRedeemer || isWarlord || isHunter || isShaper || isElder;
+
             var mods = item.GetComponent<Mods>();
             Rarity = mods?.ItemRarity ?? ItemRarity.Normal;
             BIdentified = mods?.Identified ?? true;
@@ -67,6 +70,7 @@ namespace Stashie
             Synthesised = mods?.Synthesised ?? false;
             isBlightMap = mods?.ItemMods.Where(m => m.Name.Contains("InfectedMap")).Count() > 0;
             isElderGuardianMap = mods?.ItemMods.Where(m => m.Name.Contains("MapElderContainsBoss")).Count() > 0;
+            Enchanted = mods?.ItemMods.Where(m => m.Name.Contains("Enchantment")).Count() > 0;
             
 
             NumberOfSockets = item.GetComponent<Sockets>()?.NumberOfSockets ?? 0;
@@ -88,7 +92,7 @@ namespace Stashie
                 ClusterJewelBase = "";
             }*/
 
-            Name = "";
+            Name = baseComponent.Name;
             Description = "";
             MapTier = item.HasComponent<Map>() ? item.GetComponent<Map>().Tier : 0;
             clientRect = InventoryItem.GetClientRect().Center;
@@ -107,6 +111,10 @@ namespace Stashie
                 Description = ProphecyDescription;
                 Name = ProphecyName;
                 BaseName = "Prophecy";
+            }
+            else
+            {
+                Name = mods?.UniqueName ?? "";
             }
             
         }

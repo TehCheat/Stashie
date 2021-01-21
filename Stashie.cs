@@ -606,34 +606,40 @@ namespace Stashie
 
             yield return StashItems();
         }
-
+        /// <summary>
+        /// this needs a rewrite... 
+        /// </summary>
+        /// <returns></returns>
         private IEnumerator StashItems()
         {
             var tries = 0;
             NormalInventoryItem lastHoverItem = null;
             PublishEvent("stashie_start_drop_items", null);
-
+            //
             while (_dropItems.Count > 0 && tries < 2)
             {
                 tries++;
-                _visibleStashIndex = -1;
-                _visibleStashIndex = GetIndexOfCurrentVisibleTab();
-                var sortedByStash = _dropItems.OrderByDescending(x => x.StashIndex == _visibleStashIndex)
-                    .ThenBy(x => x.StashIndex).ToList();
-                var ingameStateCurLatency = GameController.Game.IngameState.CurLatency;
-                var latency = (int) ingameStateCurLatency + Settings.ExtraDelay;
-                Input.KeyDown(Keys.LControlKey);
-                var waitedItems = new List<FilterResult>(8);
-                var dropItemsToStashWaitTime = new WaitTime(Settings.ExtraDelay);
-                yield return Delay();
-                LogMessage($"Want drop {sortedByStash.Count} items.");
 
-                foreach (var stashResults in sortedByStash)
+                _visibleStashIndex = GetIndexOfCurrentVisibleTab();
+                if (_visibleStashIndex < 0) yield break;
+
+                var itemsSortedByStash = _dropItems.OrderByDescending(x => x.StashIndex == _visibleStashIndex)
+                    .ThenBy(x => x.StashIndex).ToList();
+                var latency = (int) GameController.Game.IngameState.CurLatency + Settings.ExtraDelay; //i still dont like this. will come back later
+                var waitedItems = new List<FilterResult>(8);                            //8? where does that number come from????
+                var dropItemsToStashWaitTime = new WaitTime(Settings.ExtraDelay);       //will see if this is truly necessary, too many "useless" variables bloat the code
+
+                Input.KeyDown(Keys.LControlKey);
+                
+                //yield return Delay();
+                LogMessage($"Want drop {itemsSortedByStash.Count} items.");
+
+                foreach (var stashResults in itemsSortedByStash)
                 {
                     _coroutineIteration++;
                     _coroutineWorker?.UpdateTicks(_coroutineIteration);
-                    var tryTime = _debugTimer.ElapsedMilliseconds + 2000 + latency;
-
+                    var tryTime = _debugTimer.ElapsedMilliseconds + latency + 2000;
+                    //move to the correct tab if we arent on it already
                     if (stashResults.StashIndex != _visibleStashIndex)
                     {
                         _stackItemTimer.Restart();
@@ -647,16 +653,16 @@ namespace Stashie
                                 .InventoryPanel[InventoryIndex.PlayerInventory]
                                 .VisibleInventoryItems;
 
-                            foreach (var waitedItem in waitedItems)
+                            foreach (var item in waitedItems)
                             {
-                                var contains = visibleInventoryItems.Contains(waitedItem.ItemData.InventoryItem);
+                                var contains = visibleInventoryItems.Contains(item.ItemData.InventoryItem);
 
                                 if (!contains) continue;
-                                yield return ClickElement(waitedItem.ClickPos);
+                                yield return ClickElement(item.ClickPos);
                                 waited = true;
                             }
 
-                            yield return new WaitTime(100);
+                            yield return new WaitTime(100); //what do we wait for here ?
 
                             PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
 
@@ -1005,7 +1011,7 @@ namespace Stashie
 
         public IEnumerator SwitchToTab(int tabIndex)
         {
-            // We don't want to Switch to a tab that we are already on
+            // We don't want to Switch to a tab that we are already on or that has the magic number for affinities
             //var stashPanel = GameController.Game.IngameState.IngameUi.StashElement;
 
             _visibleStashIndex = GetIndexOfCurrentVisibleTab();

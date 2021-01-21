@@ -41,7 +41,8 @@ namespace Stashie
             "After Stashie has dropped all items to their respective tabs, then go to the following tab.")]
         public ToggleNode VisitTabWhenDone { get; set; }
 
-        [Menu("tab (index)")] public RangeNode<int> TabToVisitWhenDone { get; set; }
+        [Menu("tab (index)")] 
+        public RangeNode<int> TabToVisitWhenDone { get; set; }
         public ToggleNode RefillCurrency { get; set; }
         public ListIndexNode CurrencyStashTab { get; set; }
         public ToggleNode AllowHaveMore { get; set; }
