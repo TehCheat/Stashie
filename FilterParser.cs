@@ -35,6 +35,9 @@ namespace Stashie
         private const string PARAMETER_FRACTUREDMODS = "fractured";
         private const string PARAMETER_SKILLGEMLEVEL = "skillgemlevel";
         private const string PARAMTER_CLUSTERJEWELPASSIVES = "clusterjewelpassives";
+        private const string PARAMETER_METAMORPHREWARDSAMOUNT = "metamorphrewardsamount";
+        private const string PARAMETER_METAMORPHGOODREWARDSAMOUNT = "metamorphgoodrewardsamount";
+        private const string PARAMETER_METAMORPHBADREWARDSAMOUNT = "metamorphbadrewardsamount";
 
         //Boolean
         private const string PARAMETER_IDENTIFIED = "identified";
@@ -49,6 +52,8 @@ namespace Stashie
         private const string PARAMETER_ISSYNTHESISED = "Synthesised";
         private const string PARAMETER_ISBLIGHTEDMAP = "blightedMap";
         private const string PARAMETER_ISELDERGUARDIANMAP = "elderGuardianMap";
+        private const string PARAMETER_AFFINITYACTIVE = "affinity";
+        private const string PARAMETER_IGNOREAFFINITY = "ignoreaffinity";
 
         //Operations
         private const string OPERATION_NONEQUALITY = "!=";
@@ -59,6 +64,7 @@ namespace Stashie
         private const string OPERATION_LESS = "<";
         private const string OPERATION_CONTAINS = "^";
         private const string OPERATION_NOTCONTAINS = "!^";
+        private const string OPERATION_PLUS = "+"; //maybe not needed yet
 
         private static readonly string[] Operations =
         {
@@ -69,7 +75,8 @@ namespace Stashie
             OPERATION_EQUALITY,
             OPERATION_BIGGER,
             OPERATION_LESS,
-            OPERATION_CONTAINS
+            OPERATION_CONTAINS,
+            OPERATION_PLUS
         };
 
         public static List<CustomFilter> Parse(string[] filtersLines)
@@ -156,7 +163,12 @@ namespace Stashie
         private static bool ProcessCommand(BaseFilter newFilter, string command)
         {
             command = command.Trim();
-
+            if (command.Contains(PARAMETER_AFFINITYACTIVE))
+            {
+                var affinityActiveCommand = new AffinityActiveFilter { BAffinityActive = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(affinityActiveCommand);
+                return true;
+            }
             if (command.Contains(PARAMETER_IDENTIFIED))
             {
                 var identCommand = new IdentifiedItemFilter {BIdentified = command[0] != SYMBOL_NOT};
@@ -306,6 +318,21 @@ namespace Stashie
                     stringComp.IntParameter = data => data.SkillGemLevel;
                     stringComp.CompareInt = int.Parse(value);
                     stringComp.StringParameter = data => data.SkillGemLevel.ToString();
+                    break;
+                case PARAMETER_METAMORPHREWARDSAMOUNT:
+                    stringComp.IntParameter = data => data.MetamorphSampleRewardsAmount;
+                    stringComp.CompareInt = int.Parse(value);
+                    stringComp.StringParameter = data => data.MetamorphSampleRewardsAmount.ToString();
+                    break;
+                case PARAMETER_METAMORPHGOODREWARDSAMOUNT:
+                    stringComp.IntParameter = data => data.MetamorphSampleGoodRewardsAmount;
+                    stringComp.CompareInt = int.Parse(value);
+                    stringComp.StringParameter = data => data.MetamorphSampleGoodRewardsAmount.ToString();
+                    break;
+                case PARAMETER_METAMORPHBADREWARDSAMOUNT:
+                    stringComp.IntParameter = data => data.MetamorphSampleBadRewardsAmount;
+                    stringComp.CompareInt = int.Parse(value);
+                    stringComp.StringParameter = data => data.MetamorphSampleBadRewardsAmount.ToString();
                     break;
 
                 default:

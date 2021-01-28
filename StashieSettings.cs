@@ -17,6 +17,8 @@ namespace Stashie
             Enable = new ToggleNode(false);
             DropHotkey = Keys.F3;
             ExtraDelay = new RangeNode<int>(0, 0, 2000);
+            HoverItemDelay = new RangeNode<int>(5, 0, 2000);
+            StashItemDelay = new RangeNode<int>(5, 0, 2000);
             BlockInput = new ToggleNode(false);
             AlwaysUseArrow = new ToggleNode(false);
             RefillCurrency = new ToggleNode(false);
@@ -29,16 +31,21 @@ namespace Stashie
         }
 
 
-        [Menu("Stash Hotkey")] public HotkeyNode DropHotkey { get; set; }
+        [Menu("Stash Hotkey")] 
+        public HotkeyNode DropHotkey { get; set; }
 
-        [Menu("Extra Delay", "Is it going too fast? Then add a delay (in ms).")]
+        [Menu("Extra Delay", "Primary Delay (in ms).")]
         public RangeNode<int> ExtraDelay { get; set; }
+        [Menu("HoverItem Delay", "Delay used to wait inbetween checks for the Hoveritem (in ms).")]
+        public RangeNode<int> HoverItemDelay { get; set; }
+        [Menu("StashItem Delay", "Delay used to wait after dropping an item to Stash (in ms).")]
+        public RangeNode<int> StashItemDelay { get; set; }
 
         [Menu("Block Input", "Block user input (except: Ctrl+Alt+Delete) when dropping items to stash.")]
         public ToggleNode BlockInput { get; set; }
 
         [Menu("When done, go to tab.",
-            "After Stashie has dropped all items to their respective tabs, then go to the following tab.")]
+            "After Stashie has dropped all items to their respective tabs, then go to the set tab.")]
         public ToggleNode VisitTabWhenDone { get; set; }
 
         [Menu("tab (index)")] 
@@ -61,5 +68,6 @@ namespace Stashie
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
         };
+        
     }
 }

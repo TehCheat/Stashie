@@ -97,7 +97,7 @@ namespace Stashie
             {
                 if (b)
                 {
-                    if (Core.ParallelRunner.FindByName(StashTabsNameChecker) == null) InitCoroutine();
+                    if (Core.ParallelRunner.FindByName(StashTabsNameChecker) == null) InitStashTabNameCoRoutine();
                     _stashTabNamesCoroutine?.Resume();
                 }
                 else
@@ -108,7 +108,7 @@ namespace Stashie
                 SetupOrClose();
             };
 
-            InitCoroutine();
+            InitStashTabNameCoRoutine();
             SetupOrClose();
 
             Input.RegisterKey(Settings.DropHotkey);
@@ -122,14 +122,25 @@ namespace Stashie
 
         public override void AreaChange(AreaInstance area)
         {
-            //TODO Add lab name with stash
-            if (area.IsHideout || area.DisplayName.Contains("Azurite Mine"))
-                _stashTabNamesCoroutine?.Resume();
+            if (_stashTabNamesCoroutine == null) return;
+            if (_stashTabNamesCoroutine.Running)
+            {
+                if(!area.IsHideout && !area.IsTown && 
+                    !area.DisplayName.Contains("Azurite Mine") && 
+                    !area.DisplayName.Contains("Tane's Laboratory"))
+                    _stashTabNamesCoroutine?.Pause();
+            }
             else
-                _stashTabNamesCoroutine?.Pause();
+            {
+                if (area.IsHideout || 
+                    area.IsTown ||
+                    area.DisplayName.Contains("Azurite Mine") ||
+                    area.DisplayName.Contains("Tane's Laboratory"))
+                    _stashTabNamesCoroutine?.Resume();
+            }
         }
 
-        private void InitCoroutine()
+        private void InitStashTabNameCoRoutine()
         {
             _stashTabNamesCoroutine = new Coroutine(StashTabNamesUpdater_Thread(), this, StashTabsNameChecker);
             Core.ParallelRunner.Run(_stashTabNamesCoroutine);
@@ -282,10 +293,9 @@ namespace Stashie
 
         private void LoadCustomFilters()
         {
-            var filterPath = Path.Combine(DirectoryFullName, FiltersConfigFile);
-            var filtersLines = File.ReadAllLines(filterPath);
-            var unused = new FilterParser();
-            _customFilters = FilterParser.Parse(filtersLines);
+            var filterFilePath = Path.Combine(DirectoryFullName, FiltersConfigFile);
+            var filterLines = File.ReadAllLines(filterFilePath);
+            _customFilters = FilterParser.Parse(filterLines);
 
             foreach (var customFilter in _customFilters)
             {
@@ -469,6 +479,10 @@ namespace Stashie
 
         public override void Render()
         {
+            //-------------------------------
+            base.Render();
+            return;
+            //----------------------------------------------------
             if (_coroutineWorker != null && _coroutineWorker.IsDone)
             {
                 Input.KeyUp(Keys.LControlKey);
@@ -476,7 +490,7 @@ namespace Stashie
             }
 
             var uiTabsOpened = GameController.Game.IngameState.IngameUi.InventoryPanel.IsVisible &&
-                               GameController.Game.IngameState.IngameUi.StashElement.IsVisibleLocal;
+                               GameController.Game.IngameState.IngameUi.StashElement.IsVisibleLocal;  
 
             if (!uiTabsOpened && _coroutineWorker != null && !_coroutineWorker.IsDone)
             {
@@ -506,13 +520,88 @@ namespace Stashie
             Core.ParallelRunner.Run(_coroutineWorker);
         }
 
+        public override Job Tick()
+        {
+            if (!stashingRequirementsMet() && Core.ParallelRunner.FindByName("Stashie_DropItemsToStash") != null)
+            {
+                CleanUp();
+                StopCoroutine("Stashie_DropItemsToStash");
+                return null;
+            }
+            
+            if (Settings.DropHotkey.PressedOnce())
+            {
+                if(Core.ParallelRunner.FindByName("Stashie_DropItemsToStash") == null)
+                {
+                    StartDropItemsToStashCoroutine();
+                }
+                else
+                {
+                    StopCoroutine("Stashie_DropItemsToStash");
+                }
+            }
+            return null;
+        }
+
+        private void StartDropItemsToStashCoroutine()
+        {
+            _debugTimer.Reset();
+            _debugTimer.Start();
+            Core.ParallelRunner.Run(new Coroutine(DropToStashRoutine(), this, "Stashie_DropItemsToStash"));
+        }
+
+        private void StopCoroutine(string routineName)
+        {
+            var routine = Core.ParallelRunner.FindByName(routineName);
+            routine?.Done();
+            _debugTimer.Stop();
+            _debugTimer.Reset();
+        }
+        private IEnumerator DropToStashRoutine()
+        {
+            var cursorPosPreMoving = Input.ForceMousePosition; //saving cursorposition
+            //try stashing items 3 times
+            for (int tries = 0; tries < 3; ++tries)
+            {
+                yield return ParseItems();
+                if (_dropItems.Count > 0)
+                    yield return StashItemsIncrementer();
+            }
+            yield return ProcessRefills();
+            if (Settings.VisitTabWhenDone.Value) 
+                yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
+
+            //restoring cursorposition
+            Input.SetCursorPos(cursorPosPreMoving);
+            Input.MouseMove();
+            _coroutineWorker = Core.ParallelRunner.FindByName("Stashie_DropItemsToStash");
+            _coroutineWorker?.Done();
+
+            _debugTimer.Restart();
+            _debugTimer.Stop();
+            yield break;
+        }
+
+        private void CleanUp()
+        {
+            Input.KeyUp(Keys.LControlKey);
+            Input.KeyUp(Keys.Shift);
+        }
+
+        private bool stashingRequirementsMet()
+        {
+            return GameController.Game.IngameState.IngameUi.InventoryPanel.IsVisible &&
+                    GameController.Game.IngameState.IngameUi.StashElement.IsVisibleLocal;
+        }
+
         private IEnumerator ProcessInventoryItems()
         {
             _debugTimer.Restart();
             yield return ParseItems();
 
             var cursorPosPreMoving = Input.ForceMousePosition;
-            if (_dropItems.Count > 0) yield return StashItemsIncrementer();
+            if (_dropItems.Count > 0) 
+                yield return StashItemsIncrementer();
 
             yield return ProcessRefills();
             yield return Input.SetCursorPositionSmooth(new Vector2(cursorPosPreMoving.X, cursorPosPreMoving.Y));
@@ -541,29 +630,18 @@ namespace Stashie
             var inventory = GameController.Game.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
             var invItems = inventory.VisibleInventoryItems;
 
-            if (invItems == null)
+            yield return new WaitFunctionTimed(() => invItems != null,true,500, "Player inventory->VisibleInventoryItems is null!");
+            _dropItems = new List<FilterResult>();
+            _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
+            foreach (var invItem in invItems)
             {
-                LogMessage("Player inventory->VisibleInventoryItems is null!", 5);
-                yield return new WaitRender();
-            }
-            else
-            {
-                _dropItems = new List<FilterResult>();
-                _clickWindowOffset = GameController.Window.GetWindowRectangle().TopLeft;
-
-                foreach (var invItem in invItems)
-                {
-                    if (invItem.Item == null || invItem.Address == 0) continue;
-
-                    if (CheckIgnoreCells(invItem)) continue;
-
-
-                    var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
-                    var testItem = new ItemData(invItem, baseItemType);
-                    var result = CheckFilters(testItem);
-                    if (result != null)
-                        _dropItems.Add(result);
-                }
+                if (invItem.Item == null || invItem.Address == 0) continue;
+                if (CheckIgnoreCells(invItem)) continue;
+                var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
+                var testItem = new ItemData(invItem, baseItemType);
+                var result = CheckFilters(testItem);
+                if (result != null)
+                    _dropItems.Add(result);
             }
         }
 
@@ -586,6 +664,7 @@ namespace Stashie
         private FilterResult CheckFilters(ItemData itemData)
         {
             foreach (var filter in _customFilters)
+            {
                 try
                 {
                     if (!filter.AllowProcess) continue;
@@ -596,7 +675,7 @@ namespace Stashie
                 {
                     DebugWindow.LogError($"Check filters error: {ex}");
                 }
-
+            }
             return null;
         }
 
@@ -604,22 +683,131 @@ namespace Stashie
         {
             _coroutineIteration++;
 
-            yield return StashItems();
+            yield return StashItems2();
         }
+        private IEnumerator StashItems2()
+        {
+            NormalInventoryItem lastHoverItem = null;
+            PublishEvent("stashie_start_drop_items", null);
+
+            _visibleStashIndex = GetIndexOfCurrentVisibleTab();
+            if (_visibleStashIndex < 0)
+            {
+                LogMessage($"Stshie: VisibleStashIndex was invalid: {_visibleStashIndex}, stopping.");
+                yield break;
+            }
+            var itemsSortedByStash = _dropItems.OrderByDescending(x => x.StashIndex == _visibleStashIndex)
+                    .ThenBy(x => x.StashIndex).ToList();
+            var waitedItems = new List<FilterResult>(16);
+
+            Input.KeyDown(Keys.LControlKey);
+            LogMessage($"Want to drop {itemsSortedByStash.Count} items.");
+            foreach(var stashresult in itemsSortedByStash)
+            {
+                _coroutineIteration++;
+                _coroutineWorker?.UpdateTicks(_coroutineIteration);
+                var maxTryTime = _debugTimer.ElapsedMilliseconds + 2000;
+                //move to correct tab
+                if (!stashresult.SkipSwitchTab)
+                    yield return SwitchToTab(stashresult.StashIndex);
+                //this is shenanigans for items that take some time to get dumped like maps into maptab and divcards in divtab
+                var waited = waitedItems.Count > 0;
+                while (waited)
+                {
+                    waited = false;
+                    var visibleInventoryItems = GameController.Game.IngameState.IngameUi
+                                .InventoryPanel[InventoryIndex.PlayerInventory]
+                                .VisibleInventoryItems;
+                    foreach(var item in waitedItems)
+                    {
+                        if (!visibleInventoryItems.Contains(item.ItemData.InventoryItem)) continue;
+                        yield return ClickElement(item.ClickPos);
+                        waited = true;
+                    }
+                    yield return new WaitTime(Settings.ExtraDelay);
+                    PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
+                    if (!waited) waitedItems.Clear();
+                    if (_debugTimer.ElapsedMilliseconds > maxTryTime)
+                    {
+                        LogMessage($"Error while waiting for:{waitedItems.Count} items");
+                        yield break;
+                    }
+                    yield return new WaitTime((int)GameController.IngameState.CurLatency); //maybe replace with Setting option
+                }
+                yield return new WaitFunctionTimed(() => GameController.IngameState.IngameUi.StashElement.AllInventories[_visibleStashIndex] != null, 
+                    true, 2000, $"Error while loading tab, Index: {_visibleStashIndex}"); //maybe replace waittime with Setting option
+                yield return new WaitFunctionTimed(() => GetTypeOfCurrentVisibleStash() != InventoryType.InvalidInventory,
+                    true, 2000, $"Error with inventory type, Index: {_visibleStashIndex}"); //maybe replace waittime with Setting option
+                var inventory = GameController.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
+
+                yield return StashItem(stashresult, maxTryTime, lastHoverItem);
+                
+                _debugTimer.Restart();
+                PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
+            }
+            CleanUp();
+
+        }
+        private IEnumerator StashItem(FilterResult stashresult, long maxTryTime, NormalInventoryItem  lastHoverItem)
+        {
+            Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
+            //set cursor and update hoveritem
+            var inventory = GameController.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
+            while (inventory.HoverItem == null)
+            {
+                if (_debugTimer.ElapsedMilliseconds > maxTryTime)
+                {
+                    LogMessage($"Error while waiting for hover item. hoveritem is null, Index: {_visibleStashIndex}");
+                    yield break;
+                }
+                Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
+                yield return Settings.HoverItemDelay;
+            }
+            if (lastHoverItem != null)
+            {
+                while (inventory.HoverItem == null || inventory.HoverItem.Address == lastHoverItem.Address)
+                {
+                    if (_debugTimer.ElapsedMilliseconds > maxTryTime)
+                    {
+                        LogMessage($"Error while waiting for hover item. hoveritem is null, Index: {_visibleStashIndex}");
+                        yield break;
+                    }
+                    Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
+                    yield return Settings.HoverItemDelay;
+                }
+            }
+            lastHoverItem = inventory.HoverItem;
+
+            //finally press the button
+            //additional shift to circumvent affinities
+            bool shiftused = false;
+            if (stashresult.ShiftForStashing)
+            {
+                Input.KeyDown(Keys.Shift);
+                shiftused = true;
+            }
+            Input.Click(MouseButtons.Left);
+            if (shiftused)
+            {
+                Input.KeyUp(Keys.Shift);
+            }
+           
+            yield return new WaitTime(Settings.StashItemDelay);
+        }
+        [Obsolete("Deprecated use StashItems2() instead. Will call StashItems2()")]
         /// <summary>
         /// this needs a rewrite... 
         /// </summary>
         /// <returns></returns>
         private IEnumerator StashItems()
         {
-            var tries = 0;
+            yield return StashItems2();
             NormalInventoryItem lastHoverItem = null;
             PublishEvent("stashie_start_drop_items", null);
-            //
-            while (_dropItems.Count > 0 && tries < 2)
+  
+            //amount of times we try to do the stashing process
+            for (int tries = 0; _dropItems.Count > 0 && tries < 2; ++tries)
             {
-                tries++;
-
                 _visibleStashIndex = GetIndexOfCurrentVisibleTab();
                 if (_visibleStashIndex < 0) yield break;
 
@@ -631,8 +819,7 @@ namespace Stashie
 
                 Input.KeyDown(Keys.LControlKey);
                 
-                //yield return Delay();
-                LogMessage($"Want drop {itemsSortedByStash.Count} items.");
+                LogMessage($"Want to drop {itemsSortedByStash.Count} items.");
 
                 foreach (var stashResults in itemsSortedByStash)
                 {
@@ -744,10 +931,9 @@ namespace Stashie
 
                     PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
                 }
-
+                Input.KeyUp(Keys.LControlKey);
                 if (Settings.VisitTabWhenDone.Value) yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
 
-                Input.KeyUp(Keys.LControlKey);
                 yield return ParseItems();
             }
 

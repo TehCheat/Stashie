@@ -4,12 +4,16 @@ using ExileCore.PoEMemory.Models;
 using ExileCore.Shared.Enums;
 using ExileCore.Shared.Helpers;
 using SharpDX;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Stashie
 {
     public class ItemData
     {
+        private static readonly List<string> goodRewards = new List<string>{ "additional currency items", "additional fossils", "additional divination cards", "additional quality gems", "additional map fragments", "additional catalysts", "additonal essences", "additional legion incubators", "additional polished scarabs" };
+        private static readonly List<string> badRewards = new List<string> { "additional veiled armour", "additional rare weapons", "additional rare armour", "additional perandus coins", "additional rare talismans", "a rare weapon" };
+        private static readonly List<string> mediocreRewards = new List<string> { "a map item", "additional maps", "rare jewellery", "itemised prophecies", "enchanted boots", "additional rusted scarabs", "a shaper weapon", "a unique weapon", "an abyssal jewel", "incursion weapon", "additonal unique items", "additional breach splinters" };
         public NormalInventoryItem InventoryItem { get; }
         public string Path { get; }
         public string ClassName { get; }
@@ -42,6 +46,9 @@ namespace Stashie
         public bool isElderGuardianMap { get; }
         public bool Enchanted { get; }
         public int SkillGemLevel { get; }
+        public int MetamorphSampleRewardsAmount { get; } = 0;
+        public int MetamorphSampleGoodRewardsAmount { get; } = 0;
+        public int MetamorphSampleBadRewardsAmount { get; } = 0;
         
         public Vector2 clientRect { get; }
 
@@ -71,6 +78,7 @@ namespace Stashie
             isBlightMap = mods?.ItemMods.Where(m => m.Name.Contains("InfectedMap")).Count() > 0;
             isElderGuardianMap = mods?.ItemMods.Where(m => m.Name.Contains("MapElderContainsBoss")).Count() > 0;
             Enchanted = mods?.ItemMods.Where(m => m.Name.Contains("Enchantment")).Count() > 0;
+
             
 
             NumberOfSockets = item.GetComponent<Sockets>()?.NumberOfSockets ?? 0;
@@ -115,6 +123,19 @@ namespace Stashie
             else
             {
                 Name = mods?.UniqueName ?? "";
+            }
+            
+            if (ClassName == "MetamorphosisDNA")
+            {
+                var stats = mods?.HumanStats;
+                if (mods?.HumanStats != null)
+                {
+                    MetamorphSampleRewardsAmount = stats.Count();
+                    stats.ForEach(str => str.ToLower());
+                    stats.ForEach(x => x.Substring("Drops ".Length));
+                    MetamorphSampleGoodRewardsAmount = stats.Where(stat => goodRewards.Any(rewards => rewards.Equals(stat))).Count();
+                    MetamorphSampleBadRewardsAmount = stats.Where(stat => badRewards.Any(rewards => rewards.Equals(stat))).Count();
+                }
             }
             
         }

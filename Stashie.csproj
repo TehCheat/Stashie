@@ -54,6 +54,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Filter\AffinityActiveFilter.cs" />
     <Compile Include="FilterParameterCompare.cs" />
     <Compile Include="FilterParser.cs" />
     <Compile Include="FilterResult.cs" />
