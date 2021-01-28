@@ -169,6 +169,12 @@ namespace Stashie
                 newFilter.Filters.Add(affinityActiveCommand);
                 return true;
             }
+            if (command.Contains(PARAMETER_IGNOREAFFINITY))
+            {
+                var affinityIgnoreCommand = new AffinityIgnoreFilter { BAffinityIgnore = command[0] != SYMBOL_NOT };
+                newFilter.Filters.Add(affinityIgnoreCommand);
+                return true;
+            }
             if (command.Contains(PARAMETER_IDENTIFIED))
             {
                 var identCommand = new IdentifiedItemFilter {BIdentified = command[0] != SYMBOL_NOT};

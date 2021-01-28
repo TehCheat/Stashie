@@ -58,6 +58,7 @@
     <Compile Include="FilterParameterCompare.cs" />
     <Compile Include="FilterParser.cs" />
     <Compile Include="FilterResult.cs" />
+    <Compile Include="Filter\AffinityIgnoreFilter.cs" />
     <Compile Include="Filter\AnyInfluenceItemFilter.cs" />
     <Compile Include="Filter\BaseFilter.cs" />
     <Compile Include="Filter\BlightedMapFilter.cs" />
