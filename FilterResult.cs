@@ -11,7 +11,7 @@ namespace Stashie
             StashIndex = filter.StashIndexNode.Index;
             ClickPos = itemData.GetClickPosCache();
             SkipSwitchTab = Filter.Commands.Contains("affinity");
-            ShiftForStashing = Filter.Commands.Contains("ignoreaffinity");
+            ShiftForStashing = Filter.Commands.Contains("shifting");
         }
 
         public CustomFilter Filter { get; }

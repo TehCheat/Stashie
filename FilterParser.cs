@@ -53,7 +53,7 @@ namespace Stashie
         private const string PARAMETER_ISBLIGHTEDMAP = "blightedMap";
         private const string PARAMETER_ISELDERGUARDIANMAP = "elderGuardianMap";
         private const string PARAMETER_AFFINITYACTIVE = "affinity";
-        private const string PARAMETER_IGNOREAFFINITY = "ignoreaffinity";
+        private const string PARAMETER_IGNOREAFFINITY = "shifting";
 
         //Operations
         private const string OPERATION_NONEQUALITY = "!=";

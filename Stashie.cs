@@ -112,7 +112,6 @@ namespace Stashie
             SetupOrClose();
 
             Input.RegisterKey(Settings.DropHotkey);
-            Input.RegisterKey(Keys.ShiftKey);
 
             Settings.DropHotkey.OnValueChanged += () => { Input.RegisterKey(Settings.DropHotkey); };
             _stashCount = (int) GameController.Game.IngameState.IngameUi.StashElement.TotalStashes;
@@ -738,7 +737,6 @@ namespace Stashie
                     true, 2000, $"Error while loading tab, Index: {_visibleStashIndex}"); //maybe replace waittime with Setting option
                 yield return new WaitFunctionTimed(() => GetTypeOfCurrentVisibleStash() != InventoryType.InvalidInventory,
                     true, 2000, $"Error with inventory type, Index: {_visibleStashIndex}"); //maybe replace waittime with Setting option
-                var inventory = GameController.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
 
                 yield return StashItem(stashresult, maxTryTime, lastHoverItem);
                 
@@ -783,13 +781,13 @@ namespace Stashie
             bool shiftused = false;
             if (stashresult.ShiftForStashing)
             {
-                Input.KeyDown(Keys.Shift);
+                Input.KeyDown(Keys.ShiftKey);
                 shiftused = true;
             }
             Input.Click(MouseButtons.Left);
             if (shiftused)
             {
-                Input.KeyUp(Keys.Shift);
+                Input.KeyUp(Keys.ShiftKey);
             }
            
             yield return new WaitTime(Settings.StashItemDelay);
