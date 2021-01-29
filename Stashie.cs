@@ -477,54 +477,10 @@ namespace Stashie
             _settingsListNodes.Add(Settings.CurrencyStashTab);
         }
 
-        public override void Render()
-        {
-            //-------------------------------
-            base.Render();
-            return;
-            //----------------------------------------------------
-            if (_coroutineWorker != null && _coroutineWorker.IsDone)
-            {
-                Input.KeyUp(Keys.LControlKey);
-                _coroutineWorker = null;
-            }
-
-            var uiTabsOpened = GameController.Game.IngameState.IngameUi.InventoryPanel.IsVisible &&
-                               GameController.Game.IngameState.IngameUi.StashElement.IsVisibleLocal;  
-
-            if (!uiTabsOpened && _coroutineWorker != null && !_coroutineWorker.IsDone)
-            {
-                Input.KeyUp(Keys.LControlKey);
-                _coroutineWorker = Core.ParallelRunner.FindByName(CoroutineName);
-                _coroutineWorker?.Done();
-                LogError(
-                    $"Stashie: While depositing items the stash UI was closed, error happens in tab #{_visibleStashIndex}",
-                    10);
-            }
-
-            if (_coroutineWorker != null && _coroutineWorker.Running && _debugTimer.ElapsedMilliseconds > 15000)
-            {
-                LogError(
-                    $"Stopped because work more than 15 sec. Error in {GetIndexOfCurrentVisibleTab()} type {GetTypeOfCurrentVisibleStash()} visibleStashIndex: {_visibleStashIndex}",
-                    5);
-
-                _coroutineWorker?.Done();
-                _debugTimer.Restart();
-                _debugTimer.Stop();
-                Input.KeyUp(Keys.LControlKey);
-            }
-
-            if (!Settings.DropHotkey.PressedOnce()) return;
-            if (!uiTabsOpened) return;
-            _coroutineWorker = new Coroutine(ProcessInventoryItems(), this, CoroutineName);
-            Core.ParallelRunner.Run(_coroutineWorker);
-        }
-
         public override Job Tick()
         {
             if (!stashingRequirementsMet() && Core.ParallelRunner.FindByName("Stashie_DropItemsToStash") != null)
             {
-                CleanUp();
                 StopCoroutine("Stashie_DropItemsToStash");
                 return null;
             }
@@ -556,11 +512,13 @@ namespace Stashie
             routine?.Done();
             _debugTimer.Stop();
             _debugTimer.Reset();
+            CleanUp();
         }
         private IEnumerator DropToStashRoutine()
         {
             var cursorPosPreMoving = Input.ForceMousePosition; //saving cursorposition
             //try stashing items 3 times
+            _dropItems = new List<FilterResult>();
             yield return ParseItems();
             for (int tries = 0; tries < 3 && _dropItems.Count > 0; ++tries)
             {
@@ -569,19 +527,14 @@ namespace Stashie
                 yield return ParseItems();
                 yield return new WaitTime(Settings.ExtraDelay);
             }
-            yield return ProcessRefills();
+            //yield return ProcessRefills();
             if (Settings.VisitTabWhenDone.Value) 
                 yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
 
             //restoring cursorposition
             Input.SetCursorPos(cursorPosPreMoving);
             Input.MouseMove();
-            _coroutineWorker = Core.ParallelRunner.FindByName("Stashie_DropItemsToStash");
-            _coroutineWorker?.Done();
-
-            _debugTimer.Restart();
-            _debugTimer.Stop();
-            yield break;
+            StopCoroutine("Stashie_DropItemsToStash");
         }
 
         private void CleanUp()
@@ -746,8 +699,6 @@ namespace Stashie
                 _debugTimer.Restart();
                 PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
             }
-            CleanUp();
-
         }
 
         private IEnumerator StashItem(FilterResult stashresult)
