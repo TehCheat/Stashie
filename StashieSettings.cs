@@ -38,7 +38,7 @@ namespace Stashie
         public RangeNode<int> ExtraDelay { get; set; }
         [Menu("HoverItem Delay", "Delay used to wait inbetween checks for the Hoveritem (in ms).")]
         public RangeNode<int> HoverItemDelay { get; set; }
-        [Menu("StashItem Delay", "Delay used to wait after dropping an item to Stash (in ms).")]
+        [Menu("StashItem Delay", "Delay used to wait after moving the mouse on an item to Stash until clicking it(in ms).")]
         public RangeNode<int> StashItemDelay { get; set; }
 
         [Menu("Block Input", "Block user input (except: Ctrl+Alt+Delete) when dropping items to stash.")]

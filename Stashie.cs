@@ -527,7 +527,7 @@ namespace Stashie
                 yield return ParseItems();
                 yield return new WaitTime(Settings.ExtraDelay);
             }
-            //yield return ProcessRefills();
+            //yield return ProcessRefills(); currently bugged
             if (Settings.VisitTabWhenDone.Value) 
                 yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
 
@@ -704,6 +704,7 @@ namespace Stashie
         private IEnumerator StashItem(FilterResult stashresult)
         {
             Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
+            yield return new WaitTime(Settings.HoverItemDelay);
             /*
            //set cursor and update hoveritem
            yield return Settings.HoverItemDelay;
