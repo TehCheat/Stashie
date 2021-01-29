@@ -34,7 +34,7 @@ namespace Stashie
         [Menu("Stash Hotkey")] 
         public HotkeyNode DropHotkey { get; set; }
 
-        [Menu("Extra Delay", "Primary Delay (in ms).")]
+        [Menu("Extra Delay", "Delay to wait after each inventory clearing attempt(in ms).")]
         public RangeNode<int> ExtraDelay { get; set; }
         [Menu("HoverItem Delay", "Delay used to wait inbetween checks for the Hoveritem (in ms).")]
         public RangeNode<int> HoverItemDelay { get; set; }

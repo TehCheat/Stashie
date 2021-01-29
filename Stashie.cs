@@ -42,6 +42,7 @@ namespace Stashie
         private int _visibleStashIndex = -1;
         private const int MaxShownSidebarStashTabs = 31;
         private int _stashCount;
+        private NormalInventoryItem lastHoverItem;
 
         public StashieCore()
         {
@@ -560,11 +561,13 @@ namespace Stashie
         {
             var cursorPosPreMoving = Input.ForceMousePosition; //saving cursorposition
             //try stashing items 3 times
-            for (int tries = 0; tries < 3; ++tries)
+            yield return ParseItems();
+            for (int tries = 0; tries < 3 && _dropItems.Count > 0; ++tries)
             {
-                yield return ParseItems();
                 if (_dropItems.Count > 0)
                     yield return StashItemsIncrementer();
+                yield return ParseItems();
+                yield return new WaitTime(Settings.ExtraDelay);
             }
             yield return ProcessRefills();
             if (Settings.VisitTabWhenDone.Value) 
@@ -686,7 +689,6 @@ namespace Stashie
         }
         private IEnumerator StashItems2()
         {
-            NormalInventoryItem lastHoverItem = null;
             PublishEvent("stashie_start_drop_items", null);
 
             _visibleStashIndex = GetIndexOfCurrentVisibleTab();
@@ -697,7 +699,7 @@ namespace Stashie
             }
             var itemsSortedByStash = _dropItems.OrderByDescending(x => x.StashIndex == _visibleStashIndex)
                     .ThenBy(x => x.StashIndex).ToList();
-            var waitedItems = new List<FilterResult>(16);
+            var waitedItems = new List<FilterResult>(8);
 
             Input.KeyDown(Keys.LControlKey);
             LogMessage($"Want to drop {itemsSortedByStash.Count} items.");
@@ -710,6 +712,7 @@ namespace Stashie
                 if (!stashresult.SkipSwitchTab)
                     yield return SwitchToTab(stashresult.StashIndex);
                 //this is shenanigans for items that take some time to get dumped like maps into maptab and divcards in divtab
+                /*
                 var waited = waitedItems.Count > 0;
                 while (waited)
                 {
@@ -732,13 +735,13 @@ namespace Stashie
                         yield break;
                     }
                     yield return new WaitTime((int)GameController.IngameState.CurLatency); //maybe replace with Setting option
-                }
+                }*/
                 yield return new WaitFunctionTimed(() => GameController.IngameState.IngameUi.StashElement.AllInventories[_visibleStashIndex] != null, 
                     true, 2000, $"Error while loading tab, Index: {_visibleStashIndex}"); //maybe replace waittime with Setting option
                 yield return new WaitFunctionTimed(() => GetTypeOfCurrentVisibleStash() != InventoryType.InvalidInventory,
                     true, 2000, $"Error with inventory type, Index: {_visibleStashIndex}"); //maybe replace waittime with Setting option
 
-                yield return StashItem(stashresult, maxTryTime, lastHoverItem);
+                yield return StashItem(stashresult);
                 
                 _debugTimer.Restart();
                 PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
@@ -746,36 +749,40 @@ namespace Stashie
             CleanUp();
 
         }
-        private IEnumerator StashItem(FilterResult stashresult, long maxTryTime, NormalInventoryItem  lastHoverItem)
+
+        private IEnumerator StashItem(FilterResult stashresult)
         {
             Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
-            //set cursor and update hoveritem
-            var inventory = GameController.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
-            while (inventory.HoverItem == null)
-            {
-                if (_debugTimer.ElapsedMilliseconds > maxTryTime)
-                {
-                    LogMessage($"Error while waiting for hover item. hoveritem is null, Index: {_visibleStashIndex}");
-                    yield break;
-                }
-                Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
-                yield return Settings.HoverItemDelay;
-            }
-            if (lastHoverItem != null)
-            {
-                while (inventory.HoverItem == null || inventory.HoverItem.Address == lastHoverItem.Address)
-                {
-                    if (_debugTimer.ElapsedMilliseconds > maxTryTime)
-                    {
-                        LogMessage($"Error while waiting for hover item. hoveritem is null, Index: {_visibleStashIndex}");
-                        yield break;
-                    }
-                    Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
-                    yield return Settings.HoverItemDelay;
-                }
-            }
-            lastHoverItem = inventory.HoverItem;
+            /*
+           //set cursor and update hoveritem
+           yield return Settings.HoverItemDelay;
 
+           var inventory = GameController.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
+           while (inventory.HoverItem == null)
+           {
+               if (_debugTimer.ElapsedMilliseconds > maxTryTime)
+               {
+                   LogMessage($"Error while waiting for hover item. hoveritem is null, Index: {_visibleStashIndex}");
+                   yield break;
+               }
+               Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
+               yield return Settings.HoverItemDelay;
+           }
+           if (lastHoverItem != null)
+           {
+               while (inventory.HoverItem == null || inventory.HoverItem.Address == lastHoverItem.Address)
+               {
+                   if (_debugTimer.ElapsedMilliseconds > maxTryTime)
+                   {
+                       LogMessage($"Error while waiting for hover item. hoveritem is null, Index: {_visibleStashIndex}");
+                       yield break;
+                   }
+                   Input.SetCursorPos(stashresult.ClickPos + _clickWindowOffset);
+                   yield return Settings.HoverItemDelay;
+               }
+           }
+           lastHoverItem = inventory.HoverItem;
+           */
             //finally press the button
             //additional shift to circumvent affinities
             bool shiftused = false;
@@ -792,6 +799,7 @@ namespace Stashie
            
             yield return new WaitTime(Settings.StashItemDelay);
         }
+
         [Obsolete("Deprecated use StashItems2() instead. Will call StashItems2()")]
         /// <summary>
         /// this needs a rewrite... 
