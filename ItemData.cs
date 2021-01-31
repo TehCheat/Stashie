@@ -11,9 +11,9 @@ namespace Stashie
 {
     public class ItemData
     {
-        private static readonly List<string> goodRewards = new List<string>{ "additional currency items", "additional fossils", "additional divination cards", "additional quality gems", "additional map fragments", "additional catalysts", "additonal essences", "additional legion incubators", "additional polished scarabs" };
-        private static readonly List<string> badRewards = new List<string> { "additional veiled armour", "additional rare weapons", "additional rare armour", "additional perandus coins", "additional rare talismans", "a rare weapon" };
-        private static readonly List<string> mediocreRewards = new List<string> { "a map item", "additional maps", "rare jewellery", "itemised prophecies", "enchanted boots", "additional rusted scarabs", "a shaper weapon", "a unique weapon", "an abyssal jewel", "incursion weapon", "additonal unique items", "additional breach splinters" };
+        private static readonly List<string> goodRewards = new List<string>{ "additionalcurrencyitems", "additionalfossils", "additionaldivinationcards", "additionalqualitygems", "additionalmapfragments", "additionalcatalysts", "additonalessences", "additionallegionincubators", "additionalpolishedscarabs" };
+        private static readonly List<string> badRewards = new List<string> { "additionalveiledarmour", "additionalrareweapons", "additionalrarearmour", "additionalperanduscoins", "additionalraretalismans", "arareweapon" };
+        private static readonly List<string> mediocreRewards = new List<string> { "amapitem", "additionalmaps", "rarejewellery", "itemisedprophecies", "enchantedboots", "additionalrustedscarabs", "ashaperweapon", "auniqueweapon", "anabyssaljewel", "incursionweapon", "additonaluniqueitems", "additionalbreachsplinters" };
         public NormalInventoryItem InventoryItem { get; }
         public string Path { get; }
         public string ClassName { get; }
@@ -47,9 +47,9 @@ namespace Stashie
         public bool Enchanted { get; }
         public int SkillGemLevel { get; }
         public int SkillGemQualityType { get; }
-        public int MetamorphSampleRewardsAmount { get; } = 0;
-        public int MetamorphSampleGoodRewardsAmount { get; } = 0;
-        public int MetamorphSampleBadRewardsAmount { get; } = 0;
+        public int MetamorphSampleRewardsAmount { get; set; } = 0;
+        public int MetamorphSampleGoodRewardsAmount { get; set; } = 0;
+        public int MetamorphSampleBadRewardsAmount { get; set; } = 0;
         
         public Vector2 clientRect { get; }
 
@@ -133,10 +133,11 @@ namespace Stashie
                 if (stats != null)
                 {
                     MetamorphSampleRewardsAmount = stats.Count();
-                    stats.ForEach(str => str.ToLower());
-                    stats.ForEach(x => x.Substring("Drops ".Length));
-                    MetamorphSampleGoodRewardsAmount = stats.Where(stat => goodRewards.Any(rewards => rewards.Equals(stat))).Count();
-                    MetamorphSampleBadRewardsAmount = stats.Where(stat => badRewards.Any(rewards => rewards.Equals(stat))).Count();
+                    var _stats = stats.Select(str => str.ToLower()).ToList();
+                    _stats = _stats.Select(str => str.Replace(" ", "")).ToList();
+                    _stats = _stats.Select(x => x.Substring("drops".Length)).ToList();
+                    MetamorphSampleGoodRewardsAmount = _stats.Where(stat => goodRewards.Any(rewards => rewards.Equals(stat))).ToList().Count();
+                    MetamorphSampleBadRewardsAmount = _stats.Where(stat => badRewards.Any(rewards => rewards.Equals(stat))).ToList().Count();
                 }
             }
             
