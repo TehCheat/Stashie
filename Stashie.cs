@@ -650,7 +650,7 @@ namespace Stashie
                 LogMessage($"Stshie: VisibleStashIndex was invalid: {_visibleStashIndex}, stopping.");
                 yield break;
             }
-            var itemsSortedByStash = _dropItems.OrderBy(x => x.SkipSwitchTab || x.StashIndex == _visibleStashIndex).ThenBy(x => x.StashIndex).ToList();
+            var itemsSortedByStash = _dropItems.OrderBy(x => x.SkipSwitchTab || x.StashIndex == _visibleStashIndex ? 0 : 1).ThenBy(x => x.StashIndex).ToList();
             var waitedItems = new List<FilterResult>(8);
 
             Input.KeyDown(Keys.LControlKey);
