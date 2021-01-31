@@ -518,7 +518,7 @@ namespace Stashie
         {
             var cursorPosPreMoving = Input.ForceMousePosition; //saving cursorposition
             //try stashing items 3 times
-            _dropItems = new List<FilterResult>();
+            
             yield return ParseItems();
             for (int tries = 0; tries < 3 && _dropItems.Count > 0; ++tries)
             {
@@ -650,8 +650,7 @@ namespace Stashie
                 LogMessage($"Stshie: VisibleStashIndex was invalid: {_visibleStashIndex}, stopping.");
                 yield break;
             }
-            var itemsSortedByStash = _dropItems.OrderByDescending(x => x.StashIndex == _visibleStashIndex)
-                    .ThenBy(x => x.StashIndex).ToList();
+            var itemsSortedByStash = _dropItems.OrderBy(x => x.SkipSwitchTab || x.StashIndex == _visibleStashIndex).ThenBy(x => x.StashIndex).ToList();
             var waitedItems = new List<FilterResult>(8);
 
             Input.KeyDown(Keys.LControlKey);
