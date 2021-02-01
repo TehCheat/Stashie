@@ -21,7 +21,8 @@ namespace Stashie
     public class StashieCore : BaseSettingsPlugin<StashieSettings>
     {
         private const string StashTabsNameChecker = "Stash Tabs Name Checker";
-        private const string FiltersConfigFile = "FiltersConfig.txt";
+        private const string FiltersConfigFilePrimary = "FiltersConfig.txt";
+        private const string FiltersConfigFileSecondary = "FiltersConfig2.txt";
         private const int WhileDelay = 5;
         private const int InputDelay = 15;
         private const string CoroutineName = "Drop To Stash";
@@ -30,7 +31,8 @@ namespace Stashie
         private readonly WaitTime _wait10Ms = new WaitTime(10);
         private readonly WaitTime _wait3Ms = new WaitTime(3);
         private Vector2 _clickWindowOffset;
-        private List<CustomFilter> _customFilters;
+        private List<CustomFilter> _customFiltersPrimary;
+        private List<CustomFilter> _customFiltersSecondary;
         private List<RefillProcessor> _customRefills;
         private List<FilterResult> _dropItems;
         private List<ListIndexNode> _settingsListNodes;
@@ -43,6 +45,7 @@ namespace Stashie
         private const int MaxShownSidebarStashTabs = 31;
         private int _stashCount;
         private NormalInventoryItem lastHoverItem;
+        private bool secondaryFilterActive = false;
 
         public StashieCore()
         {
@@ -115,6 +118,7 @@ namespace Stashie
             Input.RegisterKey(Settings.DropHotkey);
 
             Settings.DropHotkey.OnValueChanged += () => { Input.RegisterKey(Settings.DropHotkey); };
+            Settings.SwitchFilterhotkey.OnValueChanged += () => { Input.RegisterKey(Settings.SwitchFilterhotkey); };
             _stashCount = (int) GameController.Game.IngameState.IngameUi.StashElement.TotalStashes;
 
             return true;
@@ -293,11 +297,17 @@ namespace Stashie
 
         private void LoadCustomFilters()
         {
-            var filterFilePath = Path.Combine(DirectoryFullName, FiltersConfigFile);
+            string filter = FiltersConfigFilePrimary;
+            if (secondaryFilterActive) 
+            {
+                filter = FiltersConfigFileSecondary;
+            }
+            
+            var filterFilePath = Path.Combine(DirectoryFullName, filter);
             var filterLines = File.ReadAllLines(filterFilePath);
-            _customFilters = FilterParser.Parse(filterLines);
+            _customFiltersPrimary = FilterParser.Parse(filterLines);
 
-            foreach (var customFilter in _customFilters)
+            foreach (var customFilter in _customFiltersPrimary)
             {
                 if (!Settings.CustomFilterOptions.TryGetValue(customFilter.Name, out var indexNodeS))
                 {
@@ -387,7 +397,7 @@ namespace Stashie
 
             _filterTabs = null;
 
-            foreach (var customFilter in _customFilters.GroupBy(x => x.SubmenuName, e => e))
+            foreach (var customFilter in _customFiltersPrimary.GroupBy(x => x.SubmenuName, e => e))
                 _filterTabs += () =>
                 {
                     ImGui.TextColored(new Vector4(0f, 1f, 0.022f, 1f), customFilter.Key);
@@ -479,6 +489,15 @@ namespace Stashie
 
         public override Job Tick()
         {
+            if(Core.ParallelRunner.FindByName("Stashie_DropItemsToStash") == null)
+            {
+                if (Settings.SwitchFilterhotkey.PressedOnce())
+                {
+                    secondaryFilterActive = !secondaryFilterActive;
+                    SetupOrClose();
+                    LogMessage($"Stashie: Currently active Filter: {(!secondaryFilterActive ? "primary" : "secondary")}",5);
+                }
+            }
             if (!stashingRequirementsMet() && Core.ParallelRunner.FindByName("Stashie_DropItemsToStash") != null)
             {
                 StopCoroutine("Stashie_DropItemsToStash");
@@ -618,7 +637,7 @@ namespace Stashie
 
         private FilterResult CheckFilters(ItemData itemData)
         {
-            foreach (var filter in _customFilters)
+            foreach (var filter in _customFiltersPrimary)
             {
                 try
                 {

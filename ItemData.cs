@@ -11,9 +11,10 @@ namespace Stashie
 {
     public class ItemData
     {
-        private static readonly List<string> goodRewards = new List<string>{ "additionalcurrencyitems", "additionalfossils", "additionaldivinationcards", "additionalqualitygems", "additionalmapfragments", "additionalcatalysts", "additonalessences", "additionallegionincubators", "additionalpolishedscarabs" };
+        private static readonly List<string> goodRewards = new List<string>{ "Drops additional Currency Items", "Drops additional Fossils", "Drops additional Divination Cards", "Drops additional Quality Gems", "Drops additional Map Fragments", "Drops additional Catalysts", "Drops additonal Essences", "Drops additional Legion Incubators", "Drops additional Polished Scarabs" };
         private static readonly List<string> badRewards = new List<string> { "additionalveiledarmour", "additionalrareweapons", "additionalrarearmour", "additionalperanduscoins", "additionalraretalismans", "arareweapon" };
         private static readonly List<string> mediocreRewards = new List<string> { "amapitem", "additionalmaps", "rarejewellery", "itemisedprophecies", "enchantedboots", "additionalrustedscarabs", "ashaperweapon", "auniqueweapon", "anabyssaljewel", "incursionweapon", "additonaluniqueitems", "additionalbreachsplinters" };
+        private static readonly HashSet<string> goodRewardsHS = new HashSet<string>(goodRewards);
         public NormalInventoryItem InventoryItem { get; }
         public string Path { get; }
         public string ClassName { get; }
@@ -47,9 +48,9 @@ namespace Stashie
         public bool Enchanted { get; }
         public int SkillGemLevel { get; }
         public int SkillGemQualityType { get; }
-        public int MetamorphSampleRewardsAmount { get; set; } = 0;
-        public int MetamorphSampleGoodRewardsAmount { get; set; } = 0;
-        public int MetamorphSampleBadRewardsAmount { get; set; } = 0;
+        public int MetamorphSampleRewardsAmount { get; } = 0;
+        public int MetamorphSampleGoodRewardsAmount { get; } = 0;
+        public int MetamorphSampleBadRewardsAmount { get; } = 0;
         
         public Vector2 clientRect { get; }
 
@@ -133,11 +134,12 @@ namespace Stashie
                 if (stats != null)
                 {
                     MetamorphSampleRewardsAmount = stats.Count();
-                    var _stats = stats.Select(str => str.ToLower()).ToList();
-                    _stats = _stats.Select(str => str.Replace(" ", "")).ToList();
-                    _stats = _stats.Select(x => x.Substring("drops".Length)).ToList();
-                    MetamorphSampleGoodRewardsAmount = _stats.Where(stat => goodRewards.Any(rewards => rewards.Equals(stat))).ToList().Count();
-                    MetamorphSampleBadRewardsAmount = _stats.Where(stat => badRewards.Any(rewards => rewards.Equals(stat))).ToList().Count();
+                    //var _stats = stats.Select(str => str.ToLower()).ToList();
+                    //_stats = _stats.Select(str => str.Replace(" ", "")).ToList();
+                    //_stats = _stats.Select(x => x.Substring(5)).ToList();
+                    MetamorphSampleGoodRewardsAmount = stats.Count(x => goodRewardsHS.Contains(x));
+                    //MetamorphSampleGoodRewardsAmount = _stats.Where(stat => goodRewards.Any(rewards => rewards.Equals(stat))).Count();
+                    //MetamorphSampleBadRewardsAmount = _stats.Where(stat => badRewards.Any(rewards => rewards.Equals(stat))).Count();
                 }
             }
             

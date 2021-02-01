@@ -35,9 +35,9 @@ namespace Stashie
         private const string PARAMETER_FRACTUREDMODS = "fractured";
         private const string PARAMETER_SKILLGEMLEVEL = "skillgemlevel";
         private const string PARAMTER_CLUSTERJEWELPASSIVES = "clusterjewelpassives";
-        private const string PARAMETER_METAMORPHREWARDSAMOUNT = "metamorphrewardsamount";
-        private const string PARAMETER_METAMORPHGOODREWARDSAMOUNT = "metamorphgoodrewardsamount";
-        private const string PARAMETER_METAMORPHBADREWARDSAMOUNT = "metamorphbadrewardsamount";
+        private const string PARAMETER_METAMORPHREWARDSAMOUNT = "sampleStats";
+        private const string PARAMETER_METAMORPHGOODREWARDSAMOUNT = "goodrewards";
+        private const string PARAMETER_METAMORPHBADREWARDSAMOUNT = "badrewards";
 
         //Boolean
         private const string PARAMETER_IDENTIFIED = "identified";
