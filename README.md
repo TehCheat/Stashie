@@ -6,6 +6,4 @@ Find all the available keywords here: https://github.com/nymann/Stashie/wiki/key
 
 
 #### Wanna give feedback?
-https://discord.gg/Q3cdy4v
-
-![](http://overseer.co/Stashie/Stashie.gif)
+Open an Issue here on github with as much as detail as possible.
