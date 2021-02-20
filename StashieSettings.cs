@@ -30,6 +30,7 @@ namespace Stashie
             CustomRefillOptions = new Dictionary<string, RangeNode<int>>();
             VisitTabWhenDone = new ToggleNode(false);
             TabToVisitWhenDone = new RangeNode<int>(0, 0, 40);
+            BackToOriginalTab = new ToggleNode(false);
         }
 
 
@@ -54,6 +55,8 @@ namespace Stashie
 
         [Menu("tab (index)")] 
         public RangeNode<int> TabToVisitWhenDone { get; set; }
+        [Menu("Go back to the tab you were in prior to Stashing")]
+        public ToggleNode BackToOriginalTab { get; }
         public ToggleNode RefillCurrency { get; set; }
         public ListIndexNode CurrencyStashTab { get; set; }
         public ToggleNode AllowHaveMore { get; set; }

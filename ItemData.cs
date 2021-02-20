@@ -6,14 +6,15 @@ using ExileCore.Shared.Helpers;
 using SharpDX;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Stashie
 {
     public class ItemData
     {
-        private static readonly List<string> goodRewards = new List<string>{ "Drops additional Currency Items", "Drops additional Fossils", "Drops additional Divination Cards", "Drops additional Quality Gems", "Drops additional Map Fragments", "Drops additional Catalysts", "Drops additonal Essences", "Drops additional Legion Incubators", "Drops additional Polished Scarabs" };
-        private static readonly List<string> badRewards = new List<string> { "additionalveiledarmour", "additionalrareweapons", "additionalrarearmour", "additionalperanduscoins", "additionalraretalismans", "arareweapon" };
-        private static readonly List<string> mediocreRewards = new List<string> { "amapitem", "additionalmaps", "rarejewellery", "itemisedprophecies", "enchantedboots", "additionalrustedscarabs", "ashaperweapon", "auniqueweapon", "anabyssaljewel", "incursionweapon", "additonaluniqueitems", "additionalbreachsplinters" };
+        public static readonly List<string> goodRewards = new List<string>{ "Drops additional Currency Items", "Drops additional Currency Shards", "Drops additional Fossils", "Drops additional Divination Cards", "Drops additional Quality Gems", "Drops additional Map Fragments", "Drops additional Catalysts", "Drops additonal Essences", "Drops additional Legion Incubators", "Drops additional Polished Scarabs" };
+        //private static readonly List<string> badRewards = new List<string> { "additionalveiledarmour", "additionalrareweapons", "additionalrarearmour", "additionalperanduscoins", "additionalraretalismans", "arareweapon" };
+        //private static readonly List<string> mediocreRewards = new List<string> { "amapitem", "additionalmaps", "rarejewellery", "itemisedprophecies", "enchantedboots", "additionalrustedscarabs", "ashaperweapon", "auniqueweapon", "anabyssaljewel", "incursionweapon", "additonaluniqueitems", "additionalbreachsplinters" };
         private static readonly HashSet<string> goodRewardsHS = new HashSet<string>(goodRewards);
         public NormalInventoryItem InventoryItem { get; }
         public string Path { get; }
@@ -32,6 +33,7 @@ namespace Stashie
         public int MapTier { get; }
         public int NumberOfSockets { get; }
         public int LargestLinkSize { get; }
+        public int DeliriumStacks { get; }
         //public int ClusterJewelpassives { get; }
         public bool BIdentified { get; }
         public bool isCorrupted { get; }
@@ -48,15 +50,16 @@ namespace Stashie
         public bool Enchanted { get; }
         public int SkillGemLevel { get; }
         public int SkillGemQualityType { get; }
-        public int MetamorphSampleRewardsAmount { get; } = 0;
-        public int MetamorphSampleGoodRewardsAmount { get; } = 0;
-        public int MetamorphSampleBadRewardsAmount { get; } = 0;
-        
+        public int MetamorphSampleRewardsAmount { get; }
+        public int MetamorphSampleGoodRewardsAmount { get; }
+        public int MetamorphSampleBadRewardsAmount { get; }
+        public uint InventoryID { get; }
         public Vector2 clientRect { get; }
 
         public ItemData(NormalInventoryItem inventoryItem, BaseItemType baseItemType)
         {
             InventoryItem = inventoryItem;
+            InventoryID = inventoryItem.Item.InventoryId;
             var item = inventoryItem.Item;
             Path = item.Path;
             var baseComponent = item.GetComponent<Base>();
@@ -81,8 +84,8 @@ namespace Stashie
             isBlightMap = mods?.ItemMods.Where(m => m.Name.Contains("InfectedMap")).Count() > 0;
             isElderGuardianMap = mods?.ItemMods.Where(m => m.Name.Contains("MapElderContainsBoss")).Count() > 0;
             Enchanted = mods?.ItemMods.Where(m => m.Name.Contains("Enchantment")).Count() > 0;
+            DeliriumStacks = mods?.ItemMods.Where(m => m.Name.Contains("AfflictionMapReward")).Count() ?? 0;
 
-            
 
             NumberOfSockets = item.GetComponent<Sockets>()?.NumberOfSockets ?? 0;
             LargestLinkSize = item.GetComponent<Sockets>()?.LargestLinkSize ?? 0;
@@ -128,21 +131,26 @@ namespace Stashie
                 Name = mods?.UniqueName ?? "";
             }
             
-            if (ClassName == "MetamorphosisDNA")
+            if (BaseName.StartsWith("Metamorph"))
             {
                 var stats = mods?.HumanStats;
                 if (stats != null)
                 {
-                    MetamorphSampleRewardsAmount = stats.Count();
+                    MetamorphSampleRewardsAmount = stats.Count();                   
+       
                     //var _stats = stats.Select(str => str.ToLower()).ToList();
                     //_stats = _stats.Select(str => str.Replace(" ", "")).ToList();
                     //_stats = _stats.Select(x => x.Substring(5)).ToList();
-                    MetamorphSampleGoodRewardsAmount = stats.Count(x => goodRewardsHS.Contains(x));
+
+                    //MetamorphSampleGoodRewardsAmount = stats.Count(x => goodRewardsHS.Contains(x));
+
                     //MetamorphSampleGoodRewardsAmount = _stats.Where(stat => goodRewards.Any(rewards => rewards.Equals(stat))).Count();
                     //MetamorphSampleBadRewardsAmount = _stats.Where(stat => badRewards.Any(rewards => rewards.Equals(stat))).Count();
+                }else
+                {
+                    MetamorphSampleRewardsAmount = -1;
                 }
-            }
-            
+            }            
         }
         
         public Vector2 GetClickPosCache()
@@ -157,6 +165,60 @@ namespace Stashie
             var x = MathHepler.Randomizer.Next((int) clientRect.TopLeft.X + paddingPixels, (int) clientRect.TopRight.X - paddingPixels);
             var y = MathHepler.Randomizer.Next((int) clientRect.TopLeft.Y + paddingPixels, (int) clientRect.BottomLeft.Y - paddingPixels);
             return new Vector2(x, y);
+        }
+        
+        public override string ToString()
+        {
+            /*
+            FieldInfo[] fields = typeof(ItemData).GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+            string str = "\n";
+            foreach (var field in fields)
+            {
+                var name = field.Name;
+                var value = field.GetValue(this).ToString();
+                if (name == "goodRewards" || name == "goodRewardsHS" || name == "InventoryItem" || name == "clientRect") continue;
+                str += name + ": " + value + "\n";
+            }
+            return str;
+            */
+            
+            string itemdata = "\n" +
+                nameof(InventoryID) + ": " + InventoryID + "\n" +
+                nameof(Path) + ": " + Path + "\n" +
+                nameof(ClassName) + ": " + ClassName + "\n" +
+                nameof(BaseName) + ": " + BaseName + "\n" +
+                nameof(Name) + ": " + Name + "\n" +
+                nameof(Description) + ": " + Description + "\n" +
+                nameof(ProphecyName) + ": " + ProphecyName + "\n" +
+                nameof(ProphecyDescription) + ": " + ProphecyDescription + "\n" +
+                nameof(Rarity) + ": " + Rarity + "\n" +
+                nameof(ItemQuality) + ": " + ItemQuality + "\n" +
+                nameof(Veiled) + ": " + Veiled + "\n" +
+                nameof(Fractured) + ": " + Fractured + "\n" +
+                nameof(ItemLevel) + ": " + ItemLevel + "\n" +
+                nameof(MapTier) + ": " + MapTier + "\n" +
+                nameof(NumberOfSockets) + ": " + NumberOfSockets + "\n" +
+                nameof(LargestLinkSize) + ": " + LargestLinkSize + "\n" +
+                nameof(BIdentified) + ": " + BIdentified + "\n" +
+                nameof(isCorrupted) + ": " + isCorrupted + "\n" +
+                nameof(isCorrupted) + ": " + isCorrupted + "\n" +
+                nameof(isShaper) + ": " + isShaper + "\n" +
+                nameof(isCrusader) + ": " + isCrusader + "\n" +
+                nameof(isRedeemer) + ": " + isRedeemer + "\n" +
+                nameof(isHunter) + ": " + isHunter + "\n" +
+                nameof(isWarlord) + ": " + isWarlord + "\n" +
+                nameof(isInfluenced) + ": " + isInfluenced + "\n" +
+                nameof(Synthesised) + ": " + Synthesised + "\n" +
+                nameof(isBlightMap) + ": " + isBlightMap + "\n" +
+                nameof(isElderGuardianMap) + ": " + isElderGuardianMap + "\n" +
+                nameof(Enchanted) + ": " + Enchanted + "\n" +
+                nameof(SkillGemLevel) + ": " + SkillGemLevel + "\n" +
+                nameof(SkillGemQualityType) + ": " + SkillGemQualityType + "\n" +
+                nameof(MetamorphSampleRewardsAmount) + ": " + MetamorphSampleRewardsAmount + "\n" +
+                nameof(MetamorphSampleGoodRewardsAmount) + ": " + MetamorphSampleGoodRewardsAmount + "\n" +
+                nameof(MetamorphSampleBadRewardsAmount) + ": " + MetamorphSampleBadRewardsAmount + "\n";
+            return itemdata;
+
         }
     }
 }

@@ -537,7 +537,7 @@ namespace Stashie
         {
             var cursorPosPreMoving = Input.ForceMousePosition; //saving cursorposition
             //try stashing items 3 times
-            
+            var originTab = GetIndexOfCurrentVisibleTab();
             yield return ParseItems();
             for (int tries = 0; tries < 3 && _dropItems.Count > 0; ++tries)
             {
@@ -547,8 +547,18 @@ namespace Stashie
                 yield return new WaitTime(Settings.ExtraDelay);
             }
             //yield return ProcessRefills(); currently bugged
-            if (Settings.VisitTabWhenDone.Value) 
-                yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
+            if (Settings.VisitTabWhenDone.Value)
+            {
+                if (Settings.BackToOriginalTab.Value)
+                {
+                    yield return SwitchToTab(originTab);
+                }
+                else
+                {
+                    yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
+                }
+            } 
+                
 
             //restoring cursorposition
             Input.SetCursorPos(cursorPosPreMoving);
@@ -613,6 +623,7 @@ namespace Stashie
                 if (CheckIgnoreCells(invItem)) continue;
                 var baseItemType = GameController.Files.BaseItemTypes.Translate(invItem.Item.Path);
                 var testItem = new ItemData(invItem, baseItemType);
+                //LogMessage(testItem.ToString());
                 var result = CheckFilters(testItem);
                 if (result != null)
                     _dropItems.Add(result);
@@ -657,9 +668,9 @@ namespace Stashie
         {
             _coroutineIteration++;
 
-            yield return StashItems2();
+            yield return StashItems();
         }
-        private IEnumerator StashItems2()
+        private IEnumerator StashItems()
         {
             PublishEvent("stashie_start_drop_items", null);
 
@@ -769,153 +780,6 @@ namespace Stashie
            
             yield return new WaitTime(Settings.StashItemDelay);
         }
-
-        [Obsolete("Deprecated use StashItems2() instead. Will call StashItems2()")]
-        /// <summary>
-        /// this needs a rewrite... 
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator StashItems()
-        {
-            yield return StashItems2();
-            NormalInventoryItem lastHoverItem = null;
-            PublishEvent("stashie_start_drop_items", null);
-  
-            //amount of times we try to do the stashing process
-            for (int tries = 0; _dropItems.Count > 0 && tries < 2; ++tries)
-            {
-                _visibleStashIndex = GetIndexOfCurrentVisibleTab();
-                if (_visibleStashIndex < 0) yield break;
-
-                var itemsSortedByStash = _dropItems.OrderByDescending(x => x.StashIndex == _visibleStashIndex)
-                    .ThenBy(x => x.StashIndex).ToList();
-                var latency = (int) GameController.Game.IngameState.CurLatency + Settings.ExtraDelay; //i still dont like this. will come back later
-                var waitedItems = new List<FilterResult>(8);                            //8? where does that number come from????
-                var dropItemsToStashWaitTime = new WaitTime(Settings.ExtraDelay);       //will see if this is truly necessary, too many "useless" variables bloat the code
-
-                Input.KeyDown(Keys.LControlKey);
-                
-                LogMessage($"Want to drop {itemsSortedByStash.Count} items.");
-
-                foreach (var stashResults in itemsSortedByStash)
-                {
-                    _coroutineIteration++;
-                    _coroutineWorker?.UpdateTicks(_coroutineIteration);
-                    var tryTime = _debugTimer.ElapsedMilliseconds + latency + 2000;
-                    //move to the correct tab if we arent on it already
-                    if (stashResults.StashIndex != _visibleStashIndex)
-                    {
-                        _stackItemTimer.Restart();
-                        var waited = waitedItems.Count > 0;
-
-                        while (waited)
-                        {
-                            waited = false;
-
-                            var visibleInventoryItems = GameController.Game.IngameState.IngameUi
-                                .InventoryPanel[InventoryIndex.PlayerInventory]
-                                .VisibleInventoryItems;
-
-                            foreach (var item in waitedItems)
-                            {
-                                var contains = visibleInventoryItems.Contains(item.ItemData.InventoryItem);
-
-                                if (!contains) continue;
-                                yield return ClickElement(item.ClickPos);
-                                waited = true;
-                            }
-
-                            yield return new WaitTime(100); //what do we wait for here ?
-
-                            PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
-
-                            if (!waited) waitedItems.Clear();
-
-                            if (_debugTimer.ElapsedMilliseconds > tryTime)
-                            {
-                                LogMessage($"Error while waiting items {waitedItems.Count}");
-                                yield break;
-                            }
-
-                            yield return dropItemsToStashWaitTime;
-
-                            if (_stackItemTimer.ElapsedMilliseconds > 1000 + latency)
-                                break;
-                        }
-
-                        yield return SwitchToTab(stashResults.StashIndex);
-                    }
-
-                    var visibleInventory =
-                        GameController.IngameState.IngameUi.StashElement.AllInventories[_visibleStashIndex];
-
-                    while (visibleInventory == null)
-                    {
-                        visibleInventory =
-                            GameController.IngameState.IngameUi.StashElement.AllInventories[_visibleStashIndex];
-                        yield return _wait10Ms;
-
-                        if (_debugTimer.ElapsedMilliseconds <= tryTime + 2000) continue;
-                        LogMessage($"Error while loading tab, Index: {_visibleStashIndex}");
-                        yield break;
-                    }
-
-                    while (GetTypeOfCurrentVisibleStash() == InventoryType.InvalidInventory)
-                    {
-                        yield return dropItemsToStashWaitTime;
-
-                        if (_debugTimer.ElapsedMilliseconds <= tryTime) continue;
-                        LogMessage($"Error with inventory type, Index: {_visibleStashIndex}");
-                        yield break;
-                    }
-
-                    var inventory = GameController.IngameState.IngameUi.InventoryPanel[InventoryIndex.PlayerInventory];
-                    Input.SetCursorPos(stashResults.ClickPos + _clickWindowOffset);
-
-                    while (inventory.HoverItem == null)
-                    {
-                        Input.SetCursorPos(stashResults.ClickPos + _clickWindowOffset);
-                        yield return _wait3Ms;
-
-                        if (_debugTimer.ElapsedMilliseconds <= tryTime) continue;
-                        LogMessage($"Error while wait hover item null, Index: {_visibleStashIndex}");
-                        yield break;
-                    }
-
-                    if (lastHoverItem != null)
-                        while (inventory.HoverItem == null || inventory.HoverItem.Address == lastHoverItem.Address)
-                        {
-                            Input.SetCursorPos(stashResults.ClickPos + _clickWindowOffset);
-                            yield return _wait3Ms;
-
-                            if (_debugTimer.ElapsedMilliseconds <= tryTime) continue;
-                            LogMessage($"Error while wait hover item, Index: {_visibleStashIndex}");
-                            yield break;
-                        }
-
-                    lastHoverItem = inventory.HoverItem;
-                    Input.Click(MouseButtons.Left);
-                    yield return _wait10Ms;
-                    yield return dropItemsToStashWaitTime;
-                    var typeOfCurrentVisibleStash = GetTypeOfCurrentVisibleStash();
-
-                    if (typeOfCurrentVisibleStash == InventoryType.MapStash ||
-                        typeOfCurrentVisibleStash == InventoryType.DivinationStash)
-                        waitedItems.Add(stashResults);
-
-                    _debugTimer.Restart();
-
-                    PublishEvent("stashie_finish_drop_items_to_stash_tab", null);
-                }
-                Input.KeyUp(Keys.LControlKey);
-                if (Settings.VisitTabWhenDone.Value) yield return SwitchToTab(Settings.TabToVisitWhenDone.Value);
-
-                yield return ParseItems();
-            }
-
-            PublishEvent("stashie_stop_drop_items", null);
-        }
-
         #region Refill
 
         private IEnumerator ProcessRefills()
