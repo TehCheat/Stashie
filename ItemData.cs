@@ -7,6 +7,7 @@ using SharpDX;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Stashie
 {
@@ -63,6 +64,7 @@ namespace Stashie
             var item = inventoryItem.Item;
             Path = item.Path;
             var baseComponent = item.GetComponent<Base>();
+            if (baseComponent == null) return;
             isElder = baseComponent.isElder;
             isShaper = baseComponent.isShaper;
             isCorrupted = baseComponent.isCorrupted;
@@ -77,7 +79,7 @@ namespace Stashie
             BIdentified = mods?.Identified ?? true;
             ItemLevel = mods?.ItemLevel ?? 0;
             Veiled = mods?.ItemMods.Where(m => m.DisplayName.Contains("Veil")).Count() ?? 0;
-            Fractured = mods?.CountFractured ?? 0;
+            Fractured = mods?.FracturedCount ?? 0;
             SkillGemLevel = item.GetComponent<SkillGem>()?.Level ?? 0;
             //SkillGemQualityType = (int)item.GetComponent<SkillGem>()?.QualityType;
             Synthesised = mods?.Synthesised ?? false;
@@ -93,38 +95,21 @@ namespace Stashie
             ItemQuality = item.GetComponent<Quality>()?.ItemQuality ?? 0;
             ClassName = baseItemType.ClassName;
             BaseName = baseItemType.BaseName;
-            /*
-            if (baseItemType.BaseName.Contains("Cluster"))
-            {
-                ClusterJewelpassives = int.Parse(new string(mods?.HumanStats.ElementAt(0).
-                    SkipWhile(c => c < '0' || c > '9').TakeWhile(c => c >= '0' && c <= '9').ToArray()));
-                ClusterJewelBase = mods?.HumanStats.ElementAt(1).ToString();
-            }
-            else
-            {
-                ClusterJewelpassives = 0;
-                ClusterJewelBase = "";
-            }*/
 
-            Name = baseComponent.Name;
+            Name = baseComponent?.Name ?? "";
             Description = "";
-            MapTier = item.HasComponent<Map>() ? item.GetComponent<Map>().Tier : 0;
+            MapTier = item.GetComponent<Map>()?.Tier ?? 0;
             clientRect = InventoryItem.GetClientRect().Center;
             
-            if (@baseComponent.Name == "Prophecy")
+            if (Name == "Prophecy")
             {
-                var @prophParse = item.GetComponent<Prophecy>();
-                ProphecyName = @prophParse.DatProphecy.Name.ToLower();
-                ProphecyName = ProphecyName.Replace(" ", "");
-                ProphecyName = ProphecyName.Replace(",", "");
-                ProphecyName = ProphecyName.Replace("'", "");
-                ProphecyDescription = @prophParse.DatProphecy.PredictionText.ToLower();
-                ProphecyDescription = ProphecyDescription.Replace(" ", "");
-                ProphecyDescription = ProphecyDescription.Replace(",", "");
-                ProphecyDescription = ProphecyDescription.Replace("'", "");
-                Description = ProphecyDescription;
-                Name = ProphecyName;
                 BaseName = "Prophecy";
+                var prophecyComponent = item.HasComponent<Prophecy>()? item.GetComponent<Prophecy>() : null;
+                if (prophecyComponent == null) return;
+                Name = prophecyComponent.DatProphecy?.Name?.ToLower() ?? "";
+                Name = Regex.Replace(Name, @"[ ,']", "");
+                Description = prophecyComponent.DatProphecy?.PredictionText?.ToLower() ?? "";
+                Description = Regex.Replace(Description, @"[ ,']", "");
             }
             else
             {
