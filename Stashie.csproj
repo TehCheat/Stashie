@@ -36,7 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ExileCore">
-      <HintPath>..\..\Craere\PoeHelper\ExileCore.dll</HintPath>
+      <HintPath>..\..\PoeHelper\ExileCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ImGui.NET">

@@ -79,7 +79,7 @@ namespace Stashie
             BIdentified = mods?.Identified ?? true;
             ItemLevel = mods?.ItemLevel ?? 0;
             Veiled = mods?.ItemMods.Where(m => m.DisplayName.Contains("Veil")).Count() ?? 0;
-            Fractured = mods?.FracturedCount ?? 0;
+            Fractured = mods?.CountFractured ?? 0;
             SkillGemLevel = item.GetComponent<SkillGem>()?.Level ?? 0;
             //SkillGemQualityType = (int)item.GetComponent<SkillGem>()?.QualityType;
             Synthesised = mods?.Synthesised ?? false;
