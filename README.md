@@ -1,11 +1,9 @@
-<p align="center"> 
-<img src="http://overseer.co/Stashie/logo.png" width="200" class="logo">
-</p>
 
 ##### How does it work?
-Walk up to your stashtab and open it, then press your hotkey (if you have that setting enabled). The plugin will then put all your inventory items in their corresponding tabs. The tab indexes are set by the user via the settings UI. Ignored cells are also featured.
+Open your Stash and press the Hotkey to let Stashie stash your items.
+Edit your Filterfile to customize the stashing filters for advanced stashing strategies. 
+Find all the available keywords here: https://github.com/nymann/Stashie/wiki/keywords
+
 
 #### Wanna give feedback?
-https://discord.gg/Q3cdy4v
-
-![](http://overseer.co/Stashie/Stashie.gif)
+Open an Issue here on github with as much as detail as possible.
